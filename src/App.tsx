@@ -21,16 +21,16 @@ import { Badge } from "./components/ui/badge";
 import Gallery from "./components/ui/Gallery";
 import { galleryItems } from "./data/gallery";
 
-// Sections from /ui
+// Sections you added (living in /components/ui/)
 import FoodOptions from "./components/ui/FoodOptions";
 import TechFeatures from "./components/ui/TechFeatures";
 
-// Images served from /public
-const R_LOGO_SRC = "/r-logo.png";
-const EMBLEM_SRC = "/rikkis-logo.png";
+/** Use Vite base for all public assets so GitHub Pages project URLs work. */
+const BASE = import.meta.env.BASE_URL;
+const R_LOGO_SRC = `${BASE}r-logo.png`;
+const EMBLEM_SRC = `${BASE}rikkis-logo.png`;
 const BOOKING_EMAIL = "hello@rikkismobilebar.com";
 
-// Include new sections
 type SectionId =
   | "about"
   | "menu"
@@ -51,7 +51,7 @@ export default function App() {
     []
   );
 
-  // Show these in the header (order matters)
+  // Header nav (order matters)
   const visibleNavIds = useMemo<SectionId[]>(
     () => ["about", "menu", "food", "features", "gallery", "book"],
     []
@@ -72,7 +72,7 @@ export default function App() {
     [visibleNavIds]
   );
 
-  // If a hidden section becomes active, map to the nearest visible one
+  // If a hidden section becomes active, map to nearest visible one
   const order: SectionId[] = [
     "about",
     "menu",
@@ -102,7 +102,7 @@ export default function App() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // IntersectionObserver for section highlighting
+  // Section observer for active highlight
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -176,7 +176,9 @@ export default function App() {
     [
       "rounded-xl px-3 py-2 text-sm font-medium transition-colors outline-none",
       "focus-visible:ring-2 focus-visible:ring-brand-sea/50",
-      isActive ? "!text-white bg-brand-sea" : "text-brand-ink/80 hover:text-brand-ink hover:bg-brand-ink/10",
+      isActive
+        ? "!text-white bg-brand-sea"
+        : "text-brand-ink/80 hover:text-brand-ink hover:bg-brand-ink/10",
     ].join(" ");
 
   return (
@@ -185,7 +187,7 @@ export default function App() {
       <header
         className={`sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-brand-chrome transition-shadow ${
           scrolled ? "shadow-sm" : ""
-        } overflow-hidden`}
+        } overflow-hidden`} /* prevent chip bleed */
       >
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex h-16 items-center justify-between">
@@ -224,7 +226,10 @@ export default function App() {
             <div className="hidden md:flex">
               <Button
                 onClick={() =>
-                  document.getElementById("book")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  document.getElementById("book")?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
                 }
                 leftIcon={<Martini className="size-4" aria-hidden="true" />}
               >
@@ -265,7 +270,9 @@ export default function App() {
                     className={[
                       "rounded-lg px-3 py-2 text-sm font-medium outline-none",
                       "focus-visible:ring-2 focus-visible:ring-brand-sea/50",
-                      isActive ? "!text-white bg-brand-sea" : "text-brand-ink/80 hover:text-brand-ink hover:bg-brand-ink/10",
+                      isActive
+                        ? "!text-white bg-brand-sea"
+                        : "text-brand-ink/80 hover:text-brand-ink hover:bg-brand-ink/10",
                     ].join(" ")}
                   >
                     {label}
@@ -298,12 +305,11 @@ export default function App() {
                 Vintage Van. Future-Ready Bar.
               </h1>
 
-              {/* NEW — shorter, more suggestive intro */}
+              {/* Short, suggestive intro */}
               <p className="mt-4 text-lg text-brand-ink/80 mx-auto max-w-2xl">
-                A mid-century mobile bar for the Tri-Cities. Two pros with
-                25 years of hospitality, pouring classics and one-off menus with
-                an easy, modern touch. Drinks lead the night—everything else
-                reveals itself as you go.
+                A mid-century mobile bar for the Tri-Cities. Two pros with 25 years
+                in hospitality, pouring classics and one-off menus with an easy,
+                modern touch. Drinks lead the night—everything else reveals itself.
               </p>
 
               <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
@@ -316,7 +322,10 @@ export default function App() {
               <div className="mt-8 flex items-center justify-center gap-3">
                 <Button
                   onClick={() =>
-                    document.getElementById("book")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    document.getElementById("book")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    })
                   }
                   leftIcon={<Martini className="size-4" aria-hidden="true" />}
                 >
@@ -341,16 +350,17 @@ export default function App() {
               <picture>
                 <source
                   type="image/webp"
-                  srcSet="/rikkis-hero-image-800.webp 800w, /rikkis-hero-image-1200.webp 1200w, /rikkis-hero-image-1600.webp 1600w"
+                  srcSet={`${BASE}rikkis-hero-image-800.webp 800w, ${BASE}rikkis-hero-image-1200.webp 1200w, ${BASE}rikkis-hero-image-1600.webp 1600w`}
                   sizes="(min-width:1024px) 640px, 100vw"
                 />
                 <source
                   type="image/jpeg"
-                  srcSet="/rikkis-hero-image-800.jpg 800w, /rikkis-hero-image-1200.jpg 1200w, /rikkis-hero-image-1600.jpg 1600w"
+                  srcSet={`${BASE}rikkis-hero-image-800.jpg 800w, ${BASE}rikkis-hero-image-1200.jpg 1200w, ${BASE}rikkis-hero-image-1600.jpg 1600w`}
                   sizes="(min-width:1024px) 640px, 100vw"
                 />
+                {/* Guaranteed fallback to the PNG you have in /public */}
                 <img
-                  src="/rikkis-hero-image-1600.jpg"
+                  src={`${BASE}rikkis-hero-image.png`}
                   alt="1978 Club Wagon mobile bar setup with awning and counter"
                   width={1600}
                   height={900}
@@ -462,7 +472,9 @@ export default function App() {
                       variant="secondary"
                       fullWidth
                       onClick={() =>
-                        document.getElementById("book")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                        document
+                          .getElementById("book")
+                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
                       }
                     >
                       Get this package
