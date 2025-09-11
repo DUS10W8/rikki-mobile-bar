@@ -1,4 +1,8 @@
-// Minimal "cn" helper—no external deps needed.
-export function cn(...parts: Array<string | number | false | null | undefined>) {
-  return parts.filter(Boolean).join(" ");
+// src/lib/utils.ts
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+/** Merge Tailwind classes safely */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }
