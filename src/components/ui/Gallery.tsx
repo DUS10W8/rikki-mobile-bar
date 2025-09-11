@@ -4,19 +4,53 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 export type GalleryItem = {
   id: string;
   alt: string;
-  preview: string;         // grid thumbnail (e.g., 800px jpg)
-  full?: string;           // fallback full-size src
-  webpSet?: string;        // "/img-800.webp 800w, /img-1200.webp 1200w, /img-1600.webp 1600w"
-  jpgSet?: string;         // "/img-800.jpg 800w, /img-1200.jpg 1200w, /img-1600.jpg 1600w"
-  sizes?: string;          // "(min-width:1024px) 80vw, 100vw"
-  width?: number;          // intrinsic width for lightbox <img>
-  height?: number;         // intrinsic height for lightbox <img>
+
+  /** Grid thumbnail (e.g., 800px jpg). Can be "gallery/x.jpg" or "/gallery/x.jpg" */
+  preview: string;
+
+  /** Optional full-size fallback image */
+  full?: string;
+
+  /** Srcset strings; each URL can be relative (we will prefix BASE) */
+  webpSet?: string; // "gallery/x-800.webp 800w, gallery/x-1200.webp 1200w"
+  jpgSet?: string;  // "gallery/x-800.jpg 800w,  gallery/x-1200.jpg  1200w"
+
+  sizes?: string;
+  width?: number;
+  height?: number;
 };
 
 export interface GalleryProps {
   items: GalleryItem[];
   className?: string;
 }
+
+/* ----------- IMPORTANT: prefix all relative URLs with Vite BASE ----------- */
+const BASE = import.meta.env.BASE_URL;
+
+/** Prefix project base for relative or leading-slash paths */
+function withBase(p?: string) {
+  if (!p) return undefined;
+  // absolute or data URLs -> leave as-is
+  if (/^(https?:)?\/\//.test(p) || p.startsWith("data:")) return p;
+  // leading slash -> "/gallery/x.jpg" -> "/rikki-mobile-bar/gallery/x.jpg"
+  if (p.startsWith("/")) return BASE + p.slice(1);
+  // relative -> "gallery/x.jpg" -> "/rikki-mobile-bar/gallery/x.jpg"
+  return BASE + p;
+}
+
+/** Apply withBase() to every URL in a srcset string */
+function withBaseSet(srcset?: string) {
+  if (!srcset) return undefined;
+  return srcset
+    .split(",")
+    .map((part) => {
+      const [url, ...rest] = part.trim().split(/\s+/);
+      return [withBase(url), ...rest].join(" ");
+    })
+    .join(", ");
+}
+/* ------------------------------------------------------------------------- */
 
 export default function Gallery({ items, className }: GalleryProps) {
   const [openIndex, setOpenIndex] = React.useState<number | null>(null);
@@ -60,11 +94,12 @@ export default function Gallery({ items, className }: GalleryProps) {
             onClick={() => setOpenIndex(i)}
           >
             <img
-              src={it.preview}
+              src={withBase(it.preview)}
               alt={it.alt}
               loading="lazy"
               decoding="async"
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              onError={(e) => { e.currentTarget.style.opacity = "0.25"; }}
             />
             <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </button>
@@ -119,11 +154,15 @@ export default function Gallery({ items, className }: GalleryProps) {
               {(() => {
                 const it = items[openIndex];
                 const sizes = it.sizes || "(min-width:1024px) 80vw, 100vw";
-                const full = it.full || it.preview;
+                const full = withBase(it.full || it.preview);
                 return (
                   <picture>
-                    {it.webpSet && <source type="image/webp" srcSet={it.webpSet} sizes={sizes} />}
-                    {it.jpgSet && <source type="image/jpeg" srcSet={it.jpgSet} sizes={sizes} />}
+                    {it.webpSet && (
+                      <source type="image/webp" srcSet={withBaseSet(it.webpSet)} sizes={sizes} />
+                    )}
+                    {it.jpgSet && (
+                      <source type="image/jpeg" srcSet={withBaseSet(it.jpgSet)} sizes={sizes} />
+                    )}
                     <img
                       src={full}
                       alt={it.alt}
