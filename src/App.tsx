@@ -265,21 +265,20 @@ export default function App() {
       </header>
 
       <main>
-        {/* Logo Hero Banner */}
-        <section className="bg-brand-primary/95 py-10 md:py-16 border-b-2 border-brand-chrome/50">
-          <div className="mx-auto max-w-6xl px-4 flex items-center justify-center">
-            <img 
-              src={`${BASE}rikkis-logo.png`}
-              alt="Rikki's Mobile Bar logo"
-              className="h-24 sm:h-32 md:h-40 w-auto"
-              loading="eager"
-            />
-          </div>
-        </section>
-
         {/* Hero / About */}
-        <section id="about" className="bg-[radial-gradient(circle_at_top,_#fffaf3,_#f3ece2)] pb-16 pt-12">
-          <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 md:flex-row md:items-start">
+        <section id="about" className="bg-[radial-gradient(circle_at_top,_#fffaf3,_#f3ece2)] pb-16 pt-8 md:pt-12">
+          <div className="mx-auto max-w-6xl px-4">
+            {/* Logo Hero Image */}
+            <div className="flex justify-center mb-2 -mx-4">
+              <img 
+                src={`${BASE}rikkis-logo.png`}
+                alt="Rikki's Mobile Bar logo"
+                className="h-64 sm:h-80 md:h-96 w-auto max-w-[90%]"
+                loading="eager"
+              />
+            </div>
+
+            <div className="flex flex-col gap-10 md:flex-row md:items-start">
             {/* Left copy */}
             <div className="max-w-xl space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-brand-chrome bg-white/70 px-3 py-1 text-xs font-medium text-brand-ink/80 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur">
@@ -401,6 +400,7 @@ export default function App() {
 
               <div className="pointer-events-none absolute -left-6 -top-6 size-28 rounded-full bg-brand-sea/10 blur-3xl" />
               <div className="pointer-events-none absolute -bottom-8 -right-8 size-32 rounded-full bg-brand-rust/10 blur-3xl" />
+            </div>
             </div>
           </div>
         </section>
