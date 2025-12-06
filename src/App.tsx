@@ -72,6 +72,8 @@ export default function App() {
 
   /** Observe sections for active state + header style */
   useEffect(() => {
+    let ticking = false;
+    
     const updateActiveSection = () => {
       const headerOffset = 120; // Account for sticky header
       const triggerPoint = window.scrollY + headerOffset;
@@ -110,15 +112,23 @@ export default function App() {
       }
       
       if (best) setActive(best.id);
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateActiveSection);
+        ticking = true;
+      }
     };
 
     // Initial check
     updateActiveSection();
     
-    // Update on scroll
-    window.addEventListener("scroll", updateActiveSection, { passive: true });
+    // Update on scroll with throttling via requestAnimationFrame
+    window.addEventListener("scroll", handleScroll, { passive: true });
     
-    return () => window.removeEventListener("scroll", updateActiveSection);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [sections]);
 
   /** Scroll listener for header chrome styling */
@@ -627,7 +637,7 @@ export default function App() {
                 <select
                   id="package"
                   name="package"
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="h-10 w-full rounded-md border border-brand-chrome bg-white px-3 py-2 text-sm text-brand-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sea/50 focus-visible:border-brand-sea transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   defaultValue=""
                 >
                   <option value="" disabled>

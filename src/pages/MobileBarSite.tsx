@@ -649,7 +649,7 @@ export default function MobileBarSite() {
                   <select
                     name="package"
                     id="package"
-                    className="border rounded-xl h-10 px-3 bg-white"
+                    className="h-10 w-full rounded-md border border-brand-chrome bg-white px-3 py-2 text-sm text-brand-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sea/50 focus-visible:border-brand-sea transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                     defaultValue=""
                   >
                     <option value="" disabled>
