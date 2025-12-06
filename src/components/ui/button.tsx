@@ -29,6 +29,7 @@ const buttonVariants = cva(
           "bg-transparent text-brand-ink border border-brand-ink/20 hover:bg-brand-ink/5",
       },
       size: {
+        icon: "size-10 p-0",
         sm: "text-sm px-3 py-1.5",
         md: "text-base px-5 py-3",
         lg: "text-base px-6 py-3.5",
