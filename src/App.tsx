@@ -17,19 +17,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 import { Input } from "./components/ui/input";
 import { Textarea } from "./components/ui/textarea";
 import { Badge } from "./components/ui/badge";
+import { useForm, ValidationError } from "@formspree/react";
 
 import Gallery from "./components/ui/Gallery";
 import { galleryItems } from "./data/gallery";
 
 // Sections you added (living in /components/ui/)
-import FoodOptions from "./components/ui/FoodOptions";
 import TechFeatures from "./components/ui/TechFeatures";
+import ComingSoon from "./components/ui/ComingSoon";
 
 /** Use Vite base for all public assets so GitHub Pages project URLs work. */
 const BASE = import.meta.env.BASE_URL;
 const R_LOGO_SRC = `${BASE}r-logo.png`;
-const EMBLEM_SRC = `${BASE}rikkis-logo.png`;
-const BOOKING_EMAIL = "hello@rikkismobilebar.com";
 
 type SectionId =
   | "about"
@@ -37,6 +36,7 @@ type SectionId =
   | "food"
   | "features"
   | "packages"
+  | "coming-soon"
   | "gallery"
   | "book";
 
@@ -45,131 +45,97 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Sections on the page, in order
+  const [formState, formspreeSubmit] = useForm("xgvgzrnn");
+
+  // Sections on the page, in order (food moved to coming-soon section)
   const sections = useMemo<SectionId[]>(
-    () => ["about", "menu", "food", "features", "packages", "gallery", "book"],
+    () => ["about", "menu", "features", "packages", "coming-soon", "gallery", "book"],
     []
   );
 
-  // Header nav (order matters)
+  // Header nav (order matters) - removed "food" to de-emphasize food service
   const visibleNavIds = useMemo<SectionId[]>(
-    () => ["about", "menu", "food", "features", "gallery", "book"],
+    () => ["about", "menu", "features", "packages", "coming-soon", "gallery", "book"],
     []
   );
 
   const labelMap: Record<SectionId, string> = {
     about: "About",
-    menu: "Menu",
+    menu: "Drinks",
     food: "Food",
-    features: "Tech",
+    features: "Van & Experience",
     packages: "Packages",
+    "coming-soon": "Coming Soon",
     gallery: "Gallery",
     book: "Book",
   };
 
-  const navLinks = useMemo(
-    () => visibleNavIds.map((id) => ({ id, label: labelMap[id] })),
-    [visibleNavIds]
-  );
-
-  // If a hidden section becomes active, map to nearest visible one
-  const order: SectionId[] = [
-    "about",
-    "menu",
-    "food",
-    "features",
-    "packages",
-    "gallery",
-    "book",
-  ];
-  function effectiveActive(current: SectionId): SectionId {
-    if (visibleNavIds.includes(current)) return current;
-    const i = order.indexOf(current);
-    for (let step = 1; step < order.length; step++) {
-      const fwd = order[i + step];
-      if (fwd && visibleNavIds.includes(fwd)) return fwd;
-      const back = order[i - step];
-      if (back && visibleNavIds.includes(back)) return back;
-    }
-    return visibleNavIds[0];
-  }
-
-  // Header shadow on scroll
+  /** Observe sections for active state + header style */
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const updateActiveSection = () => {
+      const headerOffset = 120; // Account for sticky header
+      const triggerPoint = window.scrollY + headerOffset;
+      
+      let best: { id: SectionId; score: number } | null = null;
+      
+      for (const id of sections) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        
+        const rect = el.getBoundingClientRect();
+        const sectionTop = window.scrollY + rect.top;
+        const sectionBottom = sectionTop + rect.height;
+        
+        // Only consider sections that are visible in viewport
+        if (sectionBottom < window.scrollY || sectionTop > window.scrollY + window.innerHeight) {
+          continue;
+        }
+        
+        // Calculate score: prefer sections whose top is at or just past the trigger point
+        let score: number;
+        if (sectionTop <= triggerPoint && sectionBottom >= triggerPoint) {
+          // Section contains trigger point - prefer sections that just passed it
+          score = triggerPoint - sectionTop; // Lower is better (closer to trigger)
+        } else if (sectionTop > triggerPoint) {
+          // Section is below trigger - use distance with penalty
+          score = (sectionTop - triggerPoint) + 1000;
+        } else {
+          // Section is above trigger - higher penalty
+          score = (triggerPoint - sectionBottom) + 2000;
+        }
+        
+        if (!best || score < best.score) {
+          best = { id, score };
+        }
+      }
+      
+      if (best) setActive(best.id);
+    };
+
+    // Initial check
+    updateActiveSection();
+    
+    // Update on scroll
+    window.addEventListener("scroll", updateActiveSection, { passive: true });
+    
+    return () => window.removeEventListener("scroll", updateActiveSection);
+  }, [sections]);
+
+  /** Scroll listener for header chrome styling */
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Section observer for active highlight
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setActive(entry.target.id as SectionId);
-        });
-      },
-      { rootMargin: "-20% 0px -60% 0px", threshold: 0.01 }
-    );
-    sections.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, [sections]);
-
-  const handleNavClick = (id: SectionId) => {
+  /** Smooth scroll helper */
+  const scrollToSection = (id: SectionId) => {
     setMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-
-  // Simple mailto workflow (for now)
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    setSent(false);
-
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-
-    const nextErrors: Record<string, string> = {};
-    if (!fd.get("fullName")) nextErrors.fullName = "Please tell us your name.";
-    if (!fd.get("email")) nextErrors.email = "We need your email to reply.";
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length) return;
-
-    const subject = "Rikki’s Mobile Bar — New Inquiry";
-    const body = [
-      `Name: ${fd.get("fullName") || ""}`,
-      `Email: ${fd.get("email") || ""}`,
-      `Phone: ${fd.get("phone") || ""}`,
-      `Date: ${fd.get("date") || ""}`,
-      `Venue: ${fd.get("venue") || ""}`,
-      `Package: ${fd.get("package") || ""}`,
-      "",
-      "Message:",
-      `${fd.get("message") || ""}`,
-    ].join("\n");
-
-    setIsSubmitting(true);
-    try {
-      window.location.href = `mailto:${BOOKING_EMAIL}?subject=${encodeURIComponent(
-        subject
-      )}&body=${encodeURIComponent(body)}`;
-      setSent(true);
-      form.reset();
-    } catch {
-      setError("Could not open your email app. Please email us directly.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
 
   // Link styles (active chip forced white text)
   const navLinkClasses = (isActive: boolean) =>
@@ -182,233 +148,285 @@ export default function App() {
     ].join(" ");
 
   return (
-    <div className="min-h-screen bg-parchment text-brand-ink">
+    <div className="min-h-screen bg-brand-primary text-brand-ink">
+      {/* Top ribbon */}
+      <div className="w-full bg-gradient-to-r from-brand-rust via-brand-sea to-brand-rust text-white text-xs sm:text-sm py-2">
+        <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4">
+          <Truck className="size-4" />
+          <span>Serving Tri-Cities & the Columbia River • Licensed mobile bar</span>
+        </div>
+      </div>
+
       {/* Header */}
       <header
-        className={`sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-brand-chrome transition-shadow ${
-          scrolled ? "shadow-sm" : ""
-        } overflow-hidden`} /* prevent chip bleed */
+        className={[
+          "sticky top-0 z-40 border-b border-brand-chrome/70 backdrop-blur",
+          scrolled ? "bg-brand-primary/85 shadow-[0_10px_30px_rgba(0,0,0,0.14)]" : "bg-brand-primary/80",
+        ].join(" ")}
       >
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="flex h-16 items-center justify-between">
-            {/* Brand */}
-            <a href="#about" className="inline-flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          {/* Logo cluster */}
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-xl px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sea/50"
+            onClick={() => scrollToSection("about")}
+          >
+            <div className="flex size-9 items-center justify-center rounded-2xl border border-brand-chrome bg-[radial-gradient(circle_at_top,_#fffaf3,_#e8ddcf)] shadow-[0_4px_14px_rgba(0,0,0,0.12)]">
               <img
                 src={R_LOGO_SRC}
-                alt="Rikki’s Mobile Bar — R monogram"
-                width={44}
-                height={44}
-                loading="eager"
-                className="rounded-md"
+                alt="Rikki’s R emblem"
+                className="h-6 w-6"
+                loading="lazy"
+                decoding="async"
               />
-              <span className="sr-only">Rikki’s Mobile Bar</span>
-            </a>
-
-            {/* Desktop Nav */}
-            <nav aria-label="Primary" className="hidden md:flex items-center gap-1">
-              {navLinks.map(({ id, label }) => {
-                const isActive = effectiveActive(active) === id;
-                return (
-                  <a
-                    key={id}
-                    href={`#${id}`}
-                    onClick={() => handleNavClick(id)}
-                    aria-current={isActive ? "page" : undefined}
-                    className={navLinkClasses(isActive)}
-                  >
-                    {label}
-                  </a>
-                );
-              })}
-            </nav>
-
-            {/* Desktop CTA */}
-            <div className="hidden md:flex">
-              <Button
-                onClick={() =>
-                  document.getElementById("book")?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  })
-                }
-                leftIcon={<Martini className="size-4" aria-hidden="true" />}
-              >
-                Get a Quote
-              </Button>
             </div>
+            <div className="hidden text-left sm:block">
+              <div className="text-sm font-semibold tracking-tight">Rikki’s Mobile Bar</div>
+              <div className="text-[11px] uppercase tracking-[0.16em] text-brand-ink/60">
+                ’78 Club Wagon • Tri-Cities
+              </div>
+            </div>
+          </button>
 
-            {/* Mobile Menu Button */}
-            <button
-              className="md:hidden inline-flex items-center justify-center rounded-xl border border-brand-ink/15 p-2"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label="Toggle menu"
-              aria-expanded={menuOpen}
-              aria-controls="primary-mobile-nav"
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-2 md:flex">
+            {visibleNavIds.map((id) => (
+              <button
+                type="button"
+                key={id}
+                onClick={() => scrollToSection(id)}
+                className={navLinkClasses(active === id)}
+              >
+                {labelMap[id]}
+              </button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-2 rounded-2xl border-brand-sea bg-brand-sea text-xs font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.22)] hover:bg-brand-sea/90"
+              onClick={() => scrollToSection("book")}
             >
-              <MenuIcon className="size-6" aria-hidden="true" />
-            </button>
+              Check your date
+            </Button>
+          </nav>
+
+          {/* Mobile menu */}
+          <div className="flex items-center gap-2 md:hidden">
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-2xl border-brand-chrome bg-white/90"
+              onClick={() => scrollToSection("book")}
+            >
+              <Calendar className="size-4" />
+              <span className="sr-only">Book the bar</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-2xl border-brand-chrome bg-white/90"
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <MenuIcon className="size-4" />
+              <span className="sr-only">Toggle navigation</span>
+            </Button>
           </div>
         </div>
 
-        {/* Mobile Nav Panel */}
+        {/* Mobile drawer */}
         {menuOpen && (
-          <div
-            id="primary-mobile-nav"
-            role="dialog"
-            aria-modal="true"
-            className="md:hidden border-t border-brand-chrome bg-white"
-          >
-            <div className="mx-auto max-w-6xl px-4 py-2 grid grid-cols-2 gap-2">
-              {navLinks.map(({ id, label }) => {
-                const isActive = effectiveActive(active) === id;
-                return (
-                  <a
-                    key={id}
-                    href={`#${id}`}
-                    onClick={() => handleNavClick(id)}
-                    aria-current={isActive ? "page" : undefined}
-                    className={[
-                      "rounded-lg px-3 py-2 text-sm font-medium outline-none",
-                      "focus-visible:ring-2 focus-visible:ring-brand-sea/50",
-                      isActive
-                        ? "!text-white bg-brand-sea"
-                        : "text-brand-ink/80 hover:text-brand-ink hover:bg-brand-ink/10",
-                    ].join(" ")}
-                  >
-                    {label}
-                  </a>
-                );
-              })}
-            </div>
+          <div className="border-t border-brand-chrome bg-brand-primary/95 md:hidden">
+            <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-2 text-sm">
+              {visibleNavIds.map((id) => (
+                <button
+                  type="button"
+                  key={id}
+                  onClick={() => scrollToSection(id)}
+                  className={[
+                    "flex items-center justify-between rounded-xl px-3 py-2 text-left",
+                    active === id ? "bg-brand-sea text-white" : "text-brand-ink/90 hover:bg-brand-ink/10",
+                  ].join(" ")}
+                >
+                  {labelMap[id]}
+                  {active === id && <Check className="size-4" aria-hidden="true" />}
+                </button>
+              ))}
+            </nav>
           </div>
         )}
       </header>
 
-      {/* Main */}
-      <main id="main" tabIndex={-1} className="outline-none">
-        {/* Hero */}
-        <section id="about" className="relative" aria-label="About Rikki’s Mobile Bar">
-          <div className="mx-auto max-w-6xl px-4 py-12 lg:py-16 grid lg:grid-cols-2 gap-10 items-center">
-            {/* LEFT: centered content */}
-            <div className="text-center">
-              <img
-                src={EMBLEM_SRC}
-                alt="Rikki’s Mobile Bar emblem"
-                width={512}
-                height={512}
-                loading="eager"
-                decoding="async"
-                className="mx-auto h-auto w-48 sm:w-56 md:w-64 drop-shadow-md"
-              />
+      <main>
+        {/* Hero / About */}
+        <section id="about" className="bg-[radial-gradient(circle_at_top,_#fffaf3,_#f3ece2)] pb-16 pt-12">
+          <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 md:flex-row md:items-start">
+            {/* Left copy */}
+            <div className="max-w-xl space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-brand-chrome bg-white/70 px-3 py-1 text-xs font-medium text-brand-ink/80 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur">
+                <span className="inline-flex size-5 items-center justify-center rounded-full bg-brand-sea/10 text-brand-sea">
+                  <Star className="size-3" />
+                </span>
+                Licensed mobile bar • Tri-Cities & beyond
+              </div>
 
-              <h1 className="mt-5 text-5xl/tight sm:text-6xl font-extrabold tracking-tight [text-wrap:balance] mx-auto max-w-3xl">
-                Vintage Van. Future-Ready Bar.
+              <h1 className="text-balance text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
+                A retro club wagon, a polished bar, and the drinks dialed in.
               </h1>
 
-              {/* Short, suggestive intro */}
-              <p className="mt-4 text-lg text-brand-ink/80 mx-auto max-w-2xl">
-                A mid-century mobile bar for the Tri-Cities. Two pros with 25 years
-                in hospitality, pouring classics and one-off menus with an easy,
-                modern touch. Drinks lead the night—everything else reveals itself.
+              <p className="text-base leading-relaxed text-brand-ink/80 md:text-lg">
+                Rikki’s Mobile Bar is a 1978 Ford Club Wagon turned mid-century-modern-inspired bar. We pull up, pop
+                out the bar, and serve a curated menu of cocktails, mocktails, beer, and wine—built around your event.
               </p>
 
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                <Badge variant="rust">Licensed &amp; Insured</Badge>
-                <Badge variant="sea">Custom Menus</Badge>
-                <Badge variant="outline">Mocktail Friendly</Badge>
-                <Badge variant="outline">Food Optional</Badge>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-brand-ink/80">
+                <Badge className="rounded-full bg-white text-[11px] shadow-sm">
+                  1978 Club Wagon • MCM-inspired bar
+                </Badge>
+                <Badge className="rounded-full bg-white text-[11px] shadow-sm">
+                  Licensed & insured
+                </Badge>
+                <Badge className="rounded-full bg-white text-[11px] shadow-sm">
+                  Custom menus + light food to meet requirements
+                </Badge>
               </div>
 
-              <div className="mt-8 flex items-center justify-center gap-3">
+              <div className="mt-6 flex flex-wrap items-center gap-4">
                 <Button
-                  onClick={() =>
-                    document.getElementById("book")?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    })
-                  }
-                  leftIcon={<Martini className="size-4" aria-hidden="true" />}
+                  className="rounded-2xl border-brand-sea bg-brand-sea text-white shadow-[0_14px_40px_rgba(0,0,0,0.24)]"
+                  onClick={() => scrollToSection("book")}
                 >
-                  Get a Quote
+                  Check availability
                 </Button>
-
-                <a
-                  href="https://instagram.com/rikkis.mobile.bar"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-brand-ink/80 hover:text-brand-ink"
-                  aria-label="Instagram: @rikkis.mobile.bar"
+                <button
+                  type="button"
+                  onClick={() => scrollToSection("packages")}
+                  className="text-sm font-medium text-brand-ink/80 hover:text-brand-ink"
                 >
-                  <Instagram className="size-5" aria-hidden="true" />
-                  <span className="text-sm">@rikkis.mobile.bar</span>
-                </a>
+                  View packages
+                </button>
               </div>
+
+              <dl className="mt-6 grid max-w-md grid-cols-2 gap-4 text-xs text-brand-ink/80 md:text-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar className="size-4 text-brand-sea" />
+                  <div>
+                    <dt className="font-semibold">Events</dt>
+                    <dd>Weddings, parties, corporate, & more</dd>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="size-4 text-brand-rust" />
+                  <div>
+                    <dt className="font-semibold">Based in</dt>
+                    <dd>Tri-Cities, WA & surrounding areas</dd>
+                  </div>
+                </div>
+              </dl>
             </div>
 
-            {/* RIGHT: hero image */}
-            <div className="relative">
-              <picture>
-                <source
-                  type="image/webp"
-                  srcSet={`${BASE}rikkis-hero-image-800.webp 800w, ${BASE}rikkis-hero-image-1200.webp 1200w, ${BASE}rikkis-hero-image-1600.webp 1600w`}
-                  sizes="(min-width:1024px) 640px, 100vw"
-                />
-                <source
-                  type="image/jpeg"
-                  srcSet={`${BASE}rikkis-hero-image-800.jpg 800w, ${BASE}rikkis-hero-image-1200.jpg 1200w, ${BASE}rikkis-hero-image-1600.jpg 1600w`}
-                  sizes="(min-width:1024px) 640px, 100vw"
-                />
-                {/* Guaranteed fallback to the PNG you have in /public */}
-                <img
-                  src={`${BASE}rikkis-hero-image.png`}
-                  alt="1978 Club Wagon mobile bar setup with awning and counter"
-                  width={1600}
-                  height={900}
-                  loading="eager"
-                  decoding="async"
-                  className="w-full h-auto rounded-2xl border border-brand-chrome shadow-[0_20px_60px_rgba(0,0,0,0.15)]"
-                />
-              </picture>
+            {/* Right visual */}
+            <div className="relative flex-1">
+              <Card className="relative rounded-[2rem] border-brand-chrome bg-white/90 shadow-[0_20px_70px_rgba(0,0,0,0.18)]">
+                <CardContent className="space-y-4 p-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.18em] text-brand-ink/60">
+                        Rikki’s Mobile Bar
+                      </p>
+                      <p className="text-sm font-semibold text-brand-ink/90">
+                        1978 Ford Club Wagon • Cream & chrome
+                      </p>
+                    </div>
+                    <div className="inline-flex items-center gap-1 rounded-full border border-brand-chrome/60 bg-brand-primary px-2 py-1 text-[11px] font-medium text-brand-ink/80">
+                      <Martini className="size-3" />
+                      In build-out • Booking now
+                    </div>
+                  </div>
+
+                  <div className="relative overflow-hidden rounded-2xl border border-brand-chrome bg-[radial-gradient(circle_at_top,_#fdf7f0,_#ece2d6)]">
+                    <picture className="block aspect-[4/3] w-full">
+                      <source
+                        type="image/webp"
+                        srcSet={`${BASE}rikkis-hero-image-800.webp 800w, ${BASE}rikkis-hero-image-1200.webp 1200w, ${BASE}rikkis-hero-image-1600.webp 1600w`}
+                        sizes="(min-width: 1024px) 50vw, 100vw"
+                      />
+                      <img
+                        src={`${BASE}rikkis-hero-image-1200.jpg`}
+                        srcSet={`${BASE}rikkis-hero-image-800.jpg 800w, ${BASE}rikkis-hero-image-1200.jpg 1200w, ${BASE}rikkis-hero-image-1600.jpg 1600w`}
+                        sizes="(min-width: 1024px) 50vw, 100vw"
+                        alt="1978 Ford Club Wagon mobile bar with fold-out bar"
+                        className="h-full w-full object-cover"
+                        loading="eager"
+                        decoding="async"
+                      />
+                    </picture>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 text-center text-xs text-brand-ink/80">
+                    <div>
+                      <div className="font-semibold">Cold storage</div>
+                      <div className="text-[11px] text-brand-ink/70">for mixers & garnishes</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold">Fold-out bar</div>
+                      <div className="text-[11px] text-brand-ink/70">with MCM profiles</div>
+                    </div>
+                    <div>
+                      <div className="font-semibold">Satellite bar</div>
+                      <div className="text-[11px] text-brand-ink/70">for bigger guest counts</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="pointer-events-none absolute -left-6 -top-6 size-28 rounded-full bg-brand-sea/10 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-8 -right-8 size-32 rounded-full bg-brand-rust/10 blur-3xl" />
             </div>
           </div>
         </section>
 
-        {/* Menu cards */}
-        <section id="menu" className="py-14">
+        {/* Menu / Drinks */}
+        <section id="menu" className="border-t border-brand-chrome/70 bg-white/70 py-14">
           <div className="mx-auto max-w-6xl px-4">
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-xl space-y-2">
+                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">The drinks come first.</h2>
+                <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
+                  We build a focused drink menu around your event—classics, signatures, or zero-proof—with an eye for
+                  speed, flow, and photo-ready details.
+                </p>
+              </div>
+              <p className="max-w-sm text-xs text-brand-ink/70">
+                Every menu includes a balance of shaken, stirred, and easy-pour options so your line moves and your
+                guests feel taken care of.
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
               {[
                 {
-                  icon: <Martini className="size-5" />,
-                  title: "Classics & Signatures",
-                  copy:
-                    "Old Fashioneds, Margaritas, Spritzes—and 70s throwbacks like Harvey Wallbangers reimagined.",
+                  title: "Cocktails",
+                  items: ["Classic builds (think margaritas, sours, old fashioneds)", "One or two signatures"],
                 },
                 {
-                  icon: <Star className="size-5" />,
-                  title: "Custom Menus",
-                  copy:
-                    "We’ll build a one-off menu with your story, colors, and favorite spirits (or zero-proof).",
+                  title: "Beer & Wine",
+                  items: ["Thoughtful beer & wine picks suited to your crowd and venue"],
                 },
                 {
-                  icon: <Truck className="size-5" />,
-                  title: "Anywhere Service",
-                  copy:
-                    "Backyard, barn, vineyard, or river. Fast setup, tidy teardown, and power-smart equipment.",
+                  title: "Zero-Proof",
+                  items: ["Intentionally built mocktails so non-drinkers don’t feel like an afterthought"],
                 },
-              ].map((card, i) => (
-                <Card
-                  key={i}
-                  className="rounded-2xl border border-brand-ink/20 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
-                >
+              ].map((section) => (
+                <Card key={section.title} className="rounded-2xl border-brand-chrome bg-white/90">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                      <span aria-hidden="true">{card.icon}</span>
-                      {card.title}
-                    </CardTitle>
+                    <CardTitle className="text-sm font-semibold">{section.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-brand-ink/80">{card.copy}</p>
+                    <ul className="space-y-1.5 text-xs text-brand-ink/80">
+                      {section.items.map((item) => (
+                        <li key={item}>• {item}</li>
+                      ))}
+                    </ul>
                   </CardContent>
                 </Card>
               ))}
@@ -416,129 +434,169 @@ export default function App() {
           </div>
         </section>
 
-        {/* Food Options (optional add-on) */}
-        <FoodOptions />
+        {/* Features / Van */}
+        <section id="features" className="border-t border-brand-chrome/70 bg-brand-primary/80 py-16">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="grid gap-10 md:grid-cols-2 md:items-start">
+              <div className="space-y-4">
+                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Built for a smooth bar flow.</h2>
+                <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
+                  We’re building the van and bar from the inside out: where ice lives, how quickly we can reset a drink
+                  station, and how easy it is for your guests to order and step away with a great drink.
+                </p>
 
-        {/* Tech & Setup */}
-        <TechFeatures />
+                <div className="grid gap-3 text-sm text-brand-ink/80 md:grid-cols-2">
+                  <div>
+                    <h3 className="text-sm font-semibold">Service-forward</h3>
+                    <p className="mt-1 text-xs text-brand-ink/80">
+                      10+ years in hospitality means we care about sequence—how guests are greeted, served, and taken
+                      care of all night.
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Grounded in Tri-Cities</h3>
+                    <p className="mt-1 text-xs text-brand-ink/80">
+                      We love partnering with local venues, caterers, and other vendors to keep your event cohesive.
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Food that meets requirements</h3>
+                    <p className="mt-1 text-xs text-brand-ink/80">
+                      We provide required food service in a simple, compliant way and can coordinate with your caterer
+                      or venue—without taking focus away from the bar.
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Tech-forward add-ons</h3>
+                    <p className="mt-1 text-xs text-brand-ink/80">
+                      From Starlink WiFi to live-stream-ready setups, we’re building toward a bar that plays nicely with
+                      modern events.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <TechFeatures />
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Packages */}
-        <section id="packages" className="py-14 bg-white/60">
+        <section id="packages" className="border-t border-brand-chrome/70 bg-white py-16">
           <div className="mx-auto max-w-6xl px-4">
-            <h2 className="text-3xl font-bold">Packages</h2>
-            <p className="mt-2 text-brand-ink/80">
-              Transparent pricing with customizable add-ons. Tell us your guest
-              count and vibe—we’ll tune the menu and staff.
-            </p>
+            <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-xl space-y-2">
+                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Packages & starting points.</h2>
+                <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
+                  Every event is a little different. These are starting points—we’ll dial in the menu, staffing, and
+                  flow based on your guest count and venue.
+                </p>
+              </div>
+              <div className="text-xs text-brand-ink/80 md:text-sm">
+                <p className="font-semibold">What’s always included:</p>
+                <ul className="mt-1 space-y-1">
+                  <li>• Licensed bar service</li>
+                  <li>• Custom menu planning</li>
+                  <li>• Required food service covered in a simple, compliant way</li>
+                  <li>• Setup & breakdown of the bar area</li>
+                </ul>
+              </div>
+            </div>
 
-            <div className="mt-8 grid md:grid-cols-3 gap-6 items-stretch">
+            <div className="grid gap-5 md:grid-cols-3">
               {[
                 {
-                  name: "River Social",
-                  price: "Starting at $",
-                  bullets: ["2 hours", "Beer/Wine + Signature", "Bartender + Glassware"],
+                  name: "Beer & Wine Bar",
+                  blurb: "A streamlined setup focused on beer, wine, and a signature spritz or two.",
+                  bestFor: "Receptions, open houses, and casual celebrations.",
                 },
                 {
-                  name: "Wedding Classic",
-                  price: "Starting at $$",
-                  bullets: ["4 hours", "Full Cocktail Menu", "2 Bartenders + Bar Back"],
+                  name: "Classic Cocktail Bar",
+                  blurb: "A focused menu of shaken & stirred classics tailored to your crowd.",
+                  bestFor: "Weddings, milestones, and private parties.",
                 },
                 {
-                  name: "Premium",
-                  price: "Starting at $$$",
-                  bullets: ["5 hours", "Craft & Zero-Proof", "Custom Build-outs"],
+                  name: "Premium / Mocktail Bar",
+                  blurb: "Elevated cocktails and zero-proof options with thoughtful garnishes.",
+                  bestFor: "Crowds that love a good drink—and a good photo.",
                 },
-              ].map((p) => (
-                <Card
-                  key={p.name}
-                  className="rounded-2xl border border-brand-ink/20 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] flex flex-col"
-                >
+              ].map((pkg) => (
+                <Card key={pkg.name} className="flex h-full flex-col rounded-2xl border-brand-chrome bg-white">
                   <CardHeader>
-                    <CardTitle className="text-xl">{p.name}</CardTitle>
+                    <CardTitle className="text-base font-semibold">{pkg.name}</CardTitle>
                   </CardHeader>
-                  <CardContent className="grow">
-                    <p className="text-brand-ink/80">{p.price}</p>
-                    <ul className="mt-3 space-y-1 text-sm">
-                      {p.bullets.map((b) => (
-                        <li key={b} className="flex items-center gap-2">
-                          <Check className="size-4" aria-hidden="true" />
-                          {b}
-                        </li>
-                      ))}
+                  <CardContent className="flex flex-1 flex-col justify-between space-y-4 text-sm text-brand-ink/80">
+                    <div>
+                      <p>{pkg.blurb}</p>
+                      <p className="mt-2 text-xs text-brand-ink/70">{pkg.bestFor}</p>
+                    </div>
+                    <ul className="space-y-1 text-xs">
+                      <li>• Curated drink menu</li>
+                      <li>• Professional bartending staff</li>
+                      <li>• Required food service covered with simple options</li>
                     </ul>
                   </CardContent>
-                  <div className="px-6 pb-6">
+                  <div className="px-6 pb-5">
                     <Button
-                      variant="secondary"
-                      fullWidth
-                      onClick={() =>
-                        document
-                          .getElementById("book")
-                          ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                      }
+                      className="w-full rounded-2xl border-brand-sea bg-brand-sea text-white"
+                      onClick={() => scrollToSection("book")}
                     >
-                      Get this package
+                      Request quote
                     </Button>
                   </div>
                 </Card>
               ))}
             </div>
+
+            <ComingSoon />
           </div>
         </section>
 
         {/* Gallery */}
-        <section id="gallery" className="py-14">
+        <section id="gallery" className="border-t border-brand-chrome/70 bg-brand-primary/80 py-16">
           <div className="mx-auto max-w-6xl px-4">
-            <h2 className="text-3xl font-bold">Gallery</h2>
-            <p className="mt-2 text-brand-ink/80">
-              A few looks—we’ll update this as our season rolls on.
-            </p>
-            <div className="mt-6">
-              <Gallery items={galleryItems} />
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">In-progress snapshots.</h2>
+                <p className="mt-1 text-sm text-brand-ink/80">
+                  As we convert the van and refine the bar setup, we’ll keep sharing how it all comes together.
+                </p>
+              </div>
+              <div className="hidden text-xs uppercase tracking-[0.16em] text-brand-ink/60 md:block">
+                More photos coming as we build
+              </div>
             </div>
+
+            <Gallery items={galleryItems} />
           </div>
         </section>
 
-        {/* Booking */}
-        <section id="book" className="py-14 bg-white/60 pb-28 md:pb-14">
+        {/* Book / Contact */}
+        <section id="book" className="bg-white/60 py-14 pb-28 md:pb-16">
           <div className="mx-auto max-w-6xl px-4">
-            <h2 className="text-3xl font-bold">Book the Bar</h2>
-            <p className="mt-2 text-brand-ink/80">
-              Give us the basics and we’ll reply with availability and a quote.
-            </p>
+            <div className="text-center">
+              <h2 className="text-3xl font-bold">Book the Bar</h2>
+              <p className="mt-2 max-w-2xl mx-auto text-brand-ink/80">
+                Give us the basics and we'll reply with availability and a quote.
+              </p>
+            </div>
 
-            <form className="mt-8 grid md:grid-cols-2 gap-4" onSubmit={handleSubmit}>
+            <form className="mt-8 grid md:grid-cols-2 gap-4" onSubmit={formspreeSubmit}>
               <div className="md:col-span-1">
                 <label htmlFor="fullName" className="sr-only">
                   Full name
                 </label>
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  placeholder="Full name"
-                  aria-invalid={!!errors.fullName || undefined}
-                  required
-                />
-                {errors.fullName && (
-                  <p className="mt-1 text-xs text-destructive">{errors.fullName}</p>
-                )}
+                <Input id="fullName" name="fullName" placeholder="Full name" required />
               </div>
 
               <div className="md:col-span-1">
                 <label htmlFor="email" className="sr-only">
                   Email
                 </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="Email"
-                  aria-invalid={!!errors.email || undefined}
-                  required
-                />
-                {errors.email && (
-                  <p className="mt-1 text-xs text-destructive">{errors.email}</p>
-                )}
+                <Input id="email" name="email" type="email" placeholder="Email" required />
+                <ValidationError prefix="Email" field="email" errors={formState.errors} />
               </div>
 
               <div className="md:col-span-1">
@@ -552,7 +610,7 @@ export default function App() {
                 <label htmlFor="date" className="sr-only">
                   Event date
                 </label>
-                <Input id="date" name="date" type="date" placeholder="Event date" />
+                <Input id="date" name="date" type="date" />
               </div>
 
               <div className="md:col-span-2">
@@ -569,15 +627,16 @@ export default function App() {
                 <select
                   id="package"
                   name="package"
-                  className="h-10 w-full rounded-md border border-input bg-transparent px-3 shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   defaultValue=""
                 >
                   <option value="" disabled>
                     Choose a package
                   </option>
-                  <option>River Social</option>
-                  <option>Wedding Classic</option>
-                  <option>Premium</option>
+                  <option value="Beer & Wine">Beer &amp; Wine</option>
+                  <option value="Classic Cocktails">Classic Cocktails</option>
+                  <option value="Premium Cocktails">Premium Cocktails</option>
+                  <option value="Dry / Mocktail Bar">Dry / Mocktail Bar</option>
                 </select>
               </div>
 
@@ -589,25 +648,25 @@ export default function App() {
                   id="message"
                   name="message"
                   placeholder="Guest count, vibe, must-have drinks…"
+                  className="min-h-[120px]"
                 />
+                <ValidationError prefix="Message" field="message" errors={formState.errors} />
               </div>
 
               <div className="md:col-span-2 flex items-center gap-3">
                 <Button
                   type="submit"
                   leftIcon={<Calendar className="size-4" aria-hidden="true" />}
-                  disabled={isSubmitting}
+                  disabled={formState.submitting}
                 >
-                  {isSubmitting ? "Opening your email app…" : "Request Availability"}
+                  {formState.submitting ? "Sending..." : "Request Availability"}
                 </Button>
                 <div aria-live="polite" className="text-sm">
-                  {sent && !error && (
+                  {formState.succeeded && (
                     <span className="text-brand-ink/80">
-                      Thanks! Your email app should have opened. If not, email us at{" "}
-                      {BOOKING_EMAIL}.
+                      Thanks! We&apos;ve received your request and will contact you soon.
                     </span>
                   )}
-                  {error && <span className="text-destructive">{error}</span>}
                 </div>
               </div>
             </form>
@@ -616,15 +675,15 @@ export default function App() {
             <dl className="mt-10 grid md:grid-cols-3 gap-6">
               {[
                 { icon: <MapPin className="size-5" />, term: "Area", desc: "Tri-Cities & Columbia River" },
-                { icon: <Phone className="size-5" />, term: "Text/Call", desc: "(509) 555-0123" },
-                { icon: <Mail className="size-5" />, term: "Email", desc: "hello@rikkismobilebar.com" },
+                { icon: <Phone className="size-5" />, term: "Text/Call", desc: "(509) 231-9307" },
+                { icon: <Mail className="size-5" />, term: "Email", desc: "rikki@rikkismobile.com" },
               ].map((it) => (
                 <div key={it.term} className="rounded-2xl border border-brand-chrome bg-white p-5">
-                  <dt className="flex items-center gap-2 text-sm font-semibold">
+                  <dt className="flex items-center justify-center gap-2 text-sm font-semibold">
                     <span aria-hidden="true">{it.icon}</span>
                     {it.term}
                   </dt>
-                  <dd className="mt-1 text-brand-ink/80">{it.desc}</dd>
+                  <dd className="mt-1 text-center text-xs text-brand-ink/80">{it.desc}</dd>
                 </div>
               ))}
             </dl>
@@ -632,45 +691,38 @@ export default function App() {
         </section>
       </main>
 
-      {/* Mobile Sticky CTA */}
-      <div className="md:hidden fixed bottom-4 inset-x-4 z-40">
-        <Button
-          className="w-full"
-          onClick={() =>
-            document.getElementById("book")?.scrollIntoView({ behavior: "smooth", block: "start" })
-          }
-          leftIcon={<Martini className="size-4" aria-hidden="true" />}
-        >
-          Get a Quote
-        </Button>
-      </div>
-
       {/* Footer */}
-      <footer className="mt-24 md:mt-12 border-t border-brand-chrome bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img
-              src={R_LOGO_SRC}
-              alt="R monogram"
-              width={28}
-              height={28}
-              loading="lazy"
-              className="rounded-md"
-            />
-            <p className="text-sm text-brand-ink/70">
-              © {new Date().getFullYear()} Rikki’s Mobile Bar. All rights reserved.
+      <footer className="border-t border-brand-chrome bg-white">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:grid-cols-3 md:items-center">
+          <div className="space-y-1">
+            <div className="text-sm font-semibold">Rikki’s Mobile Bar</div>
+            <p className="text-xs text-brand-ink/70">
+              Vintage whites • Chrome trim • Woodgrain • Rounded corners
             </p>
           </div>
-          <a
-            href="https://instagram.com/rikkis.mobile.bar"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-brand-ink/80 hover:text-brand-ink"
-            aria-label="Instagram: @rikkis.mobile.bar"
-          >
-            <Instagram className="size-5" aria-hidden="true" />
-            <span className="text-sm">@rikkis.mobile.bar</span>
-          </a>
+          <div className="text-xs text-brand-ink/70">
+            © {new Date().getFullYear()} Rikki’s Mobile Bar. All rights reserved.
+          </div>
+          <div className="flex justify-start gap-4 text-xs md:justify-end">
+            <button type="button" onClick={() => scrollToSection("packages")} className="hover:text-brand-ink">
+              Packages
+            </button>
+            <button type="button" onClick={() => scrollToSection("gallery")} className="hover:text-brand-ink">
+              Gallery
+            </button>
+            <button type="button" onClick={() => scrollToSection("book")} className="hover:text-brand-ink">
+              Book
+            </button>
+            <a
+              href="https://instagram.com/rikkismobile"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 hover:text-brand-ink"
+            >
+              <Instagram className="size-3" />
+              <span>@rikkismobile</span>
+            </a>
+          </div>
         </div>
       </footer>
     </div>
