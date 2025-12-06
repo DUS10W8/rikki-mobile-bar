@@ -265,6 +265,18 @@ export default function App() {
       </header>
 
       <main>
+        {/* Logo Hero Banner */}
+        <section className="bg-brand-primary/95 py-10 md:py-16 border-b-2 border-brand-chrome/50">
+          <div className="mx-auto max-w-6xl px-4 flex items-center justify-center">
+            <img 
+              src={`${BASE}rikkis-logo.png`}
+              alt="Rikki's Mobile Bar logo"
+              className="h-24 sm:h-32 md:h-40 w-auto"
+              loading="eager"
+            />
+          </div>
+        </section>
+
         {/* Hero / About */}
         <section id="about" className="bg-[radial-gradient(circle_at_top,_#fffaf3,_#f3ece2)] pb-16 pt-12">
           <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 md:flex-row md:items-start">
