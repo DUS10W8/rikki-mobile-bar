@@ -8,20 +8,20 @@ function cn(...classes: Array<string | undefined | false | null>) {
 }
 
 const badgeVariants = cva(
-  "inline-flex items-center justify-center w-fit whitespace-nowrap shrink-0 rounded-md border px-2 py-0.5 text-xs font-medium gap-1 transition-[color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 [&>svg]:size-3",
+  "inline-flex items-center justify-center w-fit whitespace-nowrap shrink-0 rounded-full border-2 px-3 py-1.5 text-sm font-semibold gap-2 transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-sea [&>svg]:size-4",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-primary text-primary-foreground",
-        // brand variants we use in App.tsx
+        default: "border-transparent bg-brand-primary text-brand-ink",
         rust: "border-transparent bg-brand-rust text-white",
         sea: "border-transparent bg-brand-sea text-white",
         outline:
-          "bg-transparent text-foreground border-brand-ink/20 hover:bg-accent hover:text-accent-foreground",
+          "bg-white border-brand-ink/30 text-brand-ink hover:bg-brand-ink/5",
       },
       size: {
-        sm: "text-[11px] px-1.5 py-0",
-        md: "text-xs px-2 py-0.5",
+        sm: "text-xs px-2.5 py-1",
+        md: "text-sm px-3 py-1.5",
+        lg: "text-base px-4 py-2",
       },
     },
     defaultVariants: {

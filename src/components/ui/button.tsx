@@ -9,31 +9,33 @@ function cn(...classes: Array<string | undefined | false | null>) {
 
 const buttonVariants = cva(
   [
-    "inline-flex items-center justify-center",
-    "rounded-2xl font-semibold",
+    "inline-flex items-center justify-center gap-2",
+    "rounded-2xl font-semibold font-medium",
     "transition-all outline-none",
-    "focus-visible:ring-2 focus-visible:ring-brand-sea/50",
-    "disabled:opacity-60 disabled:pointer-events-none",
+    "focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-brand-sea",
+    "disabled:opacity-60 disabled:pointer-events-none disabled:cursor-not-allowed",
     "shadow-[0_8px_28px_rgba(0,0,0,0.12)] hover:shadow-[0_12px_34px_rgba(0,0,0,0.18)]",
+    "active:scale-95",
+    "min-h-touch", // 44px minimum touch target
   ].join(" "),
   {
     variants: {
       variant: {
         primary:
-          "bg-brand-sea text-white border border-brand-sea hover:bg-brand-rust",
+          "bg-brand-sea text-white border-2 border-brand-sea hover:bg-brand-rust hover:border-brand-rust focus-visible:ring-brand-sea",
         secondary:
-          "bg-white text-brand-sea border border-brand-sea hover:bg-brand-sea/10",
+          "bg-white text-brand-sea border-2 border-brand-sea hover:bg-brand-sea/10 focus-visible:ring-brand-sea",
         ghost:
-          "bg-transparent text-brand-ink hover:bg-brand-ink/5 border border-transparent",
+          "bg-transparent text-brand-ink hover:bg-brand-ink/10 border-2 border-transparent focus-visible:ring-brand-ink/30",
         outline:
-          "bg-transparent text-brand-ink border border-brand-ink/20 hover:bg-brand-ink/5",
+          "bg-transparent text-brand-ink border-2 border-brand-ink/30 hover:bg-brand-ink/5 focus-visible:ring-brand-ink/30",
       },
       size: {
-        icon: "size-10 p-0",
-        sm: "text-sm px-3 py-1.5",
-        md: "text-base px-5 py-3",
-        lg: "text-base px-6 py-3.5",
-        xl: "text-lg px-7 py-4",
+        icon: "h-touch w-touch p-0",
+        sm: "text-sm px-3 py-2.5",
+        md: "text-base px-6 py-3",
+        lg: "text-base px-7 py-4",
+        xl: "text-lg px-8 py-4",
       },
       fullWidth: {
         true: "w-full",

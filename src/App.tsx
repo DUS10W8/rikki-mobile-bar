@@ -277,23 +277,23 @@ export default function App() {
                 Licensed mobile bar • Tri-Cities & beyond
               </div>
 
-              <h1 className="text-balance text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
+              <h1 className="text-balance text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
                 A retro club wagon, a polished bar, and the drinks dialed in.
               </h1>
 
-              <p className="text-base leading-relaxed text-brand-ink/80 md:text-lg">
-                Rikki’s Mobile Bar is a 1978 Ford Club Wagon turned mid-century-modern-inspired bar. We pull up, pop
+              <p className="text-lg sm:text-xl leading-relaxed text-brand-ink/80">
+                Rikki's Mobile Bar is a 1978 Ford Club Wagon turned mid-century-modern-inspired bar. We pull up, pop
                 out the bar, and serve a curated menu of cocktails, mocktails, beer, and wine—built around your event.
               </p>
 
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-brand-ink/80">
-                <Badge className="rounded-full bg-white text-[11px] shadow-sm">
+              <div className="mt-4 flex flex-wrap gap-2 text-sm text-brand-ink/80">
+                <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
                   1978 Club Wagon • MCM-inspired bar
                 </Badge>
-                <Badge className="rounded-full bg-white text-[11px] shadow-sm">
+                <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
                   Licensed & insured
                 </Badge>
-                <Badge className="rounded-full bg-white text-[11px] shadow-sm">
+                <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
                   Custom menus + light food to meet requirements
                 </Badge>
               </div>
@@ -399,14 +399,12 @@ export default function App() {
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div className="max-w-xl space-y-2">
                 <h2 className="text-2xl font-bold tracking-tight md:text-3xl">The drinks come first.</h2>
-                <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
-                  We build a focused drink menu around your event—classics, signatures, or zero-proof—with an eye for
-                  speed, flow, and photo-ready details.
+                <p className="text-lg leading-relaxed text-brand-ink/80 md:text-xl">
+                  Custom menus built for your event—classics, signatures, or zero-proof options.
                 </p>
               </div>
-              <p className="max-w-sm text-xs text-brand-ink/70">
-                Every menu includes a balance of shaken, stirred, and easy-pour options so your line moves and your
-                guests feel taken care of.
+              <p className="max-w-sm text-base text-brand-ink/70 md:text-lg">
+                Balanced selections for fast service and happy guests.
               </p>
             </div>
 
@@ -430,7 +428,7 @@ export default function App() {
                     <CardTitle className="text-sm font-semibold">{section.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ul className="space-y-1.5 text-xs text-brand-ink/80">
+                    <ul className="space-y-2 text-base text-brand-ink/80 md:text-lg font-medium">
                       {section.items.map((item) => (
                         <li key={item}>• {item}</li>
                       ))}
@@ -448,37 +446,33 @@ export default function App() {
             <div className="grid gap-10 md:grid-cols-2 md:items-start">
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Built for a smooth bar flow.</h2>
-                <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
-                  We’re building the van and bar from the inside out: where ice lives, how quickly we can reset a drink
-                  station, and how easy it is for your guests to order and step away with a great drink.
+                <p className="text-lg leading-relaxed text-brand-ink/80 md:text-xl">
+                  Designed from the inside out for fast service, easy setup, and happy guests.
                 </p>
 
                 <div className="grid gap-3 text-sm text-brand-ink/80 md:grid-cols-2">
                   <div>
-                    <h3 className="text-sm font-semibold">Service-forward</h3>
-                    <p className="mt-1 text-xs text-brand-ink/80">
-                      10+ years in hospitality means we care about sequence—how guests are greeted, served, and taken
-                      care of all night.
+                    <h3 className="text-lg md:text-xl font-bold">Service-first</h3>
+                    <p className="mt-2 leading-relaxed text-base">
+                      10+ years hospitality experience.
                     </p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold">Grounded in Tri-Cities</h3>
-                    <p className="mt-1 text-xs text-brand-ink/80">
-                      We love partnering with local venues, caterers, and other vendors to keep your event cohesive.
+                    <h3 className="text-lg md:text-xl font-bold">Local partners</h3>
+                    <p className="mt-2 leading-relaxed text-base">
+                      Work with Tri-Cities venues.
                     </p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold">Food that meets requirements</h3>
-                    <p className="mt-1 text-xs text-brand-ink/80">
-                      We provide required food service in a simple, compliant way and can coordinate with your caterer
-                      or venue—without taking focus away from the bar.
+                    <h3 className="text-lg md:text-xl font-bold">Food service</h3>
+                    <p className="mt-2 leading-relaxed text-base">
+                      All requirements handled simply.
                     </p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold">Tech-forward add-ons</h3>
-                    <p className="mt-1 text-xs text-brand-ink/80">
-                      From Starlink WiFi to live-stream-ready setups, we’re building toward a bar that plays nicely with
-                      modern events.
+                    <h3 className="text-lg md:text-xl font-bold">Tech-ready</h3>
+                    <p className="mt-2 leading-relaxed text-base">
+                      WiFi & live-stream setups available.
                     </p>
                   </div>
                 </div>
@@ -503,12 +497,12 @@ export default function App() {
                 </p>
               </div>
               <div className="text-xs text-brand-ink/80 md:text-sm">
-                <p className="font-semibold">What’s always included:</p>
-                <ul className="mt-1 space-y-1">
+                <p className="font-semibold text-base">What's always included:</p>
+                <ul className="mt-2 space-y-2 text-base">
                   <li>• Licensed bar service</li>
                   <li>• Custom menu planning</li>
-                  <li>• Required food service covered in a simple, compliant way</li>
-                  <li>• Setup & breakdown of the bar area</li>
+                  <li>• Required food service</li>
+                  <li>• Setup & breakdown</li>
                 </ul>
               </div>
             </div>
@@ -533,23 +527,24 @@ export default function App() {
               ].map((pkg) => (
                 <Card key={pkg.name} className="flex h-full flex-col rounded-2xl border-brand-chrome bg-white">
                   <CardHeader>
-                    <CardTitle className="text-base font-semibold">{pkg.name}</CardTitle>
+                    <CardTitle className="text-xl md:text-2xl font-bold">{pkg.name}</CardTitle>
                   </CardHeader>
-                  <CardContent className="flex flex-1 flex-col justify-between space-y-4 text-sm text-brand-ink/80">
+                  <CardContent className="flex flex-1 flex-col justify-between space-y-4 text-base text-brand-ink/80 md:text-lg">
                     <div>
-                      <p>{pkg.blurb}</p>
-                      <p className="mt-2 text-xs text-brand-ink/70">{pkg.bestFor}</p>
+                      <p className="font-medium">{pkg.blurb}</p>
+                      <p className="mt-2 text-sm md:text-base text-brand-ink/70">For: {pkg.bestFor}</p>
                     </div>
-                    <ul className="space-y-1 text-xs">
+                    <ul className="space-y-2 text-base font-medium">
                       <li>• Curated drink menu</li>
-                      <li>• Professional bartending staff</li>
-                      <li>• Required food service covered with simple options</li>
+                      <li>• Professional bartending</li>
+                      <li>• Food service included</li>
                     </ul>
                   </CardContent>
                   <div className="px-6 pb-5">
                     <Button
                       className="w-full rounded-2xl border-brand-sea bg-brand-sea text-white"
                       onClick={() => scrollToSection("book")}
+                      size="lg"
                     >
                       Request quote
                     </Button>
@@ -583,16 +578,16 @@ export default function App() {
         </section>
 
         {/* Book / Contact */}
-        <section id="book" className="bg-white/60 py-14 pb-28 md:pb-16">
+        <section id="book" className="bg-white/60 py-16 pb-28 md:pb-16">
           <div className="mx-auto max-w-6xl px-4">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold">Book the Bar</h2>
-              <p className="mt-2 max-w-2xl mx-auto text-brand-ink/80">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Book the Bar</h2>
+              <p className="mt-3 max-w-2xl mx-auto text-base md:text-lg text-brand-ink/80 leading-relaxed">
                 Give us the basics and we'll reply with availability and a quote.
               </p>
             </div>
 
-            <form className="mt-8 grid md:grid-cols-2 gap-4" onSubmit={formspreeSubmit}>
+            <form className="mt-10 grid md:grid-cols-2 gap-5" onSubmit={formspreeSubmit}>
               <div className="md:col-span-1">
                 <label htmlFor="fullName" className="sr-only">
                   Full name
@@ -636,8 +631,9 @@ export default function App() {
                 <select
                   id="package"
                   name="package"
-                  className="h-10 w-full rounded-md border border-brand-chrome bg-white px-3 py-2 text-sm text-brand-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sea/50 focus-visible:border-brand-sea transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-touch w-full rounded-md border-2 border-brand-chrome bg-white px-4 py-3 text-base font-medium text-brand-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-sea focus-visible:border-brand-sea transition-all enabled:hover:border-brand-ink/40 disabled:cursor-not-allowed disabled:opacity-50"
                   defaultValue=""
+                  aria-label="Select a package"
                 >
                   <option value="" disabled>
                     Choose a package
@@ -662,17 +658,20 @@ export default function App() {
                 <ValidationError prefix="Message" field="message" errors={formState.errors} />
               </div>
 
-              <div className="md:col-span-2 flex items-center gap-3">
+              <div className="md:col-span-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <Button
                   type="submit"
                   disabled={formState.submitting}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-brand-sea border-brand-sea text-white"
+                  size="lg"
+                  fullWidth
+                  className="sm:w-auto"
+                  aria-label={formState.submitting ? "Sending your request" : "Submit booking form"}
                 >
-                  <Calendar className="w-4 h-4" aria-hidden="true" />
-                  <span>{formState.submitting ? "Sending..." : "Request Availability"}</span>
+                  <Calendar className="w-5 h-5" aria-hidden="true" />
+                  <span className="font-semibold">{formState.submitting ? "Sending..." : "Request Availability"}</span>
                 </Button>
 
-                <div aria-live="polite" className="text-sm">
+                <div aria-live="polite" role="status" className="text-sm md:text-base leading-relaxed">
                   {formState.succeeded && (
                     <span className="text-brand-ink/80">
                       Thanks! We&apos;ve received your request and will contact you soon.
