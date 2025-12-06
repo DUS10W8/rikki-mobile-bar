@@ -12,7 +12,7 @@ import {
   Check,
 } from "lucide-react";
 
-import { Button } from "./components/ui/button";
+import {  } from "./components/ui/";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 import { Input } from "./components/ui/input";
 import { Textarea } from "./components/ui/textarea";
@@ -176,8 +176,8 @@ export default function App() {
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           {/* Logo cluster */}
-          <button
-            type="button"
+          <
+            type=""
             className="flex items-center gap-2 rounded-xl px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sea/50"
             onClick={() => scrollToSection("about")}
           >
@@ -196,13 +196,13 @@ export default function App() {
                 ’78 Club Wagon • Tri-Cities
               </div>
             </div>
-          </button>
+          </>
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-2 md:flex">
             {visibleNavIds.map((id) => (
-              <button
-                type="button"
+              <
+                type=""
                 key={id}
                 onClick={() => scrollToSection(id)}
                 className={navLinkClasses(active === id)}
@@ -220,28 +220,27 @@ export default function App() {
             </Button>
           </nav>
 
-          {/* Mobile menu */}
           <div className="flex items-center gap-2 md:hidden">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-2xl border-brand-chrome bg-white/90"
-              onClick={() => scrollToSection("book")}
-            >
-              <Calendar className="size-4" />
-              <span className="sr-only">Book the bar</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-2xl border-brand-chrome bg-white/90"
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              <MenuIcon className="size-4" />
-              <span className="sr-only">Toggle navigation</span>
-            </Button>
-          </div>
-        </div>
+  <Button
+    variant="outline"
+    size="sm"
+    className="rounded-2xl border-brand-chrome bg-white/90 p-2"
+    onClick={() => scrollToSection("book")}
+  >
+    <Calendar className="w-4 h-4" />
+    <span className="sr-only">Book the bar</span>
+  </Button>
+  <Button
+    variant="outline"
+    size="sm"
+    className="rounded-2xl border-brand-chrome bg-white/90 p-2"
+    onClick={() => setMenuOpen((v) => !v)}
+  >
+    <MenuIcon className="w-4 h-4" />
+    <span className="sr-only">Toggle navigation</span>
+  </Button>
+</div>
+
 
         {/* Mobile drawer */}
         {menuOpen && (
@@ -665,12 +664,14 @@ export default function App() {
 
               <div className="md:col-span-2 flex items-center gap-3">
                 <Button
-                  type="submit"
-                  leftIcon={<Calendar className="size-4" aria-hidden="true" />}
-                  disabled={formState.submitting}
-                >
-                  {formState.submitting ? "Sending..." : "Request Availability"}
-                </Button>
+  type="submit"
+  disabled={formState.submitting}
+  className="inline-flex items-center gap-2 rounded-2xl bg-brand-sea border-brand-sea text-white"
+>
+  <Calendar className="w-4 h-4" aria-hidden="true" />
+  <span>{formState.submitting ? "Sending..." : "Request Availability"}</span>
+</Button>
+
                 <div aria-live="polite" className="text-sm">
                   {formState.succeeded && (
                     <span className="text-brand-ink/80">
@@ -714,15 +715,15 @@ export default function App() {
             © {new Date().getFullYear()} Rikki’s Mobile Bar. All rights reserved.
           </div>
           <div className="flex justify-start gap-4 text-xs md:justify-end">
-            <button type="button" onClick={() => scrollToSection("packages")} className="hover:text-brand-ink">
+            < type="" onClick={() => scrollToSection("packages")} className="hover:text-brand-ink">
               Packages
-            </button>
-            <button type="button" onClick={() => scrollToSection("gallery")} className="hover:text-brand-ink">
+            </>
+            < type="" onClick={() => scrollToSection("gallery")} className="hover:text-brand-ink">
               Gallery
-            </button>
-            <button type="button" onClick={() => scrollToSection("book")} className="hover:text-brand-ink">
+            </>
+            < type="" onClick={() => scrollToSection("book")} className="hover:text-brand-ink">
               Book
-            </button>
+            </>
             <a
               href="https://instagram.com/rikkismobile"
               target="_blank"
