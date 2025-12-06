@@ -12,7 +12,7 @@ import {
   Check,
 } from "lucide-react";
 
-import {  } from "./components/ui/";
+import { Button } from "./components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 import { Input } from "./components/ui/input";
 import { Textarea } from "./components/ui/textarea";
@@ -47,7 +47,7 @@ export default function App() {
 
   const [formState, formspreeSubmit] = useForm("xgvgzrnn");
 
-  // Sections on the page, in order (food moved to coming-soon section)
+  // Sections on the page, in order
   const sections = useMemo<SectionId[]>(
     () => ["about", "menu", "features", "packages", "coming-soon", "gallery", "book"],
     []
@@ -73,26 +73,26 @@ export default function App() {
   /** Observe sections for active state + header style */
   useEffect(() => {
     let ticking = false;
-    
+
     const updateActiveSection = () => {
       const headerOffset = 120; // Account for sticky header
       const triggerPoint = window.scrollY + headerOffset;
-      
+
       let best: { id: SectionId; score: number } | null = null;
-      
+
       for (const id of sections) {
         const el = document.getElementById(id);
         if (!el) continue;
-        
+
         const rect = el.getBoundingClientRect();
         const sectionTop = window.scrollY + rect.top;
         const sectionBottom = sectionTop + rect.height;
-        
+
         // Only consider sections that are visible in viewport
         if (sectionBottom < window.scrollY || sectionTop > window.scrollY + window.innerHeight) {
           continue;
         }
-        
+
         // Calculate score: prefer sections whose top is at or just past the trigger point
         let score: number;
         if (sectionTop <= triggerPoint && sectionBottom >= triggerPoint) {
@@ -100,17 +100,17 @@ export default function App() {
           score = triggerPoint - sectionTop; // Lower is better (closer to trigger)
         } else if (sectionTop > triggerPoint) {
           // Section is below trigger - use distance with penalty
-          score = (sectionTop - triggerPoint) + 1000;
+          score = sectionTop - triggerPoint + 1000;
         } else {
           // Section is above trigger - higher penalty
-          score = (triggerPoint - sectionBottom) + 2000;
+          score = triggerPoint - sectionBottom + 2000;
         }
-        
+
         if (!best || score < best.score) {
           best = { id, score };
         }
       }
-      
+
       if (best) setActive(best.id);
       ticking = false;
     };
@@ -124,10 +124,10 @@ export default function App() {
 
     // Initial check
     updateActiveSection();
-    
+
     // Update on scroll with throttling via requestAnimationFrame
     window.addEventListener("scroll", handleScroll, { passive: true });
-    
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, [sections]);
 
@@ -152,9 +152,7 @@ export default function App() {
     [
       "rounded-xl px-3 py-2 text-sm font-medium transition-colors outline-none",
       "focus-visible:ring-2 focus-visible:ring-brand-sea/50",
-      isActive
-        ? "!text-white bg-brand-sea"
-        : "text-brand-ink/80 hover:text-brand-ink hover:bg-brand-ink/10",
+      isActive ? "!text-white bg-brand-sea" : "text-brand-ink/80 hover:text-brand-ink hover:bg-brand-ink/10",
     ].join(" ");
 
   return (
@@ -176,8 +174,8 @@ export default function App() {
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           {/* Logo cluster */}
-          <
-            type=""
+          <button
+            type="button"
             className="flex items-center gap-2 rounded-xl px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sea/50"
             onClick={() => scrollToSection("about")}
           >
@@ -196,13 +194,13 @@ export default function App() {
                 ’78 Club Wagon • Tri-Cities
               </div>
             </div>
-          </>
+          </button>
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-2 md:flex">
             {visibleNavIds.map((id) => (
-              <
-                type=""
+              <button
+                type="button"
                 key={id}
                 onClick={() => scrollToSection(id)}
                 className={navLinkClasses(active === id)}
@@ -220,27 +218,28 @@ export default function App() {
             </Button>
           </nav>
 
+          {/* Mobile nav buttons */}
           <div className="flex items-center gap-2 md:hidden">
-  <Button
-    variant="outline"
-    size="sm"
-    className="rounded-2xl border-brand-chrome bg-white/90 p-2"
-    onClick={() => scrollToSection("book")}
-  >
-    <Calendar className="w-4 h-4" />
-    <span className="sr-only">Book the bar</span>
-  </Button>
-  <Button
-    variant="outline"
-    size="sm"
-    className="rounded-2xl border-brand-chrome bg-white/90 p-2"
-    onClick={() => setMenuOpen((v) => !v)}
-  >
-    <MenuIcon className="w-4 h-4" />
-    <span className="sr-only">Toggle navigation</span>
-  </Button>
-</div>
-
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-2xl border-brand-chrome bg-white/90 p-2"
+              onClick={() => scrollToSection("book")}
+            >
+              <Calendar className="w-4 h-4" />
+              <span className="sr-only">Book the bar</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-2xl border-brand-chrome bg-white/90 p-2"
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <MenuIcon className="w-4 h-4" />
+              <span className="sr-only">Toggle navigation</span>
+            </Button>
+          </div>
+        </div>
 
         {/* Mobile drawer */}
         {menuOpen && (
@@ -558,10 +557,11 @@ export default function App() {
                 </Card>
               ))}
             </div>
-
-            <ComingSoon />
           </div>
         </section>
+
+        {/* Coming soon as its own section */}
+        <ComingSoon />
 
         {/* Gallery */}
         <section id="gallery" className="border-t border-brand-chrome/70 bg-brand-primary/80 py-16">
@@ -664,13 +664,13 @@ export default function App() {
 
               <div className="md:col-span-2 flex items-center gap-3">
                 <Button
-  type="submit"
-  disabled={formState.submitting}
-  className="inline-flex items-center gap-2 rounded-2xl bg-brand-sea border-brand-sea text-white"
->
-  <Calendar className="w-4 h-4" aria-hidden="true" />
-  <span>{formState.submitting ? "Sending..." : "Request Availability"}</span>
-</Button>
+                  type="submit"
+                  disabled={formState.submitting}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-brand-sea border-brand-sea text-white"
+                >
+                  <Calendar className="w-4 h-4" aria-hidden="true" />
+                  <span>{formState.submitting ? "Sending..." : "Request Availability"}</span>
+                </Button>
 
                 <div aria-live="polite" className="text-sm">
                   {formState.succeeded && (
@@ -715,15 +715,15 @@ export default function App() {
             © {new Date().getFullYear()} Rikki’s Mobile Bar. All rights reserved.
           </div>
           <div className="flex justify-start gap-4 text-xs md:justify-end">
-            < type="" onClick={() => scrollToSection("packages")} className="hover:text-brand-ink">
+            <button type="button" onClick={() => scrollToSection("packages")} className="hover:text-brand-ink">
               Packages
-            </>
-            < type="" onClick={() => scrollToSection("gallery")} className="hover:text-brand-ink">
+            </button>
+            <button type="button" onClick={() => scrollToSection("gallery")} className="hover:text-brand-ink">
               Gallery
-            </>
-            < type="" onClick={() => scrollToSection("book")} className="hover:text-brand-ink">
+            </button>
+            <button type="button" onClick={() => scrollToSection("book")} className="hover:text-brand-ink">
               Book
-            </>
+            </button>
             <a
               href="https://instagram.com/rikkismobile"
               target="_blank"
@@ -737,5 +737,8 @@ export default function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
   );
 }
