@@ -289,12 +289,14 @@ export default function App() {
               </div>
 
               <h1 className="text-balance text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
-                A retro club wagon, a polished bar, and the drinks dialed in.
+                Mid-century cool. Future-ready service.
               </h1>
 
               <p className="text-lg sm:text-xl leading-relaxed text-brand-ink/80">
-                Rikki's Mobile Bar is a 1978 Ford Club Wagon turned mid-century-modern-inspired bar. We pull up, pop
-                out the bar, and serve a curated menu of cocktails, mocktails, beer, and wine—built around your event.
+                Rikki's Mobile Bar is a licensed mobile experience company offering elevated bar service, curated food, professional audio and DJ support, and seamless event production.
+              </p>
+              <p className="text-lg sm:text-xl leading-relaxed text-brand-ink/80">
+                We handle the details—so you can enjoy a celebration that feels effortless, polished, and unforgettable.
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2 text-sm text-brand-ink/80">
