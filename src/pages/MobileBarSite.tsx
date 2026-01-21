@@ -11,16 +11,13 @@ import {
   Martini,
 } from "lucide-react";
 
-import { useForm, ValidationError } from "@formspree/react";
+import { BookingFlow } from "../booking/BookingFlow";
 
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { Textarea } from "../components/ui/textarea";
 import { Badge } from "../components/ui/badge";
 
 export default function MobileBarSite() {
-  const [state, handleSubmit] = useForm("xgvgzrnn");
   const [active, setActive] = useState<string>("about");
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -96,7 +93,7 @@ export default function MobileBarSite() {
           <div className="hidden md:flex gap-2">
             <a href="#contact">
               <Button className="rounded-2xl bg-brand-sea border-brand-sea text-white text-sm px-4 py-2 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
-                Check Your Date
+                Request Confirmation
               </Button>
             </a>
           </div>
@@ -136,7 +133,7 @@ export default function MobileBarSite() {
               ))}
               <a href="#contact" onClick={() => setMenuOpen(false)}>
                 <Button className="mt-2 w-full rounded-2xl bg-brand-sea border-brand-sea text-white text-sm">
-                  Check Your Date
+                  Request Confirmation
                 </Button>
               </a>
             </div>
@@ -197,7 +194,7 @@ export default function MobileBarSite() {
             <div className="mt-8 flex flex-wrap gap-4 items-center">
               <a href="#contact">
                 <Button className="rounded-2xl bg-brand-sea border-brand-sea text-white px-6 py-3 text-sm md:text-base shadow-[0_12px_36px_rgba(0,0,0,0.18)]">
-                  Check availability
+                  Request confirmation
                 </Button>
               </a>
               <a href="#packages" className="text-sm md:text-base font-medium text-brand-ink/70 hover:text-brand-ink">
@@ -370,7 +367,7 @@ export default function MobileBarSite() {
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>Satellite bar add-on for high guest counts</span>
+                  <span>Satellite bar add-on to keep lines moving</span>
                   <Badge className="rounded-full bg-brand-primary border border-brand-chrome text-[11px]">
                     Coming soon
                   </Badge>
@@ -405,10 +402,10 @@ export default function MobileBarSite() {
       >
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
           <div>
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Packages & starting points</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Drink programs, scaled to you</h2>
             <p className="mt-3 text-brand-ink/80 max-w-2xl">
-              Every event is a little different. These packages are starting points—we’ll adjust the menu, staffing,
-              and flow to fit your venue and guests.
+              Choose a drink program. We’ll scale staffing and volume to your guest count. Pricing is based on two
+              things: your guest count and the drink program you choose.
             </p>
           </div>
           <div className="text-sm text-brand-ink/70">
@@ -426,18 +423,23 @@ export default function MobileBarSite() {
           {[
             {
               name: "Beer & Wine Bar",
-              blurb: "A streamlined setup focused on beer, wine, and a signature spritz or two.",
-              bestFor: "Receptions, open houses, and casual celebrations.",
+              subtitle: "Simple, fast, and intentional.",
+              blurb: "Beer & wine plus a small set of simple mixed drinks—built for clean service flow and happy guests.",
+              examples: "Examples: spritz, rum & coke, jack & diet, classic margarita.",
             },
             {
               name: "Classic Cocktail Bar",
-              blurb: "A focused menu of shaken & stirred classics tailored to your crowd.",
-              bestFor: "Weddings, milestones, and private parties.",
+              subtitle: "Classics + a few signatures.",
+              blurb:
+                "A curated menu of crowd-pleasing classics with a limited signature set—balanced for speed, consistency, and polish.",
+              examples: "Examples: margarita, whiskey sour, old fashioned + 2–3 signatures.",
             },
             {
               name: "Premium / Mocktail Bar",
-              blurb: "Elevated cocktails and zero-proof options with thoughtful garnishes.",
-              bestFor: "Crowds that love a good drink—and a good photo.",
+              subtitle: "Signature-forward + zero-proof done right.",
+              blurb:
+                "An expanded signature cocktail menu with elevated ingredients, garnishes, and intentional zero-proof options.",
+              examples: "Includes: 3–5 signatures + elevated mocktails.",
             },
           ].map((pkg) => (
             <Card key={pkg.name} className="rounded-3xl border-brand-chrome bg-white flex flex-col">
@@ -446,8 +448,9 @@ export default function MobileBarSite() {
               </CardHeader>
               <CardContent className="flex-1 flex flex-col justify-between space-y-4 text-sm text-brand-ink/80">
                 <div>
+                  <p className="text-brand-ink/70 text-xs mb-2">{pkg.subtitle}</p>
                   <p>{pkg.blurb}</p>
-                  <p className="mt-2 text-brand-ink/70">{pkg.bestFor}</p>
+                  <p className="mt-2 text-brand-ink/70">{pkg.examples}</p>
                 </div>
                 <ul className="space-y-1">
                   <li>• Curated drink menu</li>
@@ -458,7 +461,7 @@ export default function MobileBarSite() {
               <div className="px-6 pb-6">
                 <a href="#contact">
                   <Button className="w-full rounded-2xl bg-brand-sea border-brand-sea text-white">
-                    Request Quote
+                    Get your event estimate
                   </Button>
                 </a>
               </div>
@@ -577,9 +580,9 @@ export default function MobileBarSite() {
       >
         <div className="grid md:grid-cols-2 gap-8 items-start">
           <div>
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Check your date</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Request confirmation</h2>
             <p className="mt-3 text-brand-ink/80">
-              Tell us about your event and the package you’re interested in. We’ll reply with availability and pricing.
+              Complete the booking flow below to get an instant estimate. We'll confirm availability and finalize your quote after review.
             </p>
             <div className="mt-6 space-y-3 text-sm text-brand-ink/80">
               <a href="mailto:rikki@rikkismobile.com" className="flex items-center gap-2 hover:opacity-80">
@@ -599,85 +602,9 @@ export default function MobileBarSite() {
             </div>
           </div>
 
-          <Card className="rounded-3xl">
-            <CardContent className="p-6">
-              {state.succeeded ? (
-                <div className="text-center py-8">
-                  <h3 className="text-2xl font-bold">Thanks! 🎉</h3>
-                  <p className="mt-2 text-brand-ink/80">
-                    We’ll be in touch shortly about your event.
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      name="fullName"
-                      id="fullName"
-                      placeholder="Full name"
-                      required
-                    />
-                    <Input
-                      type="email"
-                      name="email"
-                      id="email"
-                      placeholder="Email"
-                      required
-                    />
-                  </div>
-                  <ValidationError prefix="Email" field="email" errors={state.errors} />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input name="phone" id="phone" placeholder="Phone" />
-                    <Input
-                      type="date"
-                      name="eventDate"
-                      id="eventDate"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      name="guestCount"
-                      id="guestCount"
-                      placeholder="Guest count (approx.)"
-                    />
-                    <Input
-                      name="venueCity"
-                      id="venueCity"
-                      placeholder="Venue/City"
-                    />
-                  </div>
-                  <select
-                    name="package"
-                    id="package"
-                    className="h-10 w-full rounded-md border border-brand-chrome bg-white px-3 py-2 text-sm text-brand-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sea/50 focus-visible:border-brand-sea transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Select a package
-                    </option>
-                    <option value="Beer & Wine">Beer &amp; Wine</option>
-                    <option value="Classic Cocktails">Classic Cocktails</option>
-                    <option value="Premium Cocktails">Premium Cocktails</option>
-                    <option value="Dry / Mocktail Bar">Dry / Mocktail Bar</option>
-                  </select>
-                  <Textarea
-                    name="message"
-                    id="message"
-                    placeholder="Tell us about your vibe, timeline, and any add-ons (satellite bar, content capture, generator, glassware)."
-                    className="min-h-[120px]"
-                  />
-                  <ValidationError prefix="Message" field="message" errors={state.errors} />
-                  <Button
-                    type="submit"
-                    disabled={state.submitting}
-                    className="rounded-2xl bg-brand-sea border-brand-sea text-white"
-                  >
-                    Send Inquiry
-                  </Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
+          <div>
+            <BookingFlow formspreeId="xgvgzrnn" />
+          </div>
         </div>
       </section>
 
@@ -708,10 +635,10 @@ export default function MobileBarSite() {
       </footer>
 
       {/* Mobile sticky CTA */}
-      <div className="md:hidden fixed bottom-4 inset-x-0 px-4 z-50">
+      <div className="md:hidden fixed bottom-4 inset-x-0 px-4 z-40">
         <a href="#contact" className="block">
           <button className="w-full rounded-2xl bg-brand-sea text-white py-3 font-semibold shadow-[0_8px_28px_rgba(0,0,0,0.12)]">
-            Check Your Date
+            Request Confirmation
           </button>
         </a>
       </div>

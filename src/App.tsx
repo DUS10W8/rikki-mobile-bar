@@ -14,10 +14,8 @@ import {
 
 import { Button } from "./components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
-import { Input } from "./components/ui/input";
-import { Textarea } from "./components/ui/textarea";
 import { Badge } from "./components/ui/badge";
-import { useForm, ValidationError } from "@formspree/react";
+import { BookingFlow } from "./booking/BookingFlow";
 
 import Gallery from "./components/ui/Gallery";
 import { galleryItems } from "./data/gallery";
@@ -44,8 +42,6 @@ export default function App() {
   const [active, setActive] = useState<SectionId>("about");
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
-  const [formState, formspreeSubmit] = useForm("xgvgzrnn");
 
   // Sections on the page, in order
   const sections = useMemo<SectionId[]>(
@@ -214,7 +210,7 @@ export default function App() {
               className="ml-2 rounded-2xl border-brand-sea bg-brand-sea text-xs font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.22)] hover:bg-brand-sea/90"
               onClick={() => scrollToSection("book")}
             >
-              Check your date
+              Get your event estimate
             </Button>
           </nav>
 
@@ -316,7 +312,7 @@ export default function App() {
                   className="rounded-2xl border-brand-sea bg-brand-sea text-white shadow-[0_14px_40px_rgba(0,0,0,0.24)]"
                   onClick={() => scrollToSection("book")}
                 >
-                  Check availability
+                  Get your event estimate
                 </Button>
                 <button
                   type="button"
@@ -394,7 +390,7 @@ export default function App() {
                     </div>
                     <div>
                       <div className="font-semibold">Satellite bar</div>
-                      <div className="text-[11px] text-brand-ink/70">for bigger guest counts</div>
+                    <div className="text-[11px] text-brand-ink/70">for extra service points</div>
                     </div>
                   </div>
                 </CardContent>
@@ -504,10 +500,12 @@ export default function App() {
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div className="max-w-xl space-y-2">
-                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Packages & starting points.</h2>
+                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Drink programs, scaled to you.</h2>
                 <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
-                  Every event is a little different. These are starting points—we’ll dial in the menu, staffing, and
-                  flow based on your guest count and venue.
+                  Choose a drink program. We’ll scale staffing and volume to your guest count.
+                </p>
+                <p className="text-sm text-brand-ink/70 mt-2">
+                  Pricing is based on two things: your guest count and the drink program you choose.
                 </p>
               </div>
               <div className="text-xs text-brand-ink/80 md:text-sm">
@@ -525,28 +523,44 @@ export default function App() {
               {[
                 {
                   name: "Beer & Wine Bar",
-                  blurb: "A streamlined setup focused on beer, wine, and a signature spritz or two.",
-                  bestFor: "Receptions, open houses, and casual celebrations.",
+                  subtitle: "Simple, fast, and intentional.",
+                  blurb: "Beer & wine plus a small set of simple mixed drinks—built for clean service flow and happy guests.",
+                  examples: "Examples: spritz, rum & coke, jack & diet, classic margarita.",
+                  isPopular: false,
                 },
                 {
                   name: "Classic Cocktail Bar",
-                  blurb: "A focused menu of shaken & stirred classics tailored to your crowd.",
-                  bestFor: "Weddings, milestones, and private parties.",
+                  subtitle: "Classics + a few signatures.",
+                  blurb:
+                    "A curated menu of crowd-pleasing classics with a limited signature set—balanced for speed, consistency, and polish.",
+                  examples: "Examples: margarita, whiskey sour, old fashioned + 2–3 signatures.",
+                  isPopular: true,
                 },
                 {
                   name: "Premium / Mocktail Bar",
-                  blurb: "Elevated cocktails and zero-proof options with thoughtful garnishes.",
-                  bestFor: "Crowds that love a good drink—and a good photo.",
+                  subtitle: "Signature-forward + zero-proof done right.",
+                  blurb:
+                    "An expanded signature cocktail menu with elevated ingredients, garnishes, and intentional zero-proof options.",
+                  examples: "Includes: 3–5 signatures + elevated mocktails.",
+                  isPopular: false,
                 },
               ].map((pkg) => (
                 <Card key={pkg.name} className="flex h-full flex-col rounded-2xl border-brand-chrome bg-white">
                   <CardHeader>
-                    <CardTitle className="text-xl md:text-2xl font-bold">{pkg.name}</CardTitle>
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-xl md:text-2xl font-bold">{pkg.name}</CardTitle>
+                      {pkg.isPopular && (
+                        <Badge variant="sea" size="sm" className="shrink-0">
+                          Most popular
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-brand-ink/70 mt-1">{pkg.subtitle}</p>
                   </CardHeader>
                   <CardContent className="flex flex-1 flex-col justify-between space-y-4 text-base text-brand-ink/80 md:text-lg">
                     <div>
                       <p className="font-medium">{pkg.blurb}</p>
-                      <p className="mt-2 text-sm md:text-base text-brand-ink/70">For: {pkg.bestFor}</p>
+                      {pkg.examples && <p className="mt-2 text-sm md:text-base text-brand-ink/70">{pkg.examples}</p>}
                     </div>
                     <ul className="space-y-2 text-base font-medium">
                       <li>• Curated drink menu</li>
@@ -560,7 +574,7 @@ export default function App() {
                       onClick={() => scrollToSection("book")}
                       size="lg"
                     >
-                      Request quote
+                      Get your event estimate
                     </Button>
                   </div>
                 </Card>
@@ -594,109 +608,74 @@ export default function App() {
         {/* Book / Contact */}
         <section id="book" className="bg-white/60 py-16 pb-28 md:pb-16">
           <div className="mx-auto max-w-6xl px-4">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Book the Bar</h2>
-              <p className="mt-3 max-w-2xl mx-auto text-base md:text-lg text-brand-ink/80 leading-relaxed">
-                Give us the basics and we'll reply with availability and a quote.
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Get your event estimate</h2>
+              <p className="mt-3 mx-auto max-w-2xl text-base leading-relaxed text-brand-ink/80 md:text-lg">
+                Complete the booking flow below to get an instant estimate. We'll confirm availability and finalize your quote after review.
               </p>
             </div>
 
-            <form className="mt-10 grid md:grid-cols-2 gap-5" onSubmit={formspreeSubmit}>
-              <div className="md:col-span-1">
-                <label htmlFor="fullName" className="sr-only">
-                  Full name
-                </label>
-                <Input id="fullName" name="fullName" placeholder="Full name" required />
-              </div>
-
-              <div className="md:col-span-1">
-                <label htmlFor="email" className="sr-only">
-                  Email
-                </label>
-                <Input id="email" name="email" type="email" placeholder="Email" required />
-                <ValidationError prefix="Email" field="email" errors={formState.errors} />
-              </div>
-
-              <div className="md:col-span-1">
-                <label htmlFor="phone" className="sr-only">
-                  Phone
-                </label>
-                <Input id="phone" name="phone" type="tel" placeholder="Phone" />
-              </div>
-
-              <div className="md:col-span-1">
-                <label htmlFor="date" className="sr-only">
-                  Event date
-                </label>
-                <Input id="date" name="date" type="date" />
-              </div>
-
-              <div className="md:col-span-2">
-                <label htmlFor="venue" className="sr-only">
-                  Venue / Address
-                </label>
-                <Input id="venue" name="venue" placeholder="Venue / Address" />
-              </div>
-
-              <div className="md:col-span-2">
-                <label htmlFor="package" className="sr-only">
-                  Package
-                </label>
-                <select
-                  id="package"
-                  name="package"
-                  className="h-touch w-full rounded-md border-2 border-brand-chrome bg-white px-4 py-3 text-base font-medium text-brand-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-sea focus-visible:border-brand-sea transition-all enabled:hover:border-brand-ink/40 disabled:cursor-not-allowed disabled:opacity-50"
-                  defaultValue=""
-                  aria-label="Select a package"
-                >
-                  <option value="" disabled>
-                    Choose a package
-                  </option>
-                  <option value="Beer & Wine">Beer &amp; Wine</option>
-                  <option value="Classic Cocktails">Classic Cocktails</option>
-                  <option value="Premium Cocktails">Premium Cocktails</option>
-                  <option value="Dry / Mocktail Bar">Dry / Mocktail Bar</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label htmlFor="message" className="sr-only">
-                  Message
-                </label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  placeholder="Guest count, vibe, must-have drinks…"
-                  className="min-h-[120px]"
-                />
-                <ValidationError prefix="Message" field="message" errors={formState.errors} />
-              </div>
-
-              <div className="md:col-span-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                <Button
-                  type="submit"
-                  disabled={formState.submitting}
-                  size="lg"
-                  fullWidth
-                  className="sm:w-auto"
-                  aria-label={formState.submitting ? "Sending your request" : "Submit booking form"}
-                >
-                  <Calendar className="w-5 h-5" aria-hidden="true" />
-                  <span className="font-semibold">{formState.submitting ? "Sending..." : "Request Availability"}</span>
-                </Button>
-
-                <div aria-live="polite" role="status" className="text-sm md:text-base leading-relaxed">
-                  {formState.succeeded && (
-                    <span className="text-brand-ink/80">
-                      Thanks! We&apos;ve received your request and will contact you soon.
-                    </span>
-                  )}
+            {/* Pricing Anchor */}
+            <Card className="mb-8 rounded-2xl border-brand-chrome bg-white/90">
+              <CardContent className="p-6">
+                <div className="text-center space-y-3">
+                  <div>
+                    <div className="text-2xl font-bold text-brand-sea">Events start at $800</div>
+                    <div className="text-sm text-brand-ink/70 mt-1">
+                      Includes planning, licensed & insured service, travel, setup, and breakdown.
+                    </div>
+                  </div>
+                  <div className="text-xs text-brand-ink/60 pt-3 border-t border-brand-chrome/50">
+                    Final pricing is based on your guest count and the drink program you choose (plus any tech add-ons).
+                  </div>
+                  <div className="text-xs text-brand-ink/60 mt-2">
+                    Most events invest more based on their specific needs and scale.
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Social Proof */}
+            <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4 text-sm">
+              <div className="text-center p-4 rounded-xl bg-white/70 border border-brand-chrome/50">
+                <div className="font-semibold text-brand-ink mb-1">10+ years</div>
+                <div className="text-xs text-brand-ink/70">hospitality experience</div>
               </div>
-            </form>
+              <div className="text-center p-4 rounded-xl bg-white/70 border border-brand-chrome/50">
+                <div className="font-semibold text-brand-ink mb-1">Licensed & insured</div>
+                <div className="text-xs text-brand-ink/70">venue docs available</div>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-white/70 border border-brand-chrome/50">
+                <div className="font-semibold text-brand-ink mb-1">Built by operators</div>
+                <div className="text-xs text-brand-ink/70">not rental companies</div>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-white/70 border border-brand-chrome/50">
+                <div className="font-semibold text-brand-ink mb-1">Tri-Cities–based</div>
+                <div className="text-xs text-brand-ink/70">venue-friendly service</div>
+              </div>
+            </div>
+
+            {/* Consolidated Reassurance */}
+            <Card className="mb-8 rounded-2xl border-brand-chrome bg-white/90">
+              <CardContent className="p-4 text-center">
+                <div className="font-semibold text-brand-ink mb-1">This takes about 2 minutes.</div>
+                <div className="text-sm text-brand-ink/70">
+                  Get a clear estimate and next steps — no payment required.
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Authority Statement */}
+            <div className="mb-8 text-center">
+              <p className="text-sm text-brand-ink/70">
+                We'll review your details and confirm availability before anything is finalized.
+              </p>
+            </div>
+
+            <BookingFlow formspreeId="xgvgzrnn" />
 
             {/* Fast facts */}
-            <dl className="mt-10 grid md:grid-cols-3 gap-6">
+            <dl className="mt-10 grid gap-6 md:grid-cols-3">
               {[
                 { icon: <MapPin className="size-5" />, term: "Area", desc: "Tri-Cities & Columbia River" },
                 { icon: <Phone className="size-5" />, term: "Text/Call", desc: "(509) 231-9307" },
