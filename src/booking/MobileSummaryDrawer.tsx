@@ -1,17 +1,20 @@
 import React, { useState } from "react";
-import { X } from "lucide-react";
+import { X, RotateCcw } from "lucide-react";
+import { Button } from "../components/ui/button";
 import { QuoteSummary } from "./QuoteSummary";
-import type { Quote } from "./types";
+import type { Quote, BookingSelection } from "./types";
 
 interface MobileSummaryDrawerProps {
   quote: Quote;
+  selection?: BookingSelection;
+  onReset?: () => void;
 }
 
-export function MobileSummaryDrawer({ quote }: MobileSummaryDrawerProps) {
+export function MobileSummaryDrawer({ quote, selection, onReset }: MobileSummaryDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Only show if there's something to display
-  if (quote.lineItems.length === 0 && quote.estimatedTotal === 0) {
+  if (quote.estimatedRange.max === 0) {
     return null;
   }
 
@@ -21,9 +24,9 @@ export function MobileSummaryDrawer({ quote }: MobileSummaryDrawerProps) {
       <div className="md:hidden fixed bottom-0 inset-x-0 z-[45] bg-white border-t-2 border-brand-chrome shadow-[0_-8px_28px_rgba(0,0,0,0.12)]">
         <div className="px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex-1">
-            <div className="text-xs text-brand-ink/60 mb-1">Estimated Total</div>
+            <div className="text-xs text-brand-ink/60 mb-1">Estimated Range</div>
             <div className="text-xl font-bold text-brand-sea">
-              ${quote.estimatedTotal > 0 ? quote.estimatedTotal.toLocaleString() : "—"}
+              ${quote.estimatedRange.min.toLocaleString()} – ${quote.estimatedRange.max.toLocaleString()}
             </div>
           </div>
           <button
@@ -31,7 +34,7 @@ export function MobileSummaryDrawer({ quote }: MobileSummaryDrawerProps) {
             onClick={() => setIsOpen(true)}
             className="px-6 py-2.5 rounded-2xl bg-brand-sea text-white font-semibold text-sm shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
           >
-            View Summary
+            View estimate
           </button>
         </div>
       </div>
@@ -50,7 +53,7 @@ export function MobileSummaryDrawer({ quote }: MobileSummaryDrawerProps) {
             style={{ maxHeight: "85vh" }}
           >
             <div className="flex items-center justify-between p-4 border-b border-brand-chrome">
-              <h3 className="text-lg font-bold">Estimate Summary</h3>
+              <h3 className="text-lg font-bold">Your Event Estimate</h3>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
@@ -62,9 +65,31 @@ export function MobileSummaryDrawer({ quote }: MobileSummaryDrawerProps) {
             </div>
             <div className="overflow-y-auto" style={{ maxHeight: "calc(85vh - 73px)" }}>
               <div className="p-4">
-                <QuoteSummary quote={quote} />
+                <QuoteSummary quote={quote} selection={selection} onReset={onReset} />
               </div>
             </div>
+            {onReset && (selection?.serviceType !== null || 
+              selection?.eventType !== null || 
+              selection?.guestCount !== null ||
+              selection?.duration !== null ||
+              selection?.barTier !== null ||
+              selection?.travelType !== null ||
+              selection?.djService ||
+              selection?.customBranding ||
+              (selection?.techModules && (selection.techModules.starlinkWifi || selection.techModules.tvDisplay || selection.techModules.soundMic))) && (
+              <div className="p-4 border-t border-brand-chrome">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onReset}
+                  className="w-full text-sm text-brand-ink/60 hover:text-brand-ink"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Reset estimate
+                </Button>
+              </div>
+            )}
           </div>
         </>
       )}

@@ -9,8 +9,8 @@ interface EventTypeStepProps {
 const eventTypes = [
   { id: "wedding", label: "Wedding" },
   { id: "private-party", label: "Private Party" },
-  { id: "corporate-brand", label: "Corporate / Brand" },
-  { id: "community-other", label: "Community / Other" },
+  { id: "corporate", label: "Corporate Event" },
+  { id: "other", label: "Other" },
 ];
 
 export function EventTypeStep({ value, onChange }: EventTypeStepProps) {
@@ -18,7 +18,7 @@ export function EventTypeStep({ value, onChange }: EventTypeStepProps) {
     <div className="space-y-4">
       <div>
         <h3 className="text-2xl font-bold mb-2">Event type</h3>
-        <p className="text-brand-ink/70 text-sm">Tell us what kind of event you're planning.</p>
+        <p className="text-brand-ink/70 text-sm">Choose the event style so we can shape the estimate.</p>
       </div>
       <div className="grid gap-4">
         {eventTypes.map((type) => (

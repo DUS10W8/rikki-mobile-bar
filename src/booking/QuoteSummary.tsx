@@ -1,149 +1,239 @@
 import React from "react";
+import { RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import type { Quote, BookingSelection } from "./types";
+import { Button } from "../components/ui/button";
+import { pricingConfig } from "./pricingConfig";
+import type { Quote, BookingSelection, DurationRange } from "./types";
 
 interface QuoteSummaryProps {
   quote: Quote;
   selection?: BookingSelection;
   className?: string;
+  onReset?: () => void;
 }
 
-export function QuoteSummary({ quote, selection, className }: QuoteSummaryProps) {
-  const eventProductionBase = quote.lineItems.find((item) => item.label === "Event Production Base");
-  const guestCountScaling = quote.lineItems.find((item) => item.label === "Guest Count Scaling");
-  const drinkProgramItems = quote.lineItems.filter((item) => item.label.startsWith("Drink Program"));
-  const techItems = quote.lineItems.filter((item) => item.category === "tech");
-  const addonItems = quote.lineItems.filter((item) => item.category === "addon");
+export function QuoteSummary({ quote, selection, className, onReset }: QuoteSummaryProps) {
+  const hasBar = selection?.serviceType === "bar" || selection?.serviceType === "both";
+  const hasTech = selection?.serviceType === "tech" || selection?.serviceType === "both";
 
-  // Expert nudge: show when event type, guest count, and package are selected
-  const showExpertNudge = selection?.eventBasics.eventType && 
-                          selection?.eventBasics.guestCountRange && 
-                          selection?.barPackage &&
-                          !selection?.details.drinkHandling;
+  const barTier = hasBar && selection?.barTier
+    ? pricingConfig.barTiers.find((tier) => tier.id === selection.barTier)
+    : null;
+
+  const serviceTypeLabel = selection?.serviceType
+    ? selection.serviceType === "bar"
+      ? "Bar service"
+      : selection.serviceType === "tech"
+        ? "Event tech"
+        : "Bar + tech"
+    : null;
+
+  const guestCountLabel = selection?.guestCount
+    ? selection.guestCount === 40
+      ? "~40 guests"
+      : selection.guestCount === 75
+        ? "~75 guests"
+        : selection.guestCount === 125
+          ? "~125 guests"
+          : "~170 guests"
+    : "Guest count pending";
+
+  const durationLabel = (duration: DurationRange | null | undefined) => {
+    if (!duration) return "Duration pending";
+    if (duration === "2-3") return "2–3 hours";
+    if (duration === "4-5") return "4–5 hours";
+    return "6+ hours";
+  };
+
+  const liveDjPrice = selection?.duration
+    ? selection.duration === "2-3"
+      ? 400
+      : selection.duration === "4-5"
+        ? 500
+        : 600
+    : 500;
+
+  const hasEstimate = quote.estimatedRange.max > 0;
+
+  const getFoodServiceLabel = () => {
+    if (!hasBar || !selection?.foodPlan) return null;
+    const { status, provider } = selection.foodPlan;
+    let label = "";
+    if (status === "yes") label = "Confirmed";
+    else if (status === "planned") label = "Planned";
+    else if (status === "unsure") label = "To be confirmed";
+    
+    if (provider) {
+      const providerLabels: Record<string, string> = {
+        caterer: "Caterer",
+        food_truck: "Food truck",
+        venue: "Venue",
+        host: "Host",
+        other: "Other",
+      };
+      label += ` (${providerLabels[provider] || provider})`;
+    }
+    return label;
+  };
+
+  const getTechModulesList = () => {
+    if (!hasTech || !selection?.techModules) return null;
+    const modules: string[] = [];
+    if (selection.techModules.starlinkWifi) modules.push("Starlink WiFi");
+    if (selection.techModules.tvDisplay) modules.push("TV / Display setup");
+    if (selection.techModules.soundMic) modules.push("Bose PA + Wireless Mic");
+    return modules.length > 0 ? modules : null;
+  };
+
+  // Get guest count included items (non-priced line items)
+  const guestCountIncludedItems = quote.lineItems.filter(
+    (item) => item.amount === 0 && item.details === "Included for your guest count"
+  );
+
+  // Get priced line items (for breakdown display)
+  const pricedLineItems = quote.lineItems.filter((item) => item.amount > 0);
+  
+  // Get gratuity line item separately
+  const gratuityItem = pricedLineItems.find((item) => item.label.startsWith("Gratuity"));
+
+  // Check if user has made any selections (to show reset button)
+  const hasSelections = selection?.serviceType !== null || 
+    selection?.eventType !== null || 
+    selection?.guestCount !== null ||
+    selection?.duration !== null ||
+    selection?.barTier !== null ||
+    selection?.travelType !== null ||
+    selection?.djService ||
+    selection?.customBranding ||
+    (selection?.techModules && (selection.techModules.starlinkWifi || selection.techModules.tvDisplay || selection.techModules.soundMic));
 
   return (
     <Card className={`rounded-2xl border-2 border-brand-chrome bg-white ${className || ""}`}>
       <CardHeader>
-        <CardTitle className="text-xl">Estimate Breakdown</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl">Your Event Estimate</CardTitle>
+          {hasSelections && onReset && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onReset}
+              className="text-xs text-brand-ink/60 hover:text-brand-ink h-auto py-1 px-2"
+              title="Reset estimate"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Reset
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {eventProductionBase && (
-          <div>
-            <div className="text-sm font-semibold text-brand-ink/80 mb-2">Event Production Base</div>
-            <div className="flex justify-between items-start text-sm">
-              <div className="flex-1">
-                <div className="text-brand-ink">{eventProductionBase.label}</div>
-                {eventProductionBase.details && (
-                  <div className="text-xs text-brand-ink/60 mt-0.5">{eventProductionBase.details}</div>
-                )}
-              </div>
-              <div className="ml-4 font-medium">${eventProductionBase.amount.toLocaleString()}</div>
+        {serviceTypeLabel && (
+          <div className="pt-3 border-t border-brand-chrome/50">
+            <div className="flex justify-between items-center text-sm">
+              <div className="text-brand-ink/70">Service type</div>
+              <div className="text-brand-ink font-medium">{serviceTypeLabel}</div>
             </div>
           </div>
         )}
 
-        {guestCountScaling && (
-          <div>
-            <div className="text-sm font-semibold text-brand-ink/80 mb-2">Guest Count Scaling</div>
-            <div className="flex justify-between items-start text-sm">
-              <div className="flex-1">
-                <div className="text-brand-ink">{guestCountScaling.label}</div>
-                {guestCountScaling.details && (
-                  <div className="text-xs text-brand-ink/60 mt-0.5">{guestCountScaling.details}</div>
-                )}
-              </div>
-              <div className="ml-4 font-medium">${guestCountScaling.amount.toLocaleString()}</div>
+        <div className="space-y-1">
+          {barTier && (
+            <div className="text-base font-semibold text-brand-ink">
+              {barTier.name}
+            </div>
+          )}
+          <div className="text-sm text-brand-ink/70">{guestCountLabel}</div>
+          <div className="text-sm text-brand-ink/70">{durationLabel(selection?.duration)}</div>
+        </div>
+
+        {hasBar && selection?.foodPlan && (
+          <div className="pt-3 border-t border-brand-chrome/50">
+            <div className="flex justify-between items-center text-sm">
+              <div className="text-brand-ink/70">Food service</div>
+              <div className="text-brand-ink font-medium">{getFoodServiceLabel()}</div>
             </div>
           </div>
         )}
 
-        {drinkProgramItems.length > 0 && (
-          <div>
-            <div className="text-sm font-semibold text-brand-ink/80 mb-2">Drink Program</div>
-            <div className="space-y-2">
-              {drinkProgramItems.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-start text-sm">
-                  <div className="flex-1">
-                    <div className="text-brand-ink">{item.label}</div>
-                    {item.details && <div className="text-xs text-brand-ink/60 mt-0.5">{item.details}</div>}
-                  </div>
-                  <div className="ml-4 font-medium">${item.amount.toLocaleString()}</div>
-                </div>
+        {hasBar && selection?.mocktailMenu !== undefined && (
+          <div className="pt-3 border-t border-brand-chrome/50">
+            <div className="flex justify-between items-center text-sm">
+              <div className="text-brand-ink/70">Mocktail menu</div>
+              <div className="text-brand-ink font-medium">{selection.mocktailMenu ? "Included" : "Not included"}</div>
+            </div>
+          </div>
+        )}
+
+        {hasTech && getTechModulesList() && (
+          <div className="pt-3 border-t border-brand-chrome/50">
+            <div className="text-sm font-semibold text-brand-ink/80 mb-2">Tech modules</div>
+            <div className="text-sm text-brand-ink/70 space-y-1">
+              {getTechModulesList()?.map((module) => (
+                <div key={module}>✓ {module}</div>
               ))}
             </div>
           </div>
         )}
 
-        {techItems.length > 0 && (
-          <div>
-            <div className="text-sm font-semibold text-brand-ink/80 mb-2">Add-ons (Tech, satellite bar, generator, etc.)</div>
-            <div className="space-y-2">
-              {techItems.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-start text-sm">
-                  <div className="flex-1">
-                    <div className="text-brand-ink">{item.label}</div>
-                    {item.details && (
-                      <div className="text-xs text-brand-ink/60 mt-0.5">{item.details}</div>
-                    )}
-                  </div>
-                  <div className="ml-4 font-medium">${item.amount.toLocaleString()}</div>
-                </div>
+        {hasBar && barTier && (
+          <div className="pt-3 border-t border-brand-chrome/50">
+            <div className="text-sm font-semibold text-brand-ink/80 mb-2">Includes</div>
+            <div className="text-sm text-brand-ink/70 space-y-1">
+              {barTier.valueInclusions.map((item) => (
+                <div key={item}>✓ {item}</div>
+              ))}
+              <div>✓ Licensed & insured service</div>
+              <div>✓ Setup & breakdown</div>
+            </div>
+          </div>
+        )}
+
+        {guestCountIncludedItems.length > 0 && (
+          <div className="pt-3 border-t border-brand-chrome/50">
+            <div className="text-sm font-semibold text-brand-ink/80 mb-2">Included for your guest count</div>
+            <div className="text-sm text-brand-ink/70 space-y-1">
+              {guestCountIncludedItems.map((item, idx) => (
+                <div key={idx}>✓ {item.label}</div>
               ))}
             </div>
-            {quote.techSubtotal > 0 && (
-              <div className="flex justify-between items-center pt-2 mt-2 border-t border-brand-chrome">
-                <div className="text-sm font-semibold">Tech Subtotal</div>
-                <div className="font-semibold">${quote.techSubtotal.toLocaleString()}</div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {addonItems.length > 0 && (
-          <div>
-            <div className="text-sm font-semibold text-brand-ink/80 mb-2">Add-ons (Tech, satellite bar, generator, etc.)</div>
-            <div className="space-y-2">
-              {addonItems.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-start text-sm">
-                  <div className="flex-1">
-                    <div className="text-brand-ink">{item.label}</div>
-                    {item.details && (
-                      <div className="text-xs text-brand-ink/60 mt-0.5">{item.details}</div>
-                    )}
-                  </div>
-                  <div className="ml-4 font-medium">${item.amount.toLocaleString()}</div>
-                </div>
-              ))}
+            <div className="text-xs text-brand-ink/60 mt-2 italic">
+              Final staffing is confirmed after we review your timeline and layout.
             </div>
-            {quote.addonsSubtotal > 0 && (
-              <div className="flex justify-between items-center pt-2 mt-2 border-t border-brand-chrome">
-                <div className="text-sm font-semibold">Add-ons Subtotal</div>
-                <div className="font-semibold">${quote.addonsSubtotal.toLocaleString()}</div>
-              </div>
-            )}
           </div>
         )}
 
-        {quote.lineItems.length === 0 && (
-          <div className="text-sm text-brand-ink/60 text-center py-4">
-            Complete the steps to see your estimate
+        {((hasTech && selection?.djService) || selection?.customBranding) && (
+          <div className="pt-3 border-t border-brand-chrome/50">
+            <div className="text-sm font-semibold text-brand-ink/80 mb-2">Add-ons</div>
+            <div className="text-sm text-brand-ink/70 space-y-1">
+              {hasTech && selection?.djService && <div>Live DJ (${liveDjPrice})</div>}
+              {selection?.customBranding && <div>Event Branding & Custom Drinkware</div>}
+            </div>
           </div>
         )}
 
-        {showExpertNudge && (
-          <div className="pt-3 mt-3 border-t border-brand-chrome/50">
-            <p className="text-xs text-brand-ink/60 italic">
-              Based on events like this, most hosts choose a hosted bar with a classic or signature menu.
-            </p>
+        {gratuityItem && (
+          <div className="pt-3 border-t border-brand-chrome/50">
+            <div className="flex justify-between items-center text-sm">
+              <div className="text-brand-ink/70">{gratuityItem.label}</div>
+              <div className="text-brand-ink font-medium">${gratuityItem.amount.toLocaleString()}</div>
+            </div>
           </div>
         )}
 
-        {quote.estimatedTotal > 0 && (
+        {hasEstimate && (
           <div className="pt-4 mt-4 border-t-2 border-brand-sea">
-            <div className="flex justify-between items-center">
-              <div className="text-lg font-bold">Estimated Total</div>
-              <div className="text-2xl font-bold text-brand-sea">${quote.estimatedTotal.toLocaleString()}</div>
+            <div className="text-sm text-brand-ink/60 mb-1">Estimated Range</div>
+            <div className="text-2xl font-bold text-brand-sea">
+              ${quote.estimatedRange.min.toLocaleString()} – ${quote.estimatedRange.max.toLocaleString()}
             </div>
+          </div>
+        )}
+
+        {!hasEstimate && (
+          <div className="text-sm text-brand-ink/60 text-center py-4">
+            Complete the steps to see your estimate range
           </div>
         )}
 

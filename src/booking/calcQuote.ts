@@ -1,15 +1,13 @@
 // Pure pricing calculation function
 // No React, no DOM, no side effects
 
-import type { BookingSelection, PricingConfig, Quote, LineItem, BarPackage, TechPackage, Addon } from "./types";
+import type { BookingSelection, PricingConfig, Quote, LineItem, Range, BarTierConfig } from "./types";
 
 export function calculateQuote(
   selection: BookingSelection,
   config: PricingConfig
 ): Quote {
   const lineItems: LineItem[] = [];
-  let barSubtotal = 0;
-  let techSubtotal = 0;
   let addonsSubtotal = 0;
   const disclaimers: string[] = [];
 
@@ -20,142 +18,231 @@ export function calculateQuote(
 
   const hasBar = selection.serviceType === "bar" || selection.serviceType === "both";
   const hasTech = selection.serviceType === "tech" || selection.serviceType === "both";
-  
-  // Convert guest count range to approximate count for calculation
-  const getApproximateGuestCount = (range: string | null, exact: number | null): number => {
-    if (exact) return exact;
-    switch (range) {
-      case "under-40": return 30;
-      case "40-75": return 55;
-      case "75-125": return 100;
-      case "125+": return 150;
-      default: return 0;
-    }
+
+  const guestCount = selection.guestCount ?? 0;
+
+  const getBarTier = (): BarTierConfig | undefined =>
+    config.barTiers.find((tier) => tier.id === selection.barTier);
+
+  const getAveragePerGuestRange = (): Range => {
+    const totals = config.barTiers.reduce(
+      (acc, tier) => {
+        acc.min += tier.pricing.perGuestRange.min;
+        acc.max += tier.pricing.perGuestRange.max;
+        return acc;
+      },
+      { min: 0, max: 0 }
+    );
+    return {
+      min: Math.round(totals.min / config.barTiers.length),
+      max: Math.round(totals.max / config.barTiers.length),
+    };
   };
-  
-  const guestCount = getApproximateGuestCount(selection.eventBasics.guestCountRange, selection.eventBasics.guestCount);
 
-  // Calculate Bar Service
-  if (hasBar && selection.barPackage) {
-    const barPkg = config.barPackages.find((p) => p.id === selection.barPackage) as BarPackage | undefined;
-    if (barPkg) {
-      const baseFee = config.eventProductionBase?.amount || 0;
-      const guestCountFactorRate = config.guestCountScalingRate || 0;
-      const guestCountFactor = guestCount * guestCountFactorRate;
-      const drinkProgramAmount = guestCountFactor * barPkg.drinkProgramMultiplier;
+  const getDurationMultiplier = (): number => {
+    if (!selection.duration) return 1;
+    const tier = getBarTier();
+    if (tier) {
+      return tier.pricing.durationMultipliers[selection.duration];
+    }
+    const multipliers = config.barTiers.map((t) => t.pricing.durationMultipliers[selection.duration]);
+    return multipliers.reduce((sum, value) => sum + value, 0) / multipliers.length;
+  };
 
-      if (baseFee > 0) {
-        lineItems.push({
-          label: "Event Production Base",
-          amount: baseFee,
-          category: "bar",
-          details: "Planning, licensed service, travel, setup, and breakdown",
-        });
-      }
+  // Base production fee (always $800)
+  const baseRange: Range = {
+    min: config.baseProductionRange.min,
+    max: config.baseProductionRange.max,
+  };
 
-      if (guestCountFactor > 0) {
-        lineItems.push({
-          label: "Guest Count Scaling",
-          amount: guestCountFactor,
-          category: "bar",
-          details:
-            guestCount > 0
-              ? `Approx. ${guestCount} guests × $${guestCountFactorRate} guest count factor`
-              : "Scaled to staffing and volume needs",
-        });
-      }
+  // Bar pricing (only if bar service is selected)
+  let guestRange: Range = { min: 0, max: 0 };
+  if (hasBar) {
+    const perGuestRange = selection.barTier ? getBarTier()?.pricing.perGuestRange : getAveragePerGuestRange();
+    const durationMultiplier = getDurationMultiplier();
 
+    guestRange = guestCount
+      ? {
+          min: Math.round(guestCount * (perGuestRange?.min || 0) * durationMultiplier),
+          max: Math.round(guestCount * (perGuestRange?.max || 0) * durationMultiplier),
+        }
+      : { min: 0, max: 0 };
+  }
+
+  // Guest count-based included items (non-priced, for bar service only)
+  if (hasBar) {
+    if (guestCount >= 75) {
+      // At 75+, show satellite bar and additional bartender (staffing increases again)
       lineItems.push({
-        label: `Drink Program — ${barPkg.name}`,
-        amount: drinkProgramAmount,
-        category: "bar",
-        details: `Menu complexity multiplier ×${barPkg.drinkProgramMultiplier}`,
+        label: "Satellite bar included",
+        amount: 0,
+        category: "core",
+        details: "Included for your guest count",
       });
-
-      barSubtotal = baseFee + guestCountFactor + drinkProgramAmount;
+      lineItems.push({
+        label: "Additional bartender included",
+        amount: 0,
+        category: "core",
+        details: "Included for your guest count",
+      });
+    } else if (guestCount >= 50) {
+      // At 50-74, show additional bartender
+      lineItems.push({
+        label: "Additional bartender included",
+        amount: 0,
+        category: "core",
+        details: "Included for your guest count",
+      });
     }
   }
 
-  // Calculate Tech Service
-  if (hasTech && selection.techPackage) {
-    const techPkg = config.techPackages.find((p) => p.id === selection.techPackage) as TechPackage | undefined;
-    if (techPkg) {
-      techSubtotal = techPkg.flatFee;
+  const travelMultiplier = selection.travelType
+    ? config.travelRangeMultiplier[selection.travelType]
+    : 1;
+
+  let estimatedRange: Range = {
+    min: Math.round((baseRange.min + guestRange.min) * travelMultiplier),
+    max: Math.round((baseRange.max + guestRange.max) * travelMultiplier),
+  };
+
+  // Tech modules (only if tech service is selected)
+  if (hasTech && selection.techModules) {
+    if (selection.techModules.starlinkWifi) {
+      const amount = 100;
       lineItems.push({
-        label: techPkg.name,
-        amount: techPkg.flatFee,
-        category: "tech",
-        details: "Flat fee",
+        label: "Starlink WiFi",
+        amount,
+        category: "addon",
       });
+      addonsSubtotal += amount;
+      estimatedRange = {
+        min: estimatedRange.min + amount,
+        max: estimatedRange.max + amount,
+      };
+    }
+
+    if (selection.techModules.tvDisplay) {
+      const amount = 75;
+      lineItems.push({
+        label: "TV / Display setup",
+        amount,
+        category: "addon",
+      });
+      addonsSubtotal += amount;
+      estimatedRange = {
+        min: estimatedRange.min + amount,
+        max: estimatedRange.max + amount,
+      };
+    }
+
+    if (selection.techModules.soundMic) {
+      const amount = 150;
+      lineItems.push({
+        label: "Bose PA + Wireless Mic",
+        amount,
+        category: "addon",
+      });
+      addonsSubtotal += amount;
+      estimatedRange = {
+        min: estimatedRange.min + amount,
+        max: estimatedRange.max + amount,
+      };
     }
   }
 
-  // Calculate Add-ons
-  if (selection.addons.length > 0) {
-    selection.addons.forEach((addonId) => {
-      const addon = config.addons.find((a) => a.id === addonId) as Addon | undefined;
-      if (!addon) return;
+  // Mocktail menu (stored but not priced for now)
+  // If pricing is needed later, add it here as a flat fee
 
-      // Check availability based on service type
-      const isAvailable =
-        addon.availability === "both" ||
-        (addon.availability === "bar" && hasBar) ||
-        (addon.availability === "tech" && hasTech);
+  // DJ Service (only if tech is included - defensive check)
+  if (hasTech && selection.djService) {
+    let djRange: Range = { min: 400, max: 600 };
+    if (selection.duration === "2-3") djRange = { min: 400, max: 400 };
+    if (selection.duration === "4-5") djRange = { min: 500, max: 500 };
+    if (selection.duration === "6+") djRange = { min: 600, max: 600 };
 
-      if (!isAvailable) return;
-
-      let addonAmount = 0;
-
-      switch (addon.pricingType) {
-        case "flat":
-          addonAmount = addon.amount;
-          lineItems.push({
-            label: addon.name,
-            amount: addonAmount,
-            category: "addon",
-            details: "Flat fee",
-          });
-          break;
-
-        case "perPerson":
-          addonAmount = guestCount * addon.amount;
-          if (addonAmount > 0) {
-            lineItems.push({
-              label: addon.name,
-              amount: addonAmount,
-              category: "addon",
-              details: `${guestCount} guests × $${addon.amount}/person`,
-            });
-          }
-          break;
-
-        case "percent":
-          // Percentage of bar subtotal (if bar is selected)
-          if (hasBar && barSubtotal > 0) {
-            addonAmount = Math.round((barSubtotal * addon.amount) / 100);
-            lineItems.push({
-              label: addon.name,
-              amount: addonAmount,
-              category: "addon",
-              details: `${addon.amount}% of bar service`,
-            });
-          }
-          break;
-      }
-
-      addonsSubtotal += addonAmount;
+    const djAmount = Math.round((djRange.min + djRange.max) / 2);
+    lineItems.push({
+      label: "Live DJ",
+      amount: djAmount,
+      category: "addon",
+      details: selection.duration ? undefined : "Range based on duration",
     });
+    addonsSubtotal += djAmount;
+    estimatedRange = {
+      min: estimatedRange.min + djRange.min,
+      max: estimatedRange.max + djRange.max,
+    };
   }
 
-  const estimatedTotal = barSubtotal + techSubtotal + addonsSubtotal;
+  // Custom Branding (available for all service types)
+  if (selection.customBranding) {
+    const brandingRange: Range = { min: 250, max: 350 };
+    lineItems.push({
+      label: "Event Branding & Custom Drinkware",
+      amount: 300,
+      category: "addon",
+    });
+    addonsSubtotal += 300;
+    estimatedRange = {
+      min: estimatedRange.min + brandingRange.min,
+      max: estimatedRange.max + brandingRange.max,
+    };
+  }
+
+  // Determine if we have enough pricing signals
+  const hasPricingSignal =
+    selection.serviceType !== null &&
+    (hasBar ? (selection.guestCount !== null && selection.barTier !== null) : true) &&
+    selection.duration !== null &&
+    selection.travelType !== null;
+
+  // Add padding if key signals are missing
+  if (!hasPricingSignal) {
+    estimatedRange = { min: 0, max: 0 };
+  } else {
+    const missingSignals: string[] = [];
+    if (hasBar && !selection.barTier) missingSignals.push("barTier");
+    if (hasBar && !selection.guestCount) missingSignals.push("guestCount");
+    if (!selection.duration) missingSignals.push("duration");
+    if (!selection.travelType) missingSignals.push("travelType");
+
+    if (missingSignals.length > 0) {
+      let padding = config.defaultRangePadding;
+      if (missingSignals.includes("barTier")) padding += 180;
+      if (missingSignals.includes("guestCount")) padding += 180;
+      if (missingSignals.includes("duration")) padding += 140;
+      if (missingSignals.includes("travelType")) padding += 80;
+      estimatedRange = {
+        min: Math.max(0, estimatedRange.min - padding),
+        max: estimatedRange.max + padding,
+      };
+    }
+  }
+
+  // Calculate gratuity: fixed 20% of the full estimate subtotal (before gratuity)
+  // The estimatedRange at this point represents the full subtotal (base + guest costs + tech + add-ons + travel)
+  if (hasPricingSignal && estimatedRange.min > 0) {
+    const gratuityMin = Math.round(estimatedRange.min * 0.2);
+    const gratuityMax = Math.round(estimatedRange.max * 0.2);
+    const gratuityAmount = Math.round((gratuityMin + gratuityMax) / 2);
+    
+    lineItems.push({
+      label: "Gratuity (20%)",
+      amount: gratuityAmount,
+      category: "addon",
+    });
+    
+    // Add gratuity to the final estimated range
+    estimatedRange = {
+      min: estimatedRange.min + gratuityMin,
+      max: estimatedRange.max + gratuityMax,
+    };
+  }
 
   return {
     lineItems,
-    barSubtotal,
-    techSubtotal,
+    estimatedRange,
     addonsSubtotal,
-    estimatedTotal,
     disclaimers,
-    minSpendApplied: undefined,
   };
 }

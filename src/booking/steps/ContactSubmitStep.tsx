@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import type { BookingSelection } from "../types";
@@ -7,25 +7,44 @@ interface ContactSubmitStepProps {
   value: BookingSelection["contact"];
   onChange: (value: BookingSelection["contact"]) => void;
   onSubmit: () => void;
-  isSubmitting: boolean;
 }
 
-export function ContactSubmitStep({ value, onChange, onSubmit, isSubmitting }: ContactSubmitStepProps) {
+const MIN_DATE = "2026-04-07";
+
+export function ContactSubmitStep({ value, onChange, onSubmit }: ContactSubmitStepProps) {
+  const [dateError, setDateError] = useState<string>("");
+
   const updateField = (field: keyof typeof value, newValue: string) => {
+    if (field === "eventDate") {
+      // Validate date is on or after 2026-04-07
+      if (newValue && newValue < MIN_DATE) {
+        setDateError("We're currently booking events starting April 7, 2026.");
+      } else {
+        setDateError("");
+      }
+    }
     onChange({ ...value, [field]: newValue });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Final validation before submit
+    if (value.eventDate && value.eventDate < MIN_DATE) {
+      setDateError("We're currently booking events starting April 7, 2026.");
+      return;
+    }
+    if (dateError) {
+      return;
+    }
     onSubmit();
   };
 
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-2xl font-bold mb-2">Contact information</h3>
-        <p className="text-brand-ink/70 text-sm">We'll use this to confirm availability and finalize your quote.</p>
-        <p className="text-xs text-brand-ink/60 mt-2">No payment required • Availability confirmed after submission</p>
+        <h3 className="text-2xl font-bold mb-2">Check availability</h3>
+        <p className="text-brand-ink/70 text-sm">We’ll use this to confirm your date and finalize the estimate.</p>
+        <p className="text-xs text-brand-ink/60 mt-2">No payment required • Takes about 30 seconds</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -62,6 +81,23 @@ export function ContactSubmitStep({ value, onChange, onSubmit, isSubmitting }: C
             onChange={(e) => updateField("phone", e.target.value)}
             required
           />
+        </div>
+        <div>
+          <label htmlFor="eventDate" className="block text-sm font-medium mb-2">
+            Event date <span className="text-brand-rust">*</span>
+          </label>
+          <Input
+            id="eventDate"
+            type="date"
+            value={value.eventDate}
+            onChange={(e) => updateField("eventDate", e.target.value)}
+            min={MIN_DATE}
+            required
+            className={dateError ? "border-brand-rust" : ""}
+          />
+          {dateError && (
+            <p className="text-sm text-brand-rust mt-1">{dateError}</p>
+          )}
         </div>
         <div>
           <label htmlFor="bestTimeToContact" className="block text-sm font-medium mb-2">

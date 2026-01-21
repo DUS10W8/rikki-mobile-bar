@@ -7,10 +7,10 @@ interface GuestCountRangeStepProps {
 }
 
 const guestRanges = [
-  { id: "under-40", label: "Under 40", description: "We’ll scale staffing appropriately." },
-  { id: "40-75", label: "40–75", description: "Helps right-size service speed." },
-  { id: "75-125", label: "75–125", description: "Ensures bar flow stays balanced." },
-  { id: "125+", label: "125+", description: "We’ll staff and stock for volume." },
+  { id: "lt-50", label: "<50", description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "50-100", label: "50–100", description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "100-150", label: "100–150", description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "150-plus", label: "150+", description: "Staffing and preparation scale with guest count to maintain service quality." },
 ];
 
 export function GuestCountRangeStep({ value, onChange }: GuestCountRangeStepProps) {
@@ -19,7 +19,7 @@ export function GuestCountRangeStep({ value, onChange }: GuestCountRangeStepProp
       <div>
         <h3 className="text-2xl font-bold mb-2">Estimated guest count</h3>
         <p className="text-brand-ink/70 text-sm">
-          Select a range so we can scale staffing and volume. No need to be exact—this just guides the estimate.
+          Staffing and preparation scale with guest count to maintain service quality.
         </p>
       </div>
       <div className="grid gap-4">

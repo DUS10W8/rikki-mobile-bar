@@ -10,4 +10,8 @@ export default defineConfig({
     },
   },
   base: "/",
+  server: {
+    host: true, // Allow access from network
+    port: 5173,
+  },
 });

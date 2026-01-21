@@ -30,8 +30,8 @@ export function ServiceTypeStep({ value, onChange, config }: ServiceTypeStepProp
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-2xl font-bold mb-2">Service type</h3>
-        <p className="text-brand-ink/70 text-sm">Select the service type that best fits your event.</p>
+        <h3 className="text-2xl font-bold mb-2">Which services are you looking for?</h3>
+        <p className="text-brand-ink/70 text-sm">Select the services you need for your event.</p>
       </div>
       <div className="grid gap-4">
         {options.map((option) => (
@@ -55,11 +55,6 @@ export function ServiceTypeStep({ value, onChange, config }: ServiceTypeStepProp
               <CardContent className="p-6">
                 <div className="font-bold text-lg mb-2">{option.label}</div>
                 <div className="text-sm text-brand-ink/70">{option.description}</div>
-                {option.type === "tech" && (
-                  <div className="mt-2 text-xs text-brand-ink/60 italic">
-                    Hosting an event without alcohol? We've got you.
-                  </div>
-                )}
               </CardContent>
             </Card>
           </button>
