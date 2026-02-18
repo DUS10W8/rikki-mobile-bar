@@ -1,0 +1,68 @@
+import type { GalleryItem } from "../components/ui/Gallery";
+
+export const galleryItems: GalleryItem[] = [
+  {
+    id: "beer-pour",
+    alt: "Beer Pour",
+    preview: "/gallery/beer-pour-800.jpg",
+    full: "/gallery/beer-pour-1600.jpg",
+    webpSet: "/gallery/beer-pour-800.webp 800w, /gallery/beer-pour-1200.webp 1200w, /gallery/beer-pour-1600.webp 1600w",
+    jpgSet: "/gallery/beer-pour-800.jpg 800w, /gallery/beer-pour-1200.jpg 1200w, /gallery/beer-pour-1600.jpg 1600w",
+  },
+  {
+    id: "cocktails-trio",
+    alt: "Cocktails Trio",
+    preview: "/gallery/cocktails-trio-800.jpg",
+    full: "/gallery/cocktails-trio-1600.jpg",
+    webpSet: "/gallery/cocktails-trio-800.webp 800w, /gallery/cocktails-trio-1200.webp 1200w, /gallery/cocktails-trio-1600.webp 1600w",
+    jpgSet: "/gallery/cocktails-trio-800.jpg 800w, /gallery/cocktails-trio-1200.jpg 1200w, /gallery/cocktails-trio-1600.jpg 1600w",
+  },
+  {
+    id: "dance-party-van",
+    alt: "Dance Party Van",
+    preview: "/gallery/dance-party-van-800.jpg",
+    full: "/gallery/dance-party-van-1600.jpg",
+    webpSet: "/gallery/dance-party-van-800.webp 800w, /gallery/dance-party-van-1200.webp 1200w, /gallery/dance-party-van-1600.webp 1600w",
+    jpgSet: "/gallery/dance-party-van-800.jpg 800w, /gallery/dance-party-van-1200.jpg 1200w, /gallery/dance-party-van-1600.jpg 1600w",
+  },
+  {
+    id: "friends-at-van",
+    alt: "Friends At Van",
+    preview: "/gallery/friends-at-van-800.jpg",
+    full: "/gallery/friends-at-van-1600.jpg",
+    webpSet: "/gallery/friends-at-van-800.webp 800w, /gallery/friends-at-van-1200.webp 1200w, /gallery/friends-at-van-1600.webp 1600w",
+    jpgSet: "/gallery/friends-at-van-800.jpg 800w, /gallery/friends-at-van-1200.jpg 1200w, /gallery/friends-at-van-1600.jpg 1600w",
+  },
+  {
+    id: "game-night-van",
+    alt: "Game Night Van",
+    preview: "/gallery/game-night-van-800.jpg",
+    full: "/gallery/game-night-van-1600.jpg",
+    webpSet: "/gallery/game-night-van-800.webp 800w, /gallery/game-night-van-1200.webp 1200w, /gallery/game-night-van-1600.webp 1600w",
+    jpgSet: "/gallery/game-night-van-800.jpg 800w, /gallery/game-night-van-1200.jpg 1200w, /gallery/game-night-van-1600.jpg 1600w",
+  },
+  {
+    id: "margarita-and-iced-tea",
+    alt: "Margarita And Iced Tea",
+    preview: "/gallery/margarita-and-iced-tea-800.jpg",
+    full: "/gallery/margarita-and-iced-tea-1600.jpg",
+    webpSet: "/gallery/margarita-and-iced-tea-800.webp 800w, /gallery/margarita-and-iced-tea-1200.webp 1200w, /gallery/margarita-and-iced-tea-1600.webp 1600w",
+    jpgSet: "/gallery/margarita-and-iced-tea-800.jpg 800w, /gallery/margarita-and-iced-tea-1200.jpg 1200w, /gallery/margarita-and-iced-tea-1600.jpg 1600w",
+  },
+  {
+    id: "shaken-pour",
+    alt: "Shaken Pour",
+    preview: "/gallery/shaken-pour-800.jpg",
+    full: "/gallery/shaken-pour-1600.jpg",
+    webpSet: "/gallery/shaken-pour-800.webp 800w, /gallery/shaken-pour-1200.webp 1200w, /gallery/shaken-pour-1600.webp 1600w",
+    jpgSet: "/gallery/shaken-pour-800.jpg 800w, /gallery/shaken-pour-1200.jpg 1200w, /gallery/shaken-pour-1600.jpg 1600w",
+  },
+  {
+    id: "taps-and-cocktails",
+    alt: "Taps And Cocktails",
+    preview: "/gallery/taps-and-cocktails-800.jpg",
+    full: "/gallery/taps-and-cocktails-1600.jpg",
+    webpSet: "/gallery/taps-and-cocktails-800.webp 800w, /gallery/taps-and-cocktails-1200.webp 1200w, /gallery/taps-and-cocktails-1600.webp 1600w",
+    jpgSet: "/gallery/taps-and-cocktails-800.jpg 800w, /gallery/taps-and-cocktails-1200.jpg 1200w, /gallery/taps-and-cocktails-1600.jpg 1600w",
+  },
+];

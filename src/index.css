@@ -1,0 +1,51 @@
+@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700;800;900&display=swap");
+
+/* Tailwind v4: define design tokens here */
+@theme {
+  /* colors */
+  --color-brand-primary: #EADFC6;   /* parchment page bg */
+  --color-brand-parchment: #EADFC6;
+  --color-brand-chrome: #C9C9C9;    /* light borders */
+  --color-brand-ink: #141414;       /* main text */
+  --color-brand-sea: #2E9B8A;       /* teal accent */
+  --color-brand-rust: #B96B4D;      /* copper accent */
+
+  /* fonts */
+  --font-heading: "Playfair Display", serif;
+  --font-body: Inter, system-ui, sans-serif;
+}
+
+/* --- Chrome-like border utility --- */
+.chrome-border {
+  border: 1px solid transparent;
+  border-image: linear-gradient(90deg, #c9c9c9, #ffffff 35%, #ffffff 65%, #c9c9c9) 1;
+  border-radius: 1.5rem; /* matches rounded-3xl */
+}
+
+/* Base */
+:root { color-scheme: light; }
+html, body, #root { height: 100%; }
+
+body {
+  @apply bg-brand-primary text-brand-ink font-body antialiased;
+}
+
+h1, h2, h3, h4 { @apply font-heading tracking-tight; }
+
+a { @apply text-brand-sea; }
+a:hover { @apply opacity-90; }
+
+:focus-visible { @apply outline-none ring-2 ring-brand-sea/70 ring-offset-2 ring-offset-white; }
+html { scroll-behavior: smooth; }
+
+.container-max { @apply max-w-6xl mx-auto px-4; }
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
