@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const distDir = path.join(rootDir, "dist");
 const sourceIndex = path.join(distDir, "index.html");
-const spaRoutes = ["tip", "order", "privacy", "terms"];
+const spaRoutes = ["tip", "order", "privacy", "terms", "bartender"];
 
 for (const route of spaRoutes) {
   const routeDir = path.join(distDir, route);
