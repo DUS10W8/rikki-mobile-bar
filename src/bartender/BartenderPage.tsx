@@ -265,11 +265,12 @@ function KitchenOrderCard({
 }) {
   const style = getStatusCardStyle(order.status);
   const actions = getOrderActions(order.status);
+  const isCompactCard = order.status === "Ready" || order.status === "Completed";
 
   return (
-    <article className={`flex min-h-[360px] flex-col overflow-hidden rounded-xl border shadow-sm ${style.card}`}>
+    <article className={`flex flex-col overflow-hidden rounded-xl border shadow-sm ${isCompactCard ? "" : "min-h-[360px]"} ${style.card}`}>
       <div className={`h-2 ${style.bar}`} />
-      <div className="flex flex-1 flex-col p-4">
+      <div className={`flex flex-1 flex-col ${isCompactCard ? "p-3" : "p-4"}`}>
         <div className="grid gap-2">
           <div className="flex items-start justify-between gap-3">
             <h2 className="min-w-0 flex-1 text-2xl font-black leading-tight text-slate-950">{order.name}</h2>
@@ -286,7 +287,7 @@ function KitchenOrderCard({
         </div>
 
         {actions.length > 0 && (
-          <div className="mt-auto grid gap-2 pt-4">
+          <div className={`grid gap-2 ${isCompactCard ? "pt-3" : "mt-auto pt-4"}`}>
             {actions.map((action) => (
               <ActionButton
                 key={action.status}
@@ -300,8 +301,8 @@ function KitchenOrderCard({
         )}
 
         {smsMessage && (
-          <p className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700">
-            <CheckCircle2 className="h-4 w-4" />
+          <p className="mt-2 flex items-center gap-1.5 rounded-md bg-emerald-50/70 px-2.5 py-1.5 text-xs font-bold text-emerald-700">
+            <CheckCircle2 className="h-3.5 w-3.5" />
             {smsMessage}
           </p>
         )}
