@@ -137,11 +137,13 @@ export default function OrderPage() {
     <OrderShell>
       <main className="mx-auto max-w-md px-4 pb-32 pt-5">
         <header className="mb-6 overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/88 shadow-[0_24px_70px_rgba(46,46,46,0.12)] backdrop-blur">
-          <img
-            src={`${BASE}tip/path16.png`}
-            alt={BAR_NAME}
-            className="h-48 max-h-60 w-full rounded-b-3xl object-cover"
-          />
+          <div className="bg-[#fffaf2] px-4 pb-3 pt-4">
+            <img
+              src={`${BASE}tip/path16.png`}
+              alt={BAR_NAME}
+              className="mx-auto h-auto w-full rounded-b-3xl object-contain"
+            />
+          </div>
           <div className="p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-brand-chrome bg-brand-ink text-white shadow-[0_10px_24px_rgba(20,20,20,0.18)]">

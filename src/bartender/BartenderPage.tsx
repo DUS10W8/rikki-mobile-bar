@@ -121,29 +121,29 @@ export default function BartenderPage() {
     return (
       <BartenderShell>
         <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-8">
-          <form onSubmit={unlock} className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+          <form onSubmit={unlock} className="rounded-2xl border border-brand-chrome bg-[#fffaf2]/90 p-6 shadow-[0_24px_70px_rgba(46,46,46,0.12)] backdrop-blur">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-950 text-white">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-chrome bg-brand-ink text-white shadow-[0_10px_24px_rgba(20,20,20,0.18)]">
                 <LockKeyhole className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">Rikki's Mobile Bar</p>
-                <h1 className="text-3xl font-black text-slate-950">Bartender</h1>
+                <p className="text-sm font-bold uppercase tracking-wide text-brand-sea">Rikki's Mobile Bar</p>
+                <h1 className="font-heading text-3xl font-black text-brand-ink">Bartender</h1>
               </div>
             </div>
             <label className="mt-6 grid gap-2">
-              <span className="text-sm font-bold text-slate-700">PIN</span>
+              <span className="text-sm font-bold text-brand-ink/70">PIN</span>
               <input
                 value={pin}
                 onChange={(event) => setPin(event.target.value)}
-                className="min-h-12 rounded-lg border border-slate-300 px-4 text-lg font-bold text-slate-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                className="min-h-12 rounded-2xl border border-brand-chrome bg-[#fffaf2] px-4 text-lg font-bold text-brand-ink outline-none focus:border-brand-sea focus:ring-2 focus:ring-brand-sea/20"
                 inputMode="numeric"
                 type="password"
                 autoComplete="current-password"
               />
             </label>
             {pinError && <Alert>{pinError}</Alert>}
-            <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 font-black text-white">
+            <button className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink px-5 py-3 font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)]">
               <ShieldCheck className="h-5 w-5" />
               Unlock queue
             </button>
@@ -158,16 +158,16 @@ export default function BartenderPage() {
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-5">
         <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-950 text-white">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-brand-chrome bg-brand-ink text-white shadow-[0_10px_24px_rgba(20,20,20,0.18)]">
               <Martini className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">Live queue</p>
-              <h1 className="text-3xl font-black text-slate-950">Bartender dashboard</h1>
+              <p className="text-sm font-bold uppercase tracking-wide text-brand-sea">Live queue</p>
+              <h1 className="font-heading text-3xl font-black text-brand-ink">Bartender dashboard</h1>
             </div>
           </div>
           <button
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 font-bold text-slate-700 shadow-sm"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-brand-chrome bg-[#fffaf2]/90 px-4 font-bold text-brand-ink shadow-sm"
             onClick={() => loadOrders({ setOrders, setLoading, setError })}
             type="button"
           >
@@ -240,10 +240,10 @@ export default function BartenderPage() {
 function BoardHeader({ title, count, tone = "default" }: { title: string; count: number; tone?: "default" | "ready" }) {
   return (
     <div className="mb-3 flex items-center justify-between">
-      <h2 className={`text-sm font-black uppercase tracking-wide ${tone === "ready" ? "text-emerald-700" : "text-slate-500"}`}>
+      <h2 className={`font-heading text-xl font-black ${tone === "ready" ? "text-brand-sea" : "text-brand-ink"}`}>
         {title}
       </h2>
-      <span className={`rounded-full px-2.5 py-1 text-xs font-black ${tone === "ready" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>
+      <span className={`rounded-full border px-2.5 py-1 text-xs font-black ${tone === "ready" ? "border-brand-sea/25 bg-brand-sea/10 text-brand-sea" : "border-brand-chrome bg-[#fffaf2]/90 text-brand-ink/65"}`}>
         {count}
       </span>
     </div>
@@ -273,16 +273,16 @@ function KitchenOrderCard({
       <div className={`flex flex-1 flex-col ${isCompactCard ? "p-3" : "p-4"}`}>
         <div className="grid gap-2">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="min-w-0 flex-1 text-2xl font-black leading-tight text-slate-950">{order.name}</h2>
-            <span className="shrink-0 pt-1 text-xs font-black text-slate-400">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
+            <h2 className="min-w-0 flex-1 font-heading text-2xl font-black leading-tight text-brand-ink">{order.name}</h2>
+            <span className="shrink-0 pt-1 text-xs font-black text-brand-ink/45">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
           </div>
           <div className="flex items-start justify-between gap-3">
-            <p className="min-w-0 flex-1 text-lg font-bold leading-snug text-slate-700">{order.drink}</p>
-            {loading ? <Loader2 className="h-5 w-5 animate-spin text-slate-500" /> : <StatusBadge status={order.status} />}
+            <p className="min-w-0 flex-1 text-lg font-bold leading-snug text-brand-ink/72">{order.drink}</p>
+            {loading ? <Loader2 className="h-5 w-5 animate-spin text-brand-ink/55" /> : <StatusBadge status={order.status} />}
           </div>
         </div>
 
-        <div className="mt-4 rounded-lg bg-white/70 px-3 py-2 text-sm font-black uppercase tracking-wide text-slate-400">
+        <div className="mt-4 rounded-xl border border-brand-chrome/60 bg-[#fffaf2]/70 px-3 py-2 text-sm font-black uppercase tracking-wide text-brand-ink/45">
           #{shortOrderId(order.id)}
         </div>
 
@@ -301,7 +301,7 @@ function KitchenOrderCard({
         )}
 
         {smsMessage && (
-          <p className="mt-2 flex items-center gap-1.5 rounded-md bg-emerald-50/70 px-2.5 py-1.5 text-xs font-bold text-emerald-700">
+          <p className="mt-2 flex items-center gap-1.5 rounded-md bg-brand-sea/10 px-2.5 py-1.5 text-xs font-bold text-brand-sea">
             <CheckCircle2 className="h-3.5 w-3.5" />
             {smsMessage}
           </p>
@@ -323,9 +323,9 @@ function ActionButton({
   onClick: () => void;
 }) {
   const classes = {
-    default: "bg-slate-950 text-white hover:bg-slate-800",
-    ready: "bg-emerald-700 text-white hover:bg-emerald-800",
-    complete: "bg-slate-100 text-slate-950 hover:bg-slate-200",
+    default: "bg-brand-ink text-white hover:bg-[#242424]",
+    ready: "bg-brand-sea text-white hover:bg-[#257d70]",
+    complete: "border border-brand-chrome bg-[#f3ece2] text-brand-ink hover:bg-[#ece2d6]",
   };
 
   return (
@@ -333,7 +333,7 @@ function ActionButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`min-h-16 w-full rounded-lg px-5 text-xl font-black shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none ${classes[tone]}`}
+      className={`min-h-14 w-full rounded-2xl px-5 text-lg font-black shadow-sm transition disabled:cursor-not-allowed disabled:bg-brand-chrome disabled:text-brand-ink/45 disabled:shadow-none ${classes[tone]}`}
     >
       {label}
     </button>
@@ -360,16 +360,20 @@ function getOrderActions(status: OrderStatus) {
 }
 
 function BartenderShell({ children }: { children: ReactNode }) {
-  return <div className="min-h-screen bg-[#f8faf8] text-slate-950">{children}</div>;
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#fffaf2_0%,_#eadfc6_52%,_#e2d2b8_100%)] text-brand-ink">
+      {children}
+    </div>
+  );
 }
 
 function Alert({ children }: { children: ReactNode }) {
-  return <div className="my-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{children}</div>;
+  return <div className="my-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{children}</div>;
 }
 
 function Loading({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-600">
+    <div className="flex items-center gap-2 rounded-2xl border border-brand-chrome bg-[#fffaf2]/90 px-4 py-3 text-brand-ink/65">
       <Loader2 className="h-4 w-4 animate-spin" />
       {label}
     </div>
@@ -378,7 +382,7 @@ function Loading({ label }: { label: string }) {
 
 function EmptyState({ children }: { children: ReactNode }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-4 py-6 font-bold text-slate-500">
+    <div className="flex items-center gap-2 rounded-2xl border border-dashed border-brand-chrome bg-[#fffaf2]/70 px-4 py-6 font-bold text-brand-ink/55">
       <Clock3 className="h-5 w-5" />
       {children}
     </div>
@@ -387,10 +391,10 @@ function EmptyState({ children }: { children: ReactNode }) {
 
 function StatusBadge({ status }: { status: OrderStatus }) {
   const classes: Record<OrderStatus, string> = {
-    New: "bg-slate-100 text-slate-700",
-    "In Progress": "bg-yellow-100 text-yellow-800",
-    Ready: "bg-emerald-100 text-emerald-800",
-    Completed: "bg-slate-100 text-slate-400",
+    New: "border border-brand-chrome bg-[#fffaf2] text-brand-ink/70",
+    "In Progress": "border border-[#d6bd7b]/40 bg-[#f5edda] text-[#715d2b]",
+    Ready: "border border-brand-sea/25 bg-brand-sea/10 text-brand-sea",
+    Completed: "border border-brand-chrome bg-[#eee6da] text-brand-ink/35",
   };
 
   return <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${classes[status]}`}>{status}</span>;
@@ -399,20 +403,20 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 function getStatusCardStyle(status: OrderStatus) {
   const styles: Record<OrderStatus, { card: string; bar: string }> = {
     New: {
-      card: "border-slate-200 bg-white",
-      bar: "bg-slate-200",
+      card: "border-brand-chrome bg-[#fffaf2]/94 shadow-[0_14px_36px_rgba(46,46,46,0.08)]",
+      bar: "bg-brand-ink",
     },
     "In Progress": {
-      card: "border-yellow-200 bg-yellow-50/70",
-      bar: "bg-yellow-300",
+      card: "border-[#d8c48b]/60 bg-[#fff7e6]/94 shadow-[0_14px_36px_rgba(46,46,46,0.08)]",
+      bar: "bg-[#b49a54]",
     },
     Ready: {
-      card: "border-emerald-200 bg-emerald-50/70",
-      bar: "bg-emerald-400",
+      card: "border-brand-sea/25 bg-[#f4fbf7]/94 shadow-[0_12px_30px_rgba(46,46,46,0.07)]",
+      bar: "bg-brand-sea",
     },
     Completed: {
-      card: "border-slate-200 bg-slate-50 opacity-55",
-      bar: "bg-slate-200",
+      card: "border-brand-chrome bg-[#eee6da]/80 opacity-55",
+      bar: "bg-brand-chrome",
     },
   };
 
