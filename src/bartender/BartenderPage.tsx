@@ -35,7 +35,6 @@ export default function BartenderPage() {
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [smsState, setSmsState] = useState<Record<string, string>>({});
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authorized) return undefined;
@@ -56,21 +55,7 @@ export default function BartenderPage() {
     };
   }, [authorized]);
 
-  const selectedOrder = useMemo(
-    () => orders.find((order) => order.id === selectedOrderId) || orders[0] || null,
-    [orders, selectedOrderId]
-  );
-
-  useEffect(() => {
-    if (!orders.length) {
-      setSelectedOrderId(null);
-      return;
-    }
-
-    if (!selectedOrderId || !orders.some((order) => order.id === selectedOrderId)) {
-      setSelectedOrderId(orders[0].id);
-    }
-  }, [orders, selectedOrderId]);
+  const sortedOrders = useMemo(() => [...orders], [orders]);
 
   const unlock = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -182,34 +167,24 @@ export default function BartenderPage() {
         {error && <Alert>{error}</Alert>}
         {loading && <Loading label="Loading order queue" />}
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(360px,1.08fr)] lg:items-start">
-          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-            <div className="mb-3 flex items-center justify-between px-1">
-              <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">Incoming orders</h2>
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{orders.length}</span>
-            </div>
-            <div className="grid max-h-[68vh] gap-2 overflow-y-auto pr-1">
-              {orders.map((order) => (
-                <OrderListCard
-                  key={order.id}
-                  order={order}
-                  selected={selectedOrder?.id === order.id}
-                  loading={updatingId === order.id}
-                  onSelect={() => setSelectedOrderId(order.id)}
-                />
-              ))}
-              {!loading && orders.length === 0 && <EmptyState>No drink orders yet.</EmptyState>}
-            </div>
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">Orders</h2>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{sortedOrders.length}</span>
           </div>
 
-          <div className="lg:sticky lg:top-4">
-            <OrderDetail
-              order={selectedOrder}
-              disabled={updatingId !== null}
-              loading={selectedOrder ? updatingId === selectedOrder.id : false}
-              smsMessage={selectedOrder ? smsState[selectedOrder.id] : ""}
-              onStatusChange={(status) => selectedOrder && updateStatus(selectedOrder, status)}
-            />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {sortedOrders.map((order) => (
+              <KitchenOrderCard
+                key={order.id}
+                order={order}
+                disabled={updatingId !== null}
+                loading={updatingId === order.id}
+                smsMessage={smsState[order.id]}
+                onStatusChange={(status) => updateStatus(order, status)}
+              />
+            ))}
+            {!loading && sortedOrders.length === 0 && <EmptyState>No drink orders yet.</EmptyState>}
           </div>
         </section>
       </main>
@@ -217,86 +192,41 @@ export default function BartenderPage() {
   );
 }
 
-function OrderListCard({
-  order,
-  selected,
-  loading,
-  onSelect,
-}: {
-  order: BartenderOrder;
-  selected: boolean;
-  loading: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`w-full rounded-lg border p-3 text-left shadow-sm transition ${
-        selected ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-950 hover:border-slate-300"
-      } ${order.status === "Completed" && !selected ? "opacity-55" : ""}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className={`truncate text-lg font-black ${selected ? "text-white" : "text-slate-950"}`}>{order.name}</p>
-          <p className={`line-clamp-1 text-sm font-bold ${selected ? "text-white/80" : "text-slate-600"}`}>{order.drink}</p>
-          <p className={`mt-1 text-xs ${selected ? "text-white/55" : "text-slate-400"}`}>
-            {order.created_at ? formatOrderTime(order.created_at) : "No time"}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <StatusBadge status={order.status} />
-          {loading && <Loader2 className={`h-4 w-4 animate-spin ${selected ? "text-white" : "text-slate-500"}`} />}
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function OrderDetail({
+function KitchenOrderCard({
   order,
   disabled,
   loading,
   smsMessage,
   onStatusChange,
 }: {
-  order: BartenderOrder | null;
+  order: BartenderOrder;
   disabled: boolean;
   loading: boolean;
   smsMessage?: string;
   onStatusChange: (status: OrderStatus) => void;
 }) {
-  if (!order) {
-    return <EmptyState>Select an order to view details.</EmptyState>;
-  }
+  const style = getStatusCardStyle(order.status);
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+    <article className={`flex min-h-[360px] flex-col overflow-hidden rounded-xl border shadow-sm ${style.card}`}>
+      <div className={`h-2 ${style.bar}`} />
+      <div className="flex flex-1 flex-col p-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-black uppercase tracking-wide text-slate-400">Active order</p>
-          <h2 className="mt-1 text-3xl font-black leading-tight text-slate-950">{order.name}</h2>
-          <p className="mt-1 text-xl font-bold text-slate-700">{order.drink}</p>
+          <h2 className="truncate text-2xl font-black leading-tight text-slate-950">{order.name}</h2>
+          <p className="mt-1 line-clamp-2 text-lg font-bold leading-snug text-slate-700">{order.drink}</p>
         </div>
-        {loading ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-slate-500" /> : <StatusBadge status={order.status} />}
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className="text-xs font-black text-slate-400">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
+          {loading ? <Loader2 className="h-5 w-5 animate-spin text-slate-500" /> : <StatusBadge status={order.status} />}
+        </div>
       </div>
 
-      <dl className="grid grid-cols-2 gap-3 py-4 text-sm">
-        <div className="rounded-lg bg-slate-50 p-3">
-          <dt className="font-black uppercase tracking-wide text-slate-400">Status</dt>
-          <dd className="mt-1 font-bold text-slate-900">{order.status}</dd>
-        </div>
-        <div className="rounded-lg bg-slate-50 p-3">
-          <dt className="font-black uppercase tracking-wide text-slate-400">Time</dt>
-          <dd className="mt-1 font-bold text-slate-900">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</dd>
-        </div>
-        <div className="col-span-2 rounded-lg bg-slate-50 p-3">
-          <dt className="font-black uppercase tracking-wide text-slate-400">Order</dt>
-          <dd className="mt-1 font-bold text-slate-900">#{shortOrderId(order.id)}</dd>
-        </div>
-      </dl>
+      <div className="mt-4 rounded-lg bg-white/70 px-3 py-2 text-sm font-black uppercase tracking-wide text-slate-400">
+        #{shortOrderId(order.id)}
+      </div>
 
-      <div className="grid gap-2">
+      <div className="mt-auto grid gap-2 pt-4">
         <ActionButton
           label="Start"
           disabled={disabled || order.status === "In Progress" || order.status === "Completed"}
@@ -322,6 +252,7 @@ function OrderDetail({
           {smsMessage}
         </p>
       )}
+      </div>
     </article>
   );
 }
@@ -390,6 +321,29 @@ function StatusBadge({ status }: { status: OrderStatus }) {
   };
 
   return <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${classes[status]}`}>{status}</span>;
+}
+
+function getStatusCardStyle(status: OrderStatus) {
+  const styles: Record<OrderStatus, { card: string; bar: string }> = {
+    New: {
+      card: "border-slate-200 bg-white",
+      bar: "bg-slate-200",
+    },
+    "In Progress": {
+      card: "border-yellow-200 bg-yellow-50/70",
+      bar: "bg-yellow-300",
+    },
+    Ready: {
+      card: "border-emerald-200 bg-emerald-50/70",
+      bar: "bg-emerald-400",
+    },
+    Completed: {
+      card: "border-slate-200 bg-slate-50 opacity-55",
+      bar: "bg-slate-200",
+    },
+  };
+
+  return styles[status];
 }
 
 function requireSupabase(operation: string) {
