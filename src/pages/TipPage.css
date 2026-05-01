@@ -46,7 +46,7 @@
 }
 
 .tip-header-image {
-  width: 100%;
+  width: 67%;
   max-width: 100%;
   height: auto;
   object-fit: contain;
@@ -219,6 +219,7 @@
   }
 
   .tip-header-image {
+    width: 72%;
     margin-bottom: 16px;
   }
 
