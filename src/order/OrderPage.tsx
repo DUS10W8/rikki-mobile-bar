@@ -9,6 +9,7 @@ const BAR_NAME = "Rikki's Mobile Bar";
 type Drink = {
   id: string;
   name: string;
+  description?: string | null;
   category: string | null;
   active: boolean;
 };
@@ -164,7 +165,10 @@ export default function OrderPage() {
                     }`}
                     onClick={() => setSelectedDrink(drink)}
                   >
-                    <span className="text-lg font-bold text-slate-950">{drink.name}</span>
+                    <span className="min-w-0 pr-3">
+                      <span className="block text-lg font-bold text-slate-950">{drink.name}</span>
+                      {drink.description && <span className="line-clamp-2 text-sm text-slate-500">{drink.description}</span>}
+                    </span>
                     {selectedDrink?.id === drink.id ? <Check className="h-6 w-6 text-emerald-600" /> : <GlassWater className="h-5 w-5 text-slate-400" />}
                   </button>
                 ))}
