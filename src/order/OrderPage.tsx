@@ -136,8 +136,13 @@ export default function OrderPage() {
   return (
     <OrderShell>
       <main className="mx-auto max-w-md px-4 pb-32 pt-5">
-        <header className="mb-6 overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/88 p-5 shadow-[0_24px_70px_rgba(46,46,46,0.12)] backdrop-blur">
-          <img src={`${BASE}rikkis-logo.png`} alt={BAR_NAME} className="mx-auto mb-4 h-28 w-auto max-w-full object-contain" />
+        <header className="mb-6 overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/88 shadow-[0_24px_70px_rgba(46,46,46,0.12)] backdrop-blur">
+          <img
+            src={`${BASE}tip/path16.png`}
+            alt={BAR_NAME}
+            className="h-48 max-h-60 w-full rounded-b-3xl object-cover"
+          />
+          <div className="p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-brand-chrome bg-brand-ink text-white shadow-[0_10px_24px_rgba(20,20,20,0.18)]">
               <Martini className="h-6 w-6" />
@@ -146,6 +151,7 @@ export default function OrderPage() {
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-sea">{BAR_NAME}</p>
               <h1 className="text-3xl font-black text-brand-ink">Drink menu</h1>
             </div>
+          </div>
           </div>
         </header>
 
