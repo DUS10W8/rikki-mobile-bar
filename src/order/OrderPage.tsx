@@ -5,6 +5,7 @@ import { orderSupabase, orderSupabaseConfig } from "./orderSupabaseClient";
 import "./OrderPage.css";
 
 const BAR_NAME = "Rikki's Mobile Bar";
+const BASE = import.meta.env.BASE_URL;
 
 type Drink = {
   id: string;
@@ -111,18 +112,18 @@ export default function OrderPage() {
       <OrderShell>
         <section className="mx-auto flex min-h-screen max-w-md flex-col px-5 py-6">
           <div className="flex flex-1 flex-col justify-center">
-            <div className="rounded-lg border border-emerald-200 bg-white p-6 text-center shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-              <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-600" />
-              <h1 className="mt-4 text-3xl font-bold text-slate-950">Order received</h1>
-              <p className="mt-3 text-slate-600">
+            <div className="rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/90 p-6 text-center shadow-[0_28px_80px_rgba(46,46,46,0.14)] backdrop-blur">
+              <CheckCircle2 className="mx-auto h-14 w-14 text-brand-sea" />
+              <h1 className="mt-4 text-3xl font-bold text-brand-ink">Order received</h1>
+              <p className="mt-3 text-brand-ink/70">
                 {confirmation.name}, your {confirmation.drink} is in the queue.
               </p>
-              <div className="mt-5 rounded-lg bg-slate-950 px-4 py-5 text-white">
-                <p className="text-sm uppercase tracking-wide text-slate-300">Order</p>
+              <div className="mt-5 rounded-2xl bg-brand-ink px-4 py-5 text-white">
+                <p className="text-sm uppercase tracking-wide text-white/70">Order</p>
                 <p className="mt-1 text-4xl font-black">#{shortOrderId(confirmation.id)}</p>
               </div>
-              <p className="mt-4 text-sm text-slate-500">We will text you when it is ready.</p>
-              <button className="mt-6 w-full rounded-lg bg-emerald-600 px-5 py-4 font-bold text-white" onClick={() => setConfirmation(null)}>
+              <p className="mt-4 text-sm text-brand-ink/60">We will text you when it is ready.</p>
+              <button className="mt-6 w-full rounded-2xl bg-brand-sea px-5 py-4 font-bold text-white shadow-[0_14px_32px_rgba(46,155,138,0.25)]" onClick={() => setConfirmation(null)}>
                 Place another order
               </button>
             </div>
@@ -134,15 +135,16 @@ export default function OrderPage() {
 
   return (
     <OrderShell>
-      <main className="mx-auto max-w-md px-4 pb-28 pt-5">
-        <header className="mb-5">
+      <main className="mx-auto max-w-md px-4 pb-32 pt-5">
+        <header className="mb-6 overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/88 p-5 shadow-[0_24px_70px_rgba(46,46,46,0.12)] backdrop-blur">
+          <img src={`${BASE}rikkis-logo.png`} alt={BAR_NAME} className="mx-auto mb-4 h-28 w-auto max-w-full object-contain" />
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-950 text-white">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-brand-chrome bg-brand-ink text-white shadow-[0_10px_24px_rgba(20,20,20,0.18)]">
               <Martini className="h-6 w-6" />
             </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">{BAR_NAME}</p>
-              <h1 className="text-3xl font-black text-slate-950">Drink menu</h1>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold uppercase tracking-wide text-brand-sea">{BAR_NAME}</p>
+              <h1 className="text-3xl font-black text-brand-ink">Drink menu</h1>
             </div>
           </div>
         </header>
@@ -154,36 +156,36 @@ export default function OrderPage() {
         <form onSubmit={submitOrder} className="space-y-5">
           {Object.entries(groupedDrinks).map(([category, items]) => (
             <section key={category}>
-              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">{category}</h2>
-              <div className="grid gap-2">
+              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-brand-ink/55">{category}</h2>
+              <div className="grid gap-3">
                 {items.map((drink) => (
                   <button
                     key={drink.id}
                     type="button"
-                    className={`flex min-h-16 items-center justify-between rounded-lg border bg-white px-4 py-3 text-left shadow-sm transition ${
-                      selectedDrink?.id === drink.id ? "border-emerald-600 ring-2 ring-emerald-100" : "border-slate-200"
+                    className={`flex min-h-20 items-center justify-between rounded-2xl border bg-[#fffaf2]/92 px-4 py-3 text-left shadow-[0_10px_28px_rgba(46,46,46,0.07)] transition ${
+                      selectedDrink?.id === drink.id ? "border-brand-sea ring-2 ring-brand-sea/20" : "border-brand-chrome/80"
                     }`}
                     onClick={() => setSelectedDrink(drink)}
                   >
                     <span className="min-w-0 pr-3">
-                      <span className="block text-lg font-bold text-slate-950">{drink.name}</span>
-                      {drink.description && <span className="line-clamp-2 text-sm text-slate-500">{drink.description}</span>}
+                      <span className="block text-lg font-bold text-brand-ink">{drink.name}</span>
+                      {drink.description && <span className="line-clamp-2 text-sm text-brand-ink/55">{drink.description}</span>}
                     </span>
-                    {selectedDrink?.id === drink.id ? <Check className="h-6 w-6 text-emerald-600" /> : <GlassWater className="h-5 w-5 text-slate-400" />}
+                    {selectedDrink?.id === drink.id ? <Check className="h-6 w-6 shrink-0 text-brand-sea" /> : <GlassWater className="h-5 w-5 shrink-0 text-brand-rust/60" />}
                   </button>
                 ))}
               </div>
             </section>
           ))}
 
-          <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <section className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_14px_36px_rgba(46,46,46,0.08)]">
             <div className="grid gap-3">
               <label className="grid gap-1">
-                <span className="text-sm font-bold text-slate-700">Name</span>
+                <span className="text-sm font-bold text-brand-ink/75">Name</span>
                 <input className="order-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="Alex" autoComplete="name" />
               </label>
               <label className="grid gap-1">
-                <span className="text-sm font-bold text-slate-700">Phone</span>
+                <span className="text-sm font-bold text-brand-ink/75">Phone</span>
                 <input
                   className="order-input"
                   value={phone}
@@ -193,16 +195,16 @@ export default function OrderPage() {
                   autoComplete="tel"
                 />
               </label>
-              <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <input className="mt-1 h-5 w-5 accent-emerald-600" type="checkbox" checked={smsConsent} onChange={(event) => setSmsConsent(event.target.checked)} />
-                <span className="text-sm font-medium text-slate-700">I agree to receive one SMS update for this drink order.</span>
+              <label className="flex items-start gap-3 rounded-2xl border border-brand-chrome/80 bg-white/60 p-3">
+                <input className="mt-1 h-5 w-5 accent-brand-sea" type="checkbox" checked={smsConsent} onChange={(event) => setSmsConsent(event.target.checked)} />
+                <span className="text-sm font-medium text-brand-ink/75">I agree to receive one SMS update for this drink order.</span>
               </label>
             </div>
           </section>
 
-          <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 p-4 backdrop-blur">
+          <div className="fixed inset-x-0 bottom-0 border-t border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_-18px_45px_rgba(46,46,46,0.10)] backdrop-blur">
             <div className="mx-auto max-w-md">
-              <button disabled={!canSubmit} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-4 text-lg font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300">
+              <button disabled={!canSubmit} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink px-5 py-4 text-lg font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)] disabled:cursor-not-allowed disabled:bg-brand-chrome disabled:text-brand-ink/50 disabled:shadow-none">
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageSquare className="h-5 w-5" />}
                 Submit order
               </button>
@@ -215,16 +217,16 @@ export default function OrderPage() {
 }
 
 function OrderShell({ children }: { children: ReactNode }) {
-  return <div className="order-page min-h-screen bg-[#f8faf8] text-slate-950">{children}</div>;
+  return <div className="order-page min-h-screen text-brand-ink">{children}</div>;
 }
 
 function Alert({ children }: { children: ReactNode }) {
-  return <div className="my-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{children}</div>;
+  return <div className="my-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{children}</div>;
 }
 
 function Loading({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-600">
+    <div className="flex items-center gap-2 rounded-2xl border border-brand-chrome bg-[#fffaf2]/92 px-4 py-3 text-brand-ink/65">
       <Loader2 className="h-4 w-4 animate-spin" />
       {label}
     </div>
@@ -233,9 +235,9 @@ function Loading({ label }: { label: string }) {
 
 function MenuUnavailable({ onRefresh }: { onRefresh: () => void }) {
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-950">
+    <div className="rounded-2xl border border-brand-rust/30 bg-[#fffaf2]/92 p-4 text-brand-ink">
       <p className="font-black">Menu unavailable. Please refresh or notify bartender.</p>
-      <button className="mt-3 inline-flex items-center gap-2 rounded-lg bg-amber-900 px-4 py-3 font-bold text-white" onClick={onRefresh} type="button">
+      <button className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-brand-rust px-4 py-3 font-bold text-white" onClick={onRefresh} type="button">
         <RefreshCw className="h-4 w-4" />
         Refresh menu
       </button>
