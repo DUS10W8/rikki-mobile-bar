@@ -55,7 +55,13 @@ export default function BartenderPage() {
     };
   }, [authorized]);
 
-  const sortedOrders = useMemo(() => [...orders], [orders]);
+  const displayOrders = useMemo(() => {
+    const byCreatedAtAsc = (a: BartenderOrder, b: BartenderOrder) => getOrderTime(a) - getOrderTime(b);
+    const activeOrders = orders.filter((order) => order.status !== "Completed").sort(byCreatedAtAsc);
+    const completedOrders = orders.filter((order) => order.status === "Completed");
+
+    return [...activeOrders, ...completedOrders];
+  }, [orders]);
 
   const unlock = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -170,11 +176,11 @@ export default function BartenderPage() {
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">Orders</h2>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{sortedOrders.length}</span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{displayOrders.length}</span>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {sortedOrders.map((order) => (
+            {displayOrders.map((order) => (
               <KitchenOrderCard
                 key={order.id}
                 order={order}
@@ -184,7 +190,7 @@ export default function BartenderPage() {
                 onStatusChange={(status) => updateStatus(order, status)}
               />
             ))}
-            {!loading && sortedOrders.length === 0 && <EmptyState>No drink orders yet.</EmptyState>}
+            {!loading && displayOrders.length === 0 && <EmptyState>No drink orders yet.</EmptyState>}
           </div>
         </section>
       </main>
@@ -211,13 +217,13 @@ function KitchenOrderCard({
     <article className={`flex min-h-[360px] flex-col overflow-hidden rounded-xl border shadow-sm ${style.card}`}>
       <div className={`h-2 ${style.bar}`} />
       <div className="flex flex-1 flex-col p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-2xl font-black leading-tight text-slate-950">{order.name}</h2>
-          <p className="mt-1 line-clamp-2 text-lg font-bold leading-snug text-slate-700">{order.drink}</p>
+      <div className="grid gap-2">
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="min-w-0 flex-1 text-2xl font-black leading-tight text-slate-950">{order.name}</h2>
+          <span className="shrink-0 pt-1 text-xs font-black text-slate-400">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="text-xs font-black text-slate-400">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
+        <div className="flex items-start justify-between gap-3">
+          <p className="min-w-0 flex-1 text-lg font-bold leading-snug text-slate-700">{order.drink}</p>
           {loading ? <Loader2 className="h-5 w-5 animate-spin text-slate-500" /> : <StatusBadge status={order.status} />}
         </div>
       </div>
@@ -440,4 +446,10 @@ function formatOrderTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function getOrderTime(order: BartenderOrder) {
+  if (!order.created_at) return Number.MAX_SAFE_INTEGER;
+  const time = new Date(order.created_at).getTime();
+  return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time;
 }
