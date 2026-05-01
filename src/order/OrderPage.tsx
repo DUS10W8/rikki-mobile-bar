@@ -141,7 +141,7 @@ export default function OrderPage() {
             <img
               src={`${BASE}tip/path16.png`}
               alt={BAR_NAME}
-              className="mx-auto h-auto w-full rounded-b-3xl object-contain"
+              className="mx-auto h-auto w-[67%] rounded-b-3xl object-contain max-[420px]:w-[72%]"
             />
           </div>
           <div className="p-5">
