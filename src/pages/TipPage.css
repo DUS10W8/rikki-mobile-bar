@@ -1,17 +1,17 @@
 .tip-page-shell {
-  --tip-cream: #f5efe5;
-  --tip-cream-deep: #e9dfd0;
-  --tip-charcoal: #2e2e2e;
-  --tip-muted: #7c766e;
-  --tip-muted-light: #a49c90;
-  --tip-line: #d8d1c7;
-  --tip-silver: #c8b7a9;
-  --tip-accent: #cfa67a;
+  --tip-cream: #eadfc6;
+  --tip-cream-deep: #e2d2b8;
+  --tip-ink: #141414;
+  --tip-muted: rgba(20, 20, 20, 0.66);
+  --tip-muted-light: rgba(20, 20, 20, 0.45);
+  --tip-line: #c9c9c9;
+  --tip-sea: #2e9b8a;
+  --tip-sea-deep: #257d70;
   --tip-white: #fffaf2;
 
   min-height: 100vh;
-  background: radial-gradient(circle at top, #fffaf2 0%, var(--tip-cream) 50%, var(--tip-cream-deep) 100%);
-  color: var(--tip-charcoal);
+  background: radial-gradient(circle at top, #fffaf2 0%, var(--tip-cream) 52%, var(--tip-cream-deep) 100%);
+  color: var(--tip-ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,60 +23,36 @@
 .tip-page-shell::before {
   content: "";
   position: fixed;
-  top: 12%;
-  left: 50%;
-  width: 220px;
-  height: 220px;
-  transform: translateX(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 50%;
-  filter: blur(4px);
-  opacity: 0.24;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 250, 242, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 250, 242, 0.22) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.28;
   pointer-events: none;
 }
 
 .tip-page {
   width: min(100%, 440px);
   border: 1px solid var(--tip-line);
-  background: rgba(255, 250, 242, 0.84);
-  border-radius: 32px;
+  background: rgba(255, 250, 242, 0.9);
+  border-radius: 28px;
   padding: 30px 26px;
-  box-shadow: 0 28px 80px rgba(46, 46, 46, 0.12);
+  box-shadow: 0 28px 80px rgba(46, 46, 46, 0.14);
   backdrop-filter: blur(10px);
   text-align: center;
   position: relative;
   overflow: hidden;
 }
 
-.tip-page::after {
-  content: "*";
-  position: absolute;
-  top: 22px;
-  left: 24px;
-  color: var(--tip-silver);
-  font-size: 22px;
-  opacity: 0.9;
-}
-
-.tip-page::before {
-  content: "";
-  position: absolute;
-  right: -20px;
-  bottom: 20px;
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  border: 1px dashed rgba(208, 170, 118, 0.35);
-  opacity: 0.48;
-}
-
 .tip-header-image {
   width: 100%;
   max-width: 100%;
-  max-height: 114px;
+  height: auto;
   object-fit: contain;
   border-radius: 22px;
-  margin-bottom: 18px;
+  margin: 0 auto 20px;
+  display: block;
 }
 
 .tip-page h1 {
@@ -86,7 +62,7 @@
   line-height: 1.1;
   letter-spacing: 0;
   margin: 0 0 12px;
-  color: var(--tip-charcoal);
+  color: var(--tip-ink);
 }
 
 .tip-intro {
@@ -114,11 +90,11 @@
   text-decoration: none;
   border: 2px solid var(--tip-line);
   background: var(--tip-white);
-  border-radius: 26px;
+  border-radius: 22px;
   padding: 18px 12px;
   font-weight: 700;
   font-size: 18px;
-  color: var(--tip-charcoal);
+  color: var(--tip-ink);
   box-shadow: 0 8px 20px rgba(46, 46, 46, 0.08);
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
   position: relative;
@@ -129,7 +105,7 @@
 .tip-amount:focus-visible {
   transform: translateY(-3px);
   box-shadow: 0 14px 30px rgba(46, 46, 46, 0.14);
-  border-color: var(--tip-silver);
+  border-color: var(--tip-sea);
   outline: none;
 }
 
@@ -138,19 +114,19 @@
 }
 
 .tip-amount-featured {
-  border-color: rgba(207, 166, 122, 0.45);
-  background: linear-gradient(180deg, rgba(255, 250, 242, 0.98) 0%, rgba(247, 238, 224, 0.95) 100%);
+  border-color: rgba(46, 155, 138, 0.42);
+  background: linear-gradient(180deg, rgba(255, 250, 242, 1) 0%, rgba(244, 251, 247, 0.96) 100%);
   font-size: 19px;
-  box-shadow: 0 18px 38px rgba(212, 165, 116, 0.18);
+  box-shadow: 0 18px 38px rgba(46, 155, 138, 0.12);
   padding: 20px 12px;
   min-height: 84px;
 }
 
 .tip-amount-featured:hover,
 .tip-amount-featured:focus-visible {
-  box-shadow: 0 22px 44px rgba(212, 165, 116, 0.24);
-  border-color: var(--tip-accent);
-  background: linear-gradient(180deg, rgba(255, 250, 242, 1) 0%, rgba(244, 235, 218, 0.98) 100%);
+  box-shadow: 0 22px 44px rgba(46, 155, 138, 0.18);
+  border-color: var(--tip-sea);
+  background: linear-gradient(180deg, rgba(255, 250, 242, 1) 0%, rgba(238, 249, 244, 0.98) 100%);
 }
 
 .tip-amount-label {
@@ -159,8 +135,8 @@
   justify-content: center;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(207, 166, 122, 0.12);
-  color: var(--tip-charcoal);
+  background: rgba(46, 155, 138, 0.1);
+  color: var(--tip-sea-deep);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -181,7 +157,7 @@
   align-items: center;
   width: 100%;
   text-decoration: none;
-  color: var(--tip-charcoal);
+  color: var(--tip-ink);
   background: transparent;
   border: none;
   padding: 16px 0;
@@ -199,7 +175,7 @@
 
 .tip-button:hover,
 .tip-button:focus-visible {
-  color: var(--tip-charcoal);
+  color: var(--tip-sea-deep);
   padding-left: 4px;
 }
 
@@ -224,10 +200,10 @@
 .tip-footer {
   margin-top: 44px;
   padding-top: 12px;
-  border-top: 1px solid rgba(207, 166, 122, 0.22);
+  border-top: 1px solid rgba(201, 201, 201, 0.8);
   font-family: "Playfair Display", Georgia, serif;
   font-size: 15px;
-  color: rgba(46, 46, 46, 0.55);
+  color: rgba(20, 20, 20, 0.55);
   letter-spacing: 0.4px;
   font-weight: 400;
 }
@@ -243,7 +219,6 @@
   }
 
   .tip-header-image {
-    max-height: 102px;
     margin-bottom: 16px;
   }
 
