@@ -20,6 +20,7 @@ type BartenderOrder = {
   drink: string;
   status: OrderStatus;
   created_at?: string;
+  updated_at?: string;
   ready_sms_sent_at?: string | null;
 };
 
@@ -55,12 +56,17 @@ export default function BartenderPage() {
     };
   }, [authorized]);
 
-  const displayOrders = useMemo(() => {
+  const { needsMadeOrders, readyOrders, completedOrders } = useMemo(() => {
     const byCreatedAtAsc = (a: BartenderOrder, b: BartenderOrder) => getOrderTime(a) - getOrderTime(b);
-    const activeOrders = orders.filter((order) => order.status !== "Completed").sort(byCreatedAtAsc);
-    const completedOrders = orders.filter((order) => order.status === "Completed");
+    const byReadyTimeAsc = (a: BartenderOrder, b: BartenderOrder) => getReadyTime(a) - getReadyTime(b);
 
-    return [...activeOrders, ...completedOrders];
+    return {
+      needsMadeOrders: orders
+        .filter((order) => order.status === "New" || order.status === "In Progress")
+        .sort(byCreatedAtAsc),
+      readyOrders: orders.filter((order) => order.status === "Ready").sort(byReadyTimeAsc),
+      completedOrders: orders.filter((order) => order.status === "Completed").sort(byCreatedAtAsc),
+    };
   }, [orders]);
 
   const unlock = (event: FormEvent<HTMLFormElement>) => {
@@ -173,28 +179,74 @@ export default function BartenderPage() {
         {error && <Alert>{error}</Alert>}
         {loading && <Loading label="Loading order queue" />}
 
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">Orders</h2>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">{displayOrders.length}</span>
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div>
+            <BoardHeader title="Needs Made" count={needsMadeOrders.length} />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4">
+              {needsMadeOrders.map((order) => (
+                <KitchenOrderCard
+                  key={order.id}
+                  order={order}
+                  disabled={updatingId !== null}
+                  loading={updatingId === order.id}
+                  smsMessage={smsState[order.id]}
+                  onStatusChange={(status) => updateStatus(order, status)}
+                />
+              ))}
+              {!loading && needsMadeOrders.length === 0 && <EmptyState>No drinks need to be made.</EmptyState>}
+            </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {displayOrders.map((order) => (
-              <KitchenOrderCard
-                key={order.id}
-                order={order}
-                disabled={updatingId !== null}
-                loading={updatingId === order.id}
-                smsMessage={smsState[order.id]}
-                onStatusChange={(status) => updateStatus(order, status)}
-              />
-            ))}
-            {!loading && displayOrders.length === 0 && <EmptyState>No drink orders yet.</EmptyState>}
-          </div>
+          <aside>
+            <BoardHeader title="Ready for Pickup" count={readyOrders.length} tone="ready" />
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+              {readyOrders.map((order) => (
+                <KitchenOrderCard
+                  key={order.id}
+                  order={order}
+                  disabled={updatingId !== null}
+                  loading={updatingId === order.id}
+                  smsMessage={smsState[order.id]}
+                  onStatusChange={(status) => updateStatus(order, status)}
+                />
+              ))}
+              {!loading && readyOrders.length === 0 && <EmptyState>No drinks ready for pickup.</EmptyState>}
+            </div>
+          </aside>
         </section>
+
+        {completedOrders.length > 0 && (
+          <section className="mt-8 border-t border-slate-200 pt-5">
+            <BoardHeader title="Completed" count={completedOrders.length} />
+            <div className="grid gap-3 opacity-75 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {completedOrders.map((order) => (
+                <KitchenOrderCard
+                  key={order.id}
+                  order={order}
+                  disabled
+                  loading={false}
+                  smsMessage={smsState[order.id]}
+                  onStatusChange={(status) => updateStatus(order, status)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </BartenderShell>
+  );
+}
+
+function BoardHeader({ title, count, tone = "default" }: { title: string; count: number; tone?: "default" | "ready" }) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className={`text-sm font-black uppercase tracking-wide ${tone === "ready" ? "text-emerald-700" : "text-slate-500"}`}>
+        {title}
+      </h2>
+      <span className={`rounded-full px-2.5 py-1 text-xs font-black ${tone === "ready" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>
+        {count}
+      </span>
+    </div>
   );
 }
 
@@ -212,52 +264,47 @@ function KitchenOrderCard({
   onStatusChange: (status: OrderStatus) => void;
 }) {
   const style = getStatusCardStyle(order.status);
+  const actions = getOrderActions(order.status);
 
   return (
     <article className={`flex min-h-[360px] flex-col overflow-hidden rounded-xl border shadow-sm ${style.card}`}>
       <div className={`h-2 ${style.bar}`} />
       <div className="flex flex-1 flex-col p-4">
-      <div className="grid gap-2">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="min-w-0 flex-1 text-2xl font-black leading-tight text-slate-950">{order.name}</h2>
-          <span className="shrink-0 pt-1 text-xs font-black text-slate-400">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
+        <div className="grid gap-2">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="min-w-0 flex-1 text-2xl font-black leading-tight text-slate-950">{order.name}</h2>
+            <span className="shrink-0 pt-1 text-xs font-black text-slate-400">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
+          </div>
+          <div className="flex items-start justify-between gap-3">
+            <p className="min-w-0 flex-1 text-lg font-bold leading-snug text-slate-700">{order.drink}</p>
+            {loading ? <Loader2 className="h-5 w-5 animate-spin text-slate-500" /> : <StatusBadge status={order.status} />}
+          </div>
         </div>
-        <div className="flex items-start justify-between gap-3">
-          <p className="min-w-0 flex-1 text-lg font-bold leading-snug text-slate-700">{order.drink}</p>
-          {loading ? <Loader2 className="h-5 w-5 animate-spin text-slate-500" /> : <StatusBadge status={order.status} />}
+
+        <div className="mt-4 rounded-lg bg-white/70 px-3 py-2 text-sm font-black uppercase tracking-wide text-slate-400">
+          #{shortOrderId(order.id)}
         </div>
-      </div>
 
-      <div className="mt-4 rounded-lg bg-white/70 px-3 py-2 text-sm font-black uppercase tracking-wide text-slate-400">
-        #{shortOrderId(order.id)}
-      </div>
+        {actions.length > 0 && (
+          <div className="mt-auto grid gap-2 pt-4">
+            {actions.map((action) => (
+              <ActionButton
+                key={action.status}
+                label={action.label}
+                tone={action.tone}
+                disabled={disabled || order.status === action.status}
+                onClick={() => onStatusChange(action.status)}
+              />
+            ))}
+          </div>
+        )}
 
-      <div className="mt-auto grid gap-2 pt-4">
-        <ActionButton
-          label="Start"
-          disabled={disabled || order.status === "In Progress" || order.status === "Completed"}
-          onClick={() => onStatusChange("In Progress")}
-        />
-        <ActionButton
-          label="Ready"
-          tone="ready"
-          disabled={disabled || order.status === "Ready" || order.status === "Completed"}
-          onClick={() => onStatusChange("Ready")}
-        />
-        <ActionButton
-          label="Complete"
-          tone="complete"
-          disabled={disabled || order.status === "Completed"}
-          onClick={() => onStatusChange("Completed")}
-        />
-      </div>
-
-      {smsMessage && (
-        <p className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700">
-          <CheckCircle2 className="h-4 w-4" />
-          {smsMessage}
-        </p>
-      )}
+        {smsMessage && (
+          <p className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700">
+            <CheckCircle2 className="h-4 w-4" />
+            {smsMessage}
+          </p>
+        )}
       </div>
     </article>
   );
@@ -290,6 +337,25 @@ function ActionButton({
       {label}
     </button>
   );
+}
+
+function getOrderActions(status: OrderStatus) {
+  if (status === "New") {
+    return [
+      { label: "Start", status: "In Progress" as const, tone: "default" as const },
+      { label: "Ready", status: "Ready" as const, tone: "ready" as const },
+    ];
+  }
+
+  if (status === "In Progress") {
+    return [{ label: "Ready", status: "Ready" as const, tone: "ready" as const }];
+  }
+
+  if (status === "Ready") {
+    return [{ label: "Complete", status: "Completed" as const, tone: "complete" as const }];
+  }
+
+  return [];
 }
 
 function BartenderShell({ children }: { children: ReactNode }) {
@@ -451,5 +517,12 @@ function formatOrderTime(value: string) {
 function getOrderTime(order: BartenderOrder) {
   if (!order.created_at) return Number.MAX_SAFE_INTEGER;
   const time = new Date(order.created_at).getTime();
+  return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time;
+}
+
+function getReadyTime(order: BartenderOrder) {
+  const readyishTime = order.ready_sms_sent_at || order.updated_at || order.created_at;
+  if (!readyishTime) return Number.MAX_SAFE_INTEGER;
+  const time = new Date(readyishTime).getTime();
   return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time;
 }
