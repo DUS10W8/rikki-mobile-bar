@@ -34,6 +34,7 @@ type Order = {
 type OrderConfirmation = Order & {
   ticketUsed: number;
   ticketLabel: string;
+  confirmationMessage: string;
 };
 
 type DrinkPayment = {
@@ -151,7 +152,12 @@ export default function OrderPage() {
     }
 
     setGuestOrderCount(existingTicketCount + 1);
-    setConfirmation({ ...data, ticketUsed: existingTicketCount + 1, ticketLabel: getSubmittedDrinkLabel(existingTicketCount, selectedDrink) });
+    setConfirmation({
+      ...data,
+      ticketUsed: existingTicketCount + 1,
+      ticketLabel: getSubmittedDrinkLabel(existingTicketCount, selectedDrink),
+      confirmationMessage: getConfirmationMessage(existingTicketCount),
+    });
     setSelectedDrink(null);
     setName("");
     setPhone("");
@@ -177,7 +183,7 @@ export default function OrderPage() {
                 <p className="text-sm uppercase tracking-wide text-white/70">Order</p>
                 <p className="mt-1 text-4xl font-black">#{shortOrderId(confirmation.id)}</p>
               </div>
-              <p className="mt-4 text-sm text-brand-ink/60">We will text you when it is ready.</p>
+              <p className="mt-4 text-sm text-brand-ink/60">{confirmation.confirmationMessage}</p>
               <p className="mt-2 text-sm font-bold text-brand-sea">{confirmation.ticketLabel}</p>
               <button className="mt-6 w-full rounded-2xl bg-brand-sea px-5 py-4 font-bold text-white shadow-[0_14px_32px_rgba(46,155,138,0.25)]" onClick={() => setConfirmation(null)}>
                 Place another order
@@ -465,4 +471,9 @@ function getSubmittedDrinkLabel(existingCount: number, drink: Drink) {
 
   const payment = getDrinkPayment(drink);
   return `Paid drink: $${payment.price}`;
+}
+
+function getConfirmationMessage(existingCount: number) {
+  if (existingCount < MAX_DRINK_TICKETS) return "We will text you when it is ready.";
+  return "Your paid drink order was sent. Please show your payment confirmation to the bartender if asked.";
 }

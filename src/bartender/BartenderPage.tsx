@@ -298,7 +298,7 @@ function KitchenOrderCard({
             <span>{formatOrderPhone(order.phone)}</span>
             <span
               className={
-                ticketLabel.startsWith("PAID")
+                ticketLabel.startsWith("NEEDS PAYMENT")
                   ? "rounded-full border border-brand-sea/25 bg-brand-sea/10 px-2 py-0.5 text-brand-sea"
                   : ""
               }
@@ -599,7 +599,7 @@ function getTicketLabelsByOrderId(orders: BartenderOrder[], drinkMenu: DrinkMenu
           return;
         }
 
-        labels[order.id] = `PAID $${getPaidDrinkPrice(drinkCategoriesByName.get(order.drink.toLowerCase()) || "")}`;
+        labels[order.id] = `NEEDS PAYMENT $${getPaidDrinkPrice(drinkCategoriesByName.get(order.drink.toLowerCase()) || "")}`;
       });
   }
 
