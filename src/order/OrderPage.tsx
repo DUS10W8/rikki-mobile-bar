@@ -35,6 +35,7 @@ type OrderConfirmation = Order & {
   ticketUsed: number;
   ticketLabel: string;
   confirmationMessage: string;
+  payment: DrinkPayment | null;
 };
 
 type DrinkPayment = {
@@ -157,6 +158,7 @@ export default function OrderPage() {
       ticketUsed: existingTicketCount + 1,
       ticketLabel: getSubmittedDrinkLabel(existingTicketCount, selectedDrink),
       confirmationMessage: getConfirmationMessage(existingTicketCount),
+      payment: existingTicketCount >= MAX_DRINK_TICKETS ? getDrinkPayment(selectedDrink) : null,
     });
     setSelectedDrink(null);
     setName("");
@@ -185,6 +187,16 @@ export default function OrderPage() {
               </div>
               <p className="mt-4 text-sm text-brand-ink/60">{confirmation.confirmationMessage}</p>
               <p className="mt-2 text-sm font-bold text-brand-sea">{confirmation.ticketLabel}</p>
+              {confirmation.payment && (
+                <a
+                  className="mt-5 flex min-h-12 items-center justify-center rounded-2xl bg-brand-ink px-5 py-3 font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)]"
+                  href={confirmation.payment.link}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Complete Payment
+                </a>
+              )}
               <button className="mt-6 w-full rounded-2xl bg-brand-sea px-5 py-4 font-bold text-white shadow-[0_14px_32px_rgba(46,155,138,0.25)]" onClick={() => setConfirmation(null)}>
                 Place another order
               </button>
@@ -273,16 +285,6 @@ export default function OrderPage() {
                 <div className="rounded-2xl border border-brand-chrome/80 bg-white/60 p-3 text-sm font-bold text-brand-ink/75">
                   {checkingTicketCount ? "Checking drink status..." : nextDrinkLabel}
                 </div>
-              )}
-              {isPaidNextDrink && selectedDrinkPayment && (
-                <a
-                  className="flex min-h-12 items-center justify-center rounded-2xl border border-brand-chrome bg-[#f3ece2] px-4 text-sm font-black text-brand-ink shadow-sm"
-                  href={selectedDrinkPayment.link}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Pay Now
-                </a>
               )}
             </div>
           </section>
@@ -474,6 +476,6 @@ function getSubmittedDrinkLabel(existingCount: number, drink: Drink) {
 }
 
 function getConfirmationMessage(existingCount: number) {
-  if (existingCount < MAX_DRINK_TICKETS) return "We will text you when it is ready.";
-  return "Your paid drink order was sent. Please show your payment confirmation to the bartender if asked.";
+  if (existingCount < MAX_DRINK_TICKETS) return "Your drink order has been placed.";
+  return "Your order has been placed. This drink requires payment.";
 }
