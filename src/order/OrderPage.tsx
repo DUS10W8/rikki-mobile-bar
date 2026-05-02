@@ -8,6 +8,11 @@ const BAR_NAME = "Rikki's Mobile Bar";
 const BASE = import.meta.env.BASE_URL;
 const MAX_DRINK_TICKETS = 2;
 const TICKET_COUNT_STATUSES = ["new", "in_progress", "ready", "completed", "New", "In Progress", "Ready", "Completed"];
+const PAYMENT_LINKS = {
+  beer: "PASTE_BEER_SQUARE_LINK_HERE",
+  wine: "PASTE_WINE_SQUARE_LINK_HERE",
+  cocktail: "PASTE_COCKTAIL_SQUARE_LINK_HERE",
+};
 
 type Drink = {
   id: string;
@@ -28,6 +33,13 @@ type Order = {
 
 type OrderConfirmation = Order & {
   ticketUsed: number;
+  ticketLabel: string;
+};
+
+type DrinkPayment = {
+  kind: "beer" | "wine" | "cocktail";
+  price: 3 | 4 | 5;
+  link: string;
 };
 
 type LoadDrinksOptions = {
@@ -48,6 +60,8 @@ export default function OrderPage() {
   const [error, setError] = useState("");
   const [menuUnavailable, setMenuUnavailable] = useState(false);
   const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
+  const [guestOrderCount, setGuestOrderCount] = useState<number | null>(null);
+  const [checkingTicketCount, setCheckingTicketCount] = useState(false);
 
   useEffect(() => {
     const loadOptions = { setDrinks, setLoading, setError, setUnavailable: setMenuUnavailable };
@@ -67,6 +81,27 @@ export default function OrderPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isValidPhone(phone)) {
+      setGuestOrderCount(null);
+      setCheckingTicketCount(false);
+      return undefined;
+    }
+
+    let ignore = false;
+    setCheckingTicketCount(true);
+
+    countGuestOrders(normalizePhone(phone)).then(({ count }) => {
+      if (ignore) return;
+      setGuestOrderCount(count);
+      setCheckingTicketCount(false);
+    });
+
+    return () => {
+      ignore = true;
+    };
+  }, [phone]);
+
   const groupedDrinks = useMemo(() => {
     return drinks.reduce<Record<string, Drink[]>>((groups, drink) => {
       const key = drink.category || "House";
@@ -77,6 +112,10 @@ export default function OrderPage() {
   }, [drinks]);
 
   const canSubmit = Boolean(selectedDrink && name.trim().length >= 2 && isValidPhone(phone) && smsConsent && !submitting);
+  const selectedDrinkPayment = selectedDrink ? getDrinkPayment(selectedDrink) : null;
+  const nextDrinkLabel = getNextDrinkLabel(guestOrderCount, selectedDrinkPayment);
+  const isPaidNextDrink = Boolean(guestOrderCount !== null && guestOrderCount >= MAX_DRINK_TICKETS && selectedDrinkPayment);
+  const submitButtonLabel = isPaidNextDrink && selectedDrinkPayment ? `Order Drink ($${selectedDrinkPayment.price})` : "Submit order";
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -97,12 +136,6 @@ export default function OrderPage() {
       return;
     }
 
-    if (existingTicketCount >= MAX_DRINK_TICKETS) {
-      setSubmitting(false);
-      setError("You’ve used your 2 drink tickets for this event. Please see the bartender if this looks incorrect.");
-      return;
-    }
-
     const { data, error: orderError } = await createOrder({
       name: name.trim(),
       phone: normalizedPhone,
@@ -117,7 +150,8 @@ export default function OrderPage() {
       return;
     }
 
-    setConfirmation({ ...data, ticketUsed: existingTicketCount + 1 });
+    setGuestOrderCount(existingTicketCount + 1);
+    setConfirmation({ ...data, ticketUsed: existingTicketCount + 1, ticketLabel: getSubmittedDrinkLabel(existingTicketCount, selectedDrink) });
     setSelectedDrink(null);
     setName("");
     setPhone("");
@@ -144,7 +178,7 @@ export default function OrderPage() {
                 <p className="mt-1 text-4xl font-black">#{shortOrderId(confirmation.id)}</p>
               </div>
               <p className="mt-4 text-sm text-brand-ink/60">We will text you when it is ready.</p>
-              <p className="mt-2 text-sm font-bold text-brand-sea">Drink ticket used: {confirmation.ticketUsed} of 2</p>
+              <p className="mt-2 text-sm font-bold text-brand-sea">{confirmation.ticketLabel}</p>
               <button className="mt-6 w-full rounded-2xl bg-brand-sea px-5 py-4 font-bold text-white shadow-[0_14px_32px_rgba(46,155,138,0.25)]" onClick={() => setConfirmation(null)}>
                 Place another order
               </button>
@@ -229,6 +263,21 @@ export default function OrderPage() {
                 <input className="mt-1 h-5 w-5 accent-brand-sea" type="checkbox" checked={smsConsent} onChange={(event) => setSmsConsent(event.target.checked)} />
                 <span className="text-sm font-medium text-brand-ink/75">I agree to receive one SMS update for this drink order.</span>
               </label>
+              {isValidPhone(phone) && (
+                <div className="rounded-2xl border border-brand-chrome/80 bg-white/60 p-3 text-sm font-bold text-brand-ink/75">
+                  {checkingTicketCount ? "Checking drink status..." : nextDrinkLabel}
+                </div>
+              )}
+              {isPaidNextDrink && selectedDrinkPayment && (
+                <a
+                  className="flex min-h-12 items-center justify-center rounded-2xl border border-brand-chrome bg-[#f3ece2] px-4 text-sm font-black text-brand-ink shadow-sm"
+                  href={selectedDrinkPayment.link}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Pay Now
+                </a>
+              )}
             </div>
           </section>
 
@@ -236,7 +285,7 @@ export default function OrderPage() {
             <div className="mx-auto max-w-md">
               <button disabled={!canSubmit} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink px-5 py-4 text-lg font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)] disabled:cursor-not-allowed disabled:bg-brand-chrome disabled:text-brand-ink/50 disabled:shadow-none">
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageSquare className="h-5 w-5" />}
-                Submit order
+                {submitButtonLabel}
               </button>
             </div>
           </div>
@@ -385,4 +434,35 @@ function formatPhone(value: string) {
 
 function shortOrderId(id: string) {
   return String(id).replace(/-/g, "").slice(0, 6).toUpperCase();
+}
+
+function getDrinkPayment(drink: Drink): DrinkPayment {
+  const category = (drink.category || "").toLowerCase();
+
+  if (category.includes("beer")) {
+    return { kind: "beer", price: 3, link: PAYMENT_LINKS.beer };
+  }
+
+  if (category.includes("wine")) {
+    return { kind: "wine", price: 4, link: PAYMENT_LINKS.wine };
+  }
+
+  return { kind: "cocktail", price: 5, link: PAYMENT_LINKS.cocktail };
+}
+
+function getNextDrinkLabel(count: number | null, payment: DrinkPayment | null) {
+  if (count === null) return "Enter your phone to check complimentary drinks.";
+  if (count === 0) return "Free drink 1 of 2";
+  if (count === 1) return "Free drink 2 of 2";
+  return payment
+    ? `You’ve used your 2 complimentary drinks. Additional drinks require payment.`
+    : "You’ve used your 2 complimentary drinks. Additional drinks require payment.";
+}
+
+function getSubmittedDrinkLabel(existingCount: number, drink: Drink) {
+  if (existingCount === 0) return "Free drink 1 of 2";
+  if (existingCount === 1) return "Free drink 2 of 2";
+
+  const payment = getDrinkPayment(drink);
+  return `Paid drink: $${payment.price}`;
 }

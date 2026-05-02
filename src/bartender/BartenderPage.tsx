@@ -24,6 +24,11 @@ type BartenderOrder = {
   ready_sms_sent_at?: string | null;
 };
 
+type DrinkMenuItem = {
+  name: string;
+  category: string | null;
+};
+
 const BARTENDER_PIN = import.meta.env.VITE_BARTENDER_PIN?.trim() || "";
 const PIN_SESSION_KEY = "rikki-bartender-pin-ok";
 const MAX_DRINK_TICKETS = 2;
@@ -37,11 +42,13 @@ export default function BartenderPage() {
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [smsState, setSmsState] = useState<Record<string, string>>({});
+  const [drinkMenu, setDrinkMenu] = useState<DrinkMenuItem[]>([]);
 
   useEffect(() => {
     if (!authorized) return undefined;
 
     loadOrders({ setOrders, setLoading, setError });
+    loadDrinkMenu({ setDrinkMenu });
 
     if (!orderSupabase) return undefined;
 
@@ -69,7 +76,7 @@ export default function BartenderPage() {
       completedOrders: orders.filter((order) => order.status === "Completed").sort(byCreatedAtAsc),
     };
   }, [orders]);
-  const ticketLabelsByOrderId = useMemo(() => getTicketLabelsByOrderId(orders), [orders]);
+  const ticketLabelsByOrderId = useMemo(() => getTicketLabelsByOrderId(orders, drinkMenu), [orders, drinkMenu]);
 
   const unlock = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -192,7 +199,7 @@ export default function BartenderPage() {
                   disabled={updatingId !== null}
                   loading={updatingId === order.id}
                   smsMessage={smsState[order.id]}
-                  ticketLabel={ticketLabelsByOrderId[order.id] || `Ticket 1 of ${MAX_DRINK_TICKETS}`}
+                  ticketLabel={ticketLabelsByOrderId[order.id] || `FREE 1/${MAX_DRINK_TICKETS}`}
                   onStatusChange={(status) => updateStatus(order, status)}
                 />
               ))}
@@ -210,7 +217,7 @@ export default function BartenderPage() {
                   disabled={updatingId !== null}
                   loading={updatingId === order.id}
                   smsMessage={smsState[order.id]}
-                  ticketLabel={ticketLabelsByOrderId[order.id] || `Ticket 1 of ${MAX_DRINK_TICKETS}`}
+                  ticketLabel={ticketLabelsByOrderId[order.id] || `FREE 1/${MAX_DRINK_TICKETS}`}
                   onStatusChange={(status) => updateStatus(order, status)}
                 />
               ))}
@@ -230,7 +237,7 @@ export default function BartenderPage() {
                   disabled
                   loading={false}
                   smsMessage={smsState[order.id]}
-                  ticketLabel={ticketLabelsByOrderId[order.id] || `Ticket 1 of ${MAX_DRINK_TICKETS}`}
+                  ticketLabel={ticketLabelsByOrderId[order.id] || `FREE 1/${MAX_DRINK_TICKETS}`}
                   onStatusChange={(status) => updateStatus(order, status)}
                 />
               ))}
@@ -289,7 +296,15 @@ function KitchenOrderCard({
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-bold text-brand-ink/50">
             <span>{formatOrderPhone(order.phone)}</span>
-            <span>{ticketLabel}</span>
+            <span
+              className={
+                ticketLabel.startsWith("PAID")
+                  ? "rounded-full border border-brand-sea/25 bg-brand-sea/10 px-2 py-0.5 text-brand-sea"
+                  : ""
+              }
+            >
+              {ticketLabel}
+            </span>
           </div>
         </div>
 
@@ -478,6 +493,25 @@ async function loadOrders({
   setOrders((data || []) as BartenderOrder[]);
 }
 
+async function loadDrinkMenu({ setDrinkMenu }: { setDrinkMenu: (drinks: DrinkMenuItem[]) => void }) {
+  const configError = requireSupabase("drinks.select");
+  if (configError || !orderSupabase) {
+    setDrinkMenu([]);
+    return;
+  }
+
+  try {
+    const { data, error } = await orderSupabase.from("drinks").select("name, category");
+    setDrinkMenu(error ? [] : ((data || []) as DrinkMenuItem[]));
+  } catch (error) {
+    console.error("[Supabase request failed]", {
+      operation: "drinks.select",
+      message: error instanceof Error ? error.message : String(error),
+    });
+    setDrinkMenu([]);
+  }
+}
+
 async function updateOrderStatus(id: string, status: OrderStatus) {
   const configError = requireSupabase("orders.update");
   if (configError || !orderSupabase) return { error: configError || new Error("Supabase is not configured.") };
@@ -543,8 +577,9 @@ function getReadyTime(order: BartenderOrder) {
   return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time;
 }
 
-function getTicketLabelsByOrderId(orders: BartenderOrder[]) {
+function getTicketLabelsByOrderId(orders: BartenderOrder[], drinkMenu: DrinkMenuItem[]) {
   const ordersByPhone = new Map<string, BartenderOrder[]>();
+  const drinkCategoriesByName = new Map(drinkMenu.map((drink) => [drink.name.toLowerCase(), drink.category || ""]));
 
   for (const order of orders) {
     if (!isTicketCountedStatus(order.status)) continue;
@@ -559,7 +594,12 @@ function getTicketLabelsByOrderId(orders: BartenderOrder[]) {
     phoneOrders
       .sort((a, b) => getOrderTime(a) - getOrderTime(b))
       .forEach((order, index) => {
-        labels[order.id] = `Ticket ${index + 1} of ${MAX_DRINK_TICKETS}`;
+        if (index < MAX_DRINK_TICKETS) {
+          labels[order.id] = `FREE ${index + 1}/${MAX_DRINK_TICKETS}`;
+          return;
+        }
+
+        labels[order.id] = `PAID $${getPaidDrinkPrice(drinkCategoriesByName.get(order.drink.toLowerCase()) || "")}`;
       });
   }
 
@@ -576,4 +616,12 @@ function formatOrderPhone(value: string) {
 
   if (national.length !== 10) return value;
   return `(${national.slice(0, 3)}) ${national.slice(3, 6)}-${national.slice(6)}`;
+}
+
+function getPaidDrinkPrice(category: string) {
+  const normalizedCategory = category.toLowerCase();
+
+  if (normalizedCategory.includes("beer")) return 3;
+  if (normalizedCategory.includes("wine")) return 4;
+  return 5;
 }
