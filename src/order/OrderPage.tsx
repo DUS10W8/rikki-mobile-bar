@@ -9,9 +9,9 @@ const BASE = import.meta.env.BASE_URL;
 const MAX_DRINK_TICKETS = 2;
 const TICKET_COUNT_STATUSES = ["new", "in_progress", "ready", "completed", "New", "In Progress", "Ready", "Completed"];
 const PAYMENT_LINKS = {
-  beer: "PASTE_BEER_SQUARE_LINK_HERE",
-  wine: "PASTE_WINE_SQUARE_LINK_HERE",
-  cocktail: "PASTE_COCKTAIL_SQUARE_LINK_HERE",
+  beer: "https://square.link/u/i3mPQjF9",
+  wine: "https://square.link/u/aqBA7xBE",
+  cocktail: "https://square.link/u/X39N1mMJ",
 };
 
 type Drink = {
@@ -115,7 +115,7 @@ export default function OrderPage() {
   const selectedDrinkPayment = selectedDrink ? getDrinkPayment(selectedDrink) : null;
   const nextDrinkLabel = getNextDrinkLabel(guestOrderCount, selectedDrinkPayment);
   const isPaidNextDrink = Boolean(guestOrderCount !== null && guestOrderCount >= MAX_DRINK_TICKETS && selectedDrinkPayment);
-  const submitButtonLabel = isPaidNextDrink && selectedDrinkPayment ? `Order Drink ($${selectedDrinkPayment.price})` : "Submit order";
+  const submitButtonLabel = isPaidNextDrink && selectedDrinkPayment ? `Order Drink ($${selectedDrinkPayment.price})` : "Order Drink";
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
