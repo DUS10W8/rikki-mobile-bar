@@ -26,6 +26,7 @@ type BartenderOrder = {
 
 const BARTENDER_PIN = import.meta.env.VITE_BARTENDER_PIN?.trim() || "";
 const PIN_SESSION_KEY = "rikki-bartender-pin-ok";
+const MAX_DRINK_TICKETS = 2;
 
 export default function BartenderPage() {
   const [authorized, setAuthorized] = useState(() => sessionStorage.getItem(PIN_SESSION_KEY) === "true");
@@ -68,6 +69,7 @@ export default function BartenderPage() {
       completedOrders: orders.filter((order) => order.status === "Completed").sort(byCreatedAtAsc),
     };
   }, [orders]);
+  const ticketLabelsByOrderId = useMemo(() => getTicketLabelsByOrderId(orders), [orders]);
 
   const unlock = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -190,6 +192,7 @@ export default function BartenderPage() {
                   disabled={updatingId !== null}
                   loading={updatingId === order.id}
                   smsMessage={smsState[order.id]}
+                  ticketLabel={ticketLabelsByOrderId[order.id] || `Ticket 1 of ${MAX_DRINK_TICKETS}`}
                   onStatusChange={(status) => updateStatus(order, status)}
                 />
               ))}
@@ -207,6 +210,7 @@ export default function BartenderPage() {
                   disabled={updatingId !== null}
                   loading={updatingId === order.id}
                   smsMessage={smsState[order.id]}
+                  ticketLabel={ticketLabelsByOrderId[order.id] || `Ticket 1 of ${MAX_DRINK_TICKETS}`}
                   onStatusChange={(status) => updateStatus(order, status)}
                 />
               ))}
@@ -226,6 +230,7 @@ export default function BartenderPage() {
                   disabled
                   loading={false}
                   smsMessage={smsState[order.id]}
+                  ticketLabel={ticketLabelsByOrderId[order.id] || `Ticket 1 of ${MAX_DRINK_TICKETS}`}
                   onStatusChange={(status) => updateStatus(order, status)}
                 />
               ))}
@@ -255,12 +260,14 @@ function KitchenOrderCard({
   disabled,
   loading,
   smsMessage,
+  ticketLabel,
   onStatusChange,
 }: {
   order: BartenderOrder;
   disabled: boolean;
   loading: boolean;
   smsMessage?: string;
+  ticketLabel: string;
   onStatusChange: (status: OrderStatus) => void;
 }) {
   const style = getStatusCardStyle(order.status);
@@ -279,6 +286,10 @@ function KitchenOrderCard({
           <div className="flex items-start justify-between gap-3">
             <p className="min-w-0 flex-1 text-lg font-bold leading-snug text-brand-ink/72">{order.drink}</p>
             {loading ? <Loader2 className="h-5 w-5 animate-spin text-brand-ink/55" /> : <StatusBadge status={order.status} />}
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-bold text-brand-ink/50">
+            <span>{formatOrderPhone(order.phone)}</span>
+            <span>{ticketLabel}</span>
           </div>
         </div>
 
@@ -530,4 +541,39 @@ function getReadyTime(order: BartenderOrder) {
   if (!readyishTime) return Number.MAX_SAFE_INTEGER;
   const time = new Date(readyishTime).getTime();
   return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time;
+}
+
+function getTicketLabelsByOrderId(orders: BartenderOrder[]) {
+  const ordersByPhone = new Map<string, BartenderOrder[]>();
+
+  for (const order of orders) {
+    if (!isTicketCountedStatus(order.status)) continue;
+    const phoneKey = order.phone.trim();
+    if (!phoneKey) continue;
+    ordersByPhone.set(phoneKey, [...(ordersByPhone.get(phoneKey) || []), order]);
+  }
+
+  const labels: Record<string, string> = {};
+
+  for (const phoneOrders of ordersByPhone.values()) {
+    phoneOrders
+      .sort((a, b) => getOrderTime(a) - getOrderTime(b))
+      .forEach((order, index) => {
+        labels[order.id] = `Ticket ${index + 1} of ${MAX_DRINK_TICKETS}`;
+      });
+  }
+
+  return labels;
+}
+
+function isTicketCountedStatus(status: string) {
+  return ["new", "in_progress", "ready", "completed", "New", "In Progress", "Ready", "Completed"].includes(status);
+}
+
+function formatOrderPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  const national = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+
+  if (national.length !== 10) return value;
+  return `(${national.slice(0, 3)}) ${national.slice(3, 6)}-${national.slice(6)}`;
 }

@@ -6,6 +6,8 @@ import "./OrderPage.css";
 
 const BAR_NAME = "Rikki's Mobile Bar";
 const BASE = import.meta.env.BASE_URL;
+const MAX_DRINK_TICKETS = 2;
+const TICKET_COUNT_STATUSES = ["new", "in_progress", "ready", "completed", "New", "In Progress", "Ready", "Completed"];
 
 type Drink = {
   id: string;
@@ -22,6 +24,10 @@ type Order = {
   drink: string;
   status: "New" | "In Progress" | "Ready" | "Completed";
   created_at?: string;
+};
+
+type OrderConfirmation = Order & {
+  ticketUsed: number;
 };
 
 type LoadDrinksOptions = {
@@ -41,7 +47,7 @@ export default function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [menuUnavailable, setMenuUnavailable] = useState(false);
-  const [confirmation, setConfirmation] = useState<Order | null>(null);
+  const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
 
   useEffect(() => {
     const loadOptions = { setDrinks, setLoading, setError, setUnavailable: setMenuUnavailable };
@@ -82,9 +88,24 @@ export default function OrderPage() {
     }
 
     setSubmitting(true);
+    const normalizedPhone = normalizePhone(phone);
+    const { count: existingTicketCount, error: ticketError } = await countGuestOrders(normalizedPhone);
+
+    if (ticketError || existingTicketCount === null) {
+      setSubmitting(false);
+      setError(`Order could not be submitted. ${ticketError?.message || "Could not verify drink tickets."}`);
+      return;
+    }
+
+    if (existingTicketCount >= MAX_DRINK_TICKETS) {
+      setSubmitting(false);
+      setError("You’ve used your 2 drink tickets for this event. Please see the bartender if this looks incorrect.");
+      return;
+    }
+
     const { data, error: orderError } = await createOrder({
       name: name.trim(),
-      phone: normalizePhone(phone),
+      phone: normalizedPhone,
       drink: selectedDrink.name,
       status: "New",
     });
@@ -96,7 +117,7 @@ export default function OrderPage() {
       return;
     }
 
-    setConfirmation(data);
+    setConfirmation({ ...data, ticketUsed: existingTicketCount + 1 });
     setSelectedDrink(null);
     setName("");
     setPhone("");
@@ -123,6 +144,7 @@ export default function OrderPage() {
                 <p className="mt-1 text-4xl font-black">#{shortOrderId(confirmation.id)}</p>
               </div>
               <p className="mt-4 text-sm text-brand-ink/60">We will text you when it is ready.</p>
+              <p className="mt-2 text-sm font-bold text-brand-sea">Drink ticket used: {confirmation.ticketUsed} of 2</p>
               <button className="mt-6 w-full rounded-2xl bg-brand-sea px-5 py-4 font-bold text-white shadow-[0_14px_32px_rgba(46,155,138,0.25)]" onClick={() => setConfirmation(null)}>
                 Place another order
               </button>
@@ -287,6 +309,24 @@ async function createOrder(order: Omit<Order, "id" | "created_at">) {
   } catch (error) {
     logSupabaseFailure("orders.insert", error);
     return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
+  }
+}
+
+async function countGuestOrders(phone: string) {
+  const configError = requireSupabase("orders.count");
+  if (configError || !orderSupabase) return { count: null, error: configError };
+
+  try {
+    const { count, error } = await orderSupabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("phone", phone)
+      .in("status", TICKET_COUNT_STATUSES);
+
+    return { count: count ?? 0, error };
+  } catch (error) {
+    logSupabaseFailure("orders.count", error);
+    return { count: null, error: error instanceof Error ? error : new Error(String(error)) };
   }
 }
 
