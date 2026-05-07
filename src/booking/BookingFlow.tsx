@@ -441,7 +441,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
             <div>
               <h3 className="text-3xl font-bold mb-2">Estimate request received! 🎉</h3>
               <p className="text-brand-ink/80">
-                We've received your request and will confirm availability and finalize your quote soon. No payment required.
+                We've received your estimate request and will confirm availability and finalize your quote soon. No payment required.
               </p>
             </div>
 
@@ -660,7 +660,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
             ) : (
               <div className="space-y-3 flex-1">
                 <div className="text-xs text-brand-ink/70 text-center px-4">
-                  You'll receive a clear estimate and next steps — no payment required to check availability.
+                  You'll see a live estimate here as you build your event. No payment required.
                 </div>
                 <Button
                   type="button"
@@ -669,7 +669,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
                   loading={submitting}
                   className="w-full"
                 >
-                  {submitting ? "Checking availability..." : "Check availability for your date"}
+                  {submitting ? "Sending estimate..." : "Send estimate request"}
                 </Button>
               </div>
             )}

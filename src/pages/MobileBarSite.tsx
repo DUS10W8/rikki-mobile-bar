@@ -268,7 +268,7 @@ export default function MobileBarSite() {
               <div>
                 <div className="font-semibold">Service-forward</div>
                 <p className="mt-1">
-                  10+ years in hospitality means we care about sequence—how guests are greeted, served, and taken care
+                  20+ years in hospitality means we care about sequence—how guests are greeted, served, and taken care
                   of all night.
                 </p>
               </div>
@@ -588,8 +588,8 @@ export default function MobileBarSite() {
               <a href="mailto:rikki@rikkismobile.com" className="flex items-center gap-2 hover:opacity-80">
                 <Mail className="w-4 h-4" /> rikki@rikkismobile.com
               </a>
-              <a href="tel:+15092319307" className="flex items-center gap-2 hover:opacity-80">
-                <Phone className="w-4 h-4" /> (509) 231-9307
+              <a href="tel:+15092319354" className="flex items-center gap-2 hover:opacity-80">
+                <Phone className="w-4 h-4" /> 5092319354
               </a>
               <a
                 href="https://instagram.com/rikkismobile"

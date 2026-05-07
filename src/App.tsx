@@ -84,7 +84,7 @@ export default function App() {
     packages: "Pricing",
     "coming-soon": "Coming Soon",
     gallery: "Gallery",
-    book: "Availability",
+    book: "Estimate",
   };
 
   /** Observe sections for active state + header style */
@@ -231,7 +231,7 @@ export default function App() {
               className="ml-2 rounded-2xl border-brand-sea bg-brand-sea text-xs font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.22)] hover:bg-brand-sea/90"
               onClick={() => scrollToSection("book")}
             >
-              Check availability
+              Get instant estimate
             </Button>
           </nav>
 
@@ -244,7 +244,7 @@ export default function App() {
               onClick={() => scrollToSection("book")}
             >
               <Calendar className="w-4 h-4" />
-              <span className="sr-only">Check availability</span>
+              <span className="sr-only">Get instant estimate</span>
             </Button>
             <Button
               variant="outline"
@@ -336,7 +336,7 @@ export default function App() {
                   className="rounded-2xl border-brand-sea bg-brand-sea text-white shadow-[0_14px_40px_rgba(0,0,0,0.24)]"
                   onClick={() => scrollToSection("book")}
                 >
-                  Check availability
+                  Get instant estimate
                 </Button>
                 <button
                   type="button"
@@ -559,7 +559,7 @@ export default function App() {
                   <div>
                     <h3 className="text-lg md:text-xl font-bold">Service-first</h3>
                     <p className="mt-2 leading-relaxed text-base">
-                      10+ years hospitality experience.
+                      20+ years.
                     </p>
                   </div>
                   <div>
@@ -673,7 +673,7 @@ export default function App() {
                       onClick={() => scrollToSection("book")}
                       size="lg"
                     >
-                      Check availability
+                      Get instant estimate
                     </Button>
                   </div>
                 </Card>
@@ -739,9 +739,9 @@ export default function App() {
         <section id="book" className="bg-[linear-gradient(180deg,#ffffff_0%,#f3ece2_100%)] py-14 pb-28 md:py-20 md:pb-20">
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-8 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Check availability for your event</h2>
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Get your instant event estimate</h2>
               <p className="mt-3 mx-auto max-w-2xl text-base leading-relaxed text-brand-ink/80 md:text-lg">
-                Share a few event details for an instant starting estimate. We'll confirm availability and refine your quote after review.
+                Build a live estimate as you answer a few event questions. We'll confirm availability and refine your final quote after review.
               </p>
             </div>
 
@@ -769,8 +769,8 @@ export default function App() {
             {/* Social Proof */}
             <div className="mb-8 grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">10+ years</div>
-                <div className="text-xs text-brand-ink/70">hospitality experience</div>
+                <div className="font-semibold text-brand-ink mb-1">Experience</div>
+                <div className="text-xs text-brand-ink/70">20+ years</div>
               </div>
               <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
                 <div className="font-semibold text-brand-ink mb-1">Licensed & insured</div>
@@ -791,7 +791,7 @@ export default function App() {
               <CardContent className="p-4 text-center">
                 <div className="font-semibold text-brand-ink mb-1">This takes about 2 minutes.</div>
                 <div className="text-sm text-brand-ink/70">
-                  Get a clear estimate and next steps — no payment required.
+                  Get a live estimate and next steps — no payment required.
                 </div>
               </CardContent>
             </Card>
@@ -809,7 +809,7 @@ export default function App() {
             <dl className="mt-10 grid gap-6 md:grid-cols-3">
               {[
                 { icon: <MapPin className="size-5" />, term: "Area", desc: "Tri-Cities & Columbia River" },
-                { icon: <Phone className="size-5" />, term: "Text/Call", desc: "(509) 231-9307" },
+                { icon: <Phone className="size-5" />, term: "Text/Call", desc: "5092319354" },
                 { icon: <Mail className="size-5" />, term: "Email", desc: "rikki@rikkismobile.com" },
               ].map((it) => (
                 <div key={it.term} className="rounded-2xl border border-brand-chrome bg-white p-5">
@@ -866,7 +866,7 @@ export default function App() {
             className="w-full rounded-2xl border-brand-sea bg-brand-sea text-white shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
             onClick={() => scrollToSection("book")}
           >
-            Check availability
+            Get instant estimate
           </Button>
         </div>
       )}
