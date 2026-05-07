@@ -20,14 +20,14 @@ export const pricingConfig: PricingConfig = {
       id: "beer-wine",
       name: "Beer & Wine Bar",
       subtitle: "Simple, fast, and intentional.",
-      description: "Beer & wine plus a small set of simple mixed drinks—built for clean service flow and happy guests.",
+      description: "Alcohol included: beer, wine, and a small set of simple mixed drinks, built for clean service flow and happy guests.",
       valueInclusions: [
-        "Event-grade stemless wine glasses",
-        "Highball cups",
-        "Minimal citrus (lemon/lime)",
+        "Alcohol for your selected drink program",
+        "Drinkware/cups",
+        "Simple garnish and bar supplies",
       ],
-      glassware: "Event-grade stemless wine glasses + highball cups",
-      garnish: "Minimal citrus (lemon/lime)",
+      glassware: "Drinkware/cups included",
+      garnish: "Simple garnish and bar supplies",
       pricing: {
         perGuestRange: { min: 16, max: 20 },
         durationMultipliers: {
@@ -41,14 +41,14 @@ export const pricingConfig: PricingConfig = {
       id: "classic-cocktail",
       name: "Classic Cocktail Bar",
       subtitle: "Most Popular",
-      description: "A curated menu of crowd-pleasing classics with a limited signature set—balanced for speed, consistency, and polish.",
+      description: "Alcohol included: a curated menu of crowd-pleasing classics with a limited signature set, balanced for speed, consistency, and polish.",
       valueInclusions: [
-        "Rocks & highball glassware",
-        "Cocktail coupes",
-        "Citrus twists, dehydrated citrus, house syrups",
+        "Alcohol for your selected drink program",
+        "Drinkware/cups",
+        "Garnishes, mixers, and bar supplies",
       ],
-      glassware: "Rocks & highball glassware + cocktail coupes",
-      garnish: "Citrus twists, dehydrated citrus, house syrups",
+      glassware: "Drinkware/cups included",
+      garnish: "Garnishes, mixers, and bar supplies",
       pricing: {
         perGuestRange: { min: 20, max: 26 },
         durationMultipliers: {
@@ -62,15 +62,15 @@ export const pricingConfig: PricingConfig = {
       id: "premium",
       name: "Premium Bar",
       subtitle: "Signature-forward + elevated ingredients.",
-      description: "An expanded signature cocktail menu with elevated ingredients, garnishes, and sophisticated presentation.",
+      description: "Alcohol included: an expanded signature cocktail menu with elevated ingredients, garnishes, and sophisticated presentation.",
       valueInclusions: [
-        "Premium crystal-style glassware",
-        "Specialty signature glassware",
-        "Dehydrated citrus, herbs, seasonal fruit",
+        "Alcohol for your selected drink program",
+        "Drinkware/cups",
+        "Premium garnishes, mixers, and bar supplies",
         "Elevated garnish presentation",
       ],
-      glassware: "Premium crystal-style glassware + specialty signature glassware",
-      garnish: "Dehydrated citrus, herbs, seasonal fruit, elevated garnish presentation",
+      glassware: "Drinkware/cups included",
+      garnish: "Premium garnishes, mixers, and bar supplies",
       pricing: {
         perGuestRange: { min: 26, max: 34 },
         durationMultipliers: {

@@ -24,7 +24,19 @@
 }
 
 /* Base */
-:root { color-scheme: light; }
+:root {
+  color-scheme: light;
+  --lux-cream: #fff8ec;
+  --lux-parchment: #eadfc6;
+  --lux-espresso: #251913;
+  --lux-charcoal: #141414;
+  --lux-champagne: #c7a15b;
+  --lux-chrome: #d6d4ce;
+  --lux-chrome-dark: #8e8a82;
+  --lux-teal: #2e9b8a;
+  --lux-rust: #b96b4d;
+  --lux-glow: rgba(199, 161, 91, 0.2);
+}
 html, body, #root { height: 100%; }
 
 body {
@@ -40,6 +52,43 @@ a:hover { @apply opacity-90; }
 html { scroll-behavior: smooth; }
 
 .container-max { @apply max-w-6xl mx-auto px-4; }
+
+.luxury-page-shell {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 250, 243, 0.9), transparent 32rem),
+    radial-gradient(circle at 86% 10%, rgba(199, 161, 91, 0.18), transparent 34rem),
+    linear-gradient(180deg, var(--lux-cream), var(--lux-parchment) 54%, #f5efe4);
+}
+
+.luxury-eyebrow {
+  color: var(--lux-rust);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.luxury-panel {
+  border: 1px solid rgba(214, 212, 206, 0.88);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 248, 236, 0.78)),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 18rem);
+  box-shadow:
+    0 24px 70px rgba(37, 25, 19, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.chrome-button {
+  border: 1px solid rgba(214, 212, 206, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 16px 42px rgba(37, 25, 19, 0.16);
+}
+
+.luxury-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(142, 138, 130, 0.58), rgba(255, 255, 255, 0.88), rgba(142, 138, 130, 0.58), transparent);
+}
 
 .hero-video-medallion {
   position: relative;

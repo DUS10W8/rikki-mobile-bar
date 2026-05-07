@@ -78,13 +78,13 @@ export default function App() {
 
   const labelMap: Record<SectionId, string> = {
     about: "Home",
-    menu: "Drinks",
+    menu: "Services",
     food: "Food",
     features: "Van & Experience",
     packages: "Pricing",
     "coming-soon": "Coming Soon",
     gallery: "Gallery",
-    book: "Estimate",
+    book: "Availability",
   };
 
   /** Observe sections for active state + header style */
@@ -173,20 +173,20 @@ export default function App() {
     ].join(" ");
 
   return (
-    <div className="min-h-screen bg-brand-primary text-brand-ink">
+    <div className="min-h-screen luxury-page-shell text-brand-ink">
       {/* Top ribbon */}
-      <div className="w-full bg-gradient-to-r from-brand-rust via-brand-sea to-brand-rust text-white text-xs sm:text-sm py-2">
+      <div className="w-full bg-[linear-gradient(90deg,#251913,#8e6b35,#251913)] text-white text-xs sm:text-sm py-2">
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4">
           <Truck className="size-4" />
-          <span>Serving Tri-Cities & the Columbia River • Licensed mobile bar</span>
+          <span>Vintage Mobile Bar • Tri-Cities, WA • Licensed service</span>
         </div>
       </div>
 
       {/* Header */}
       <header
         className={[
-          "sticky top-0 z-40 border-b border-brand-chrome/70 backdrop-blur",
-          scrolled ? "bg-brand-primary/85 shadow-[0_10px_30px_rgba(0,0,0,0.14)]" : "bg-brand-primary/80",
+          "sticky top-0 z-40 border-b border-white/60 backdrop-blur-xl",
+          scrolled ? "bg-[#fff8ec]/88 shadow-[0_14px_40px_rgba(37,25,19,0.14)]" : "bg-[#fff8ec]/76",
         ].join(" ")}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
@@ -228,10 +228,10 @@ export default function App() {
             <Button
               variant="outline"
               size="sm"
-              className="ml-2 rounded-2xl border-brand-sea bg-brand-sea text-xs font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.22)] hover:bg-brand-sea/90"
+              className="chrome-button ml-2 rounded-2xl border-brand-sea bg-brand-sea text-xs font-semibold text-white hover:bg-brand-sea/90"
               onClick={() => scrollToSection("book")}
             >
-              Get instant estimate
+              Check Availability
             </Button>
           </nav>
 
@@ -244,7 +244,7 @@ export default function App() {
               onClick={() => scrollToSection("book")}
             >
               <Calendar className="w-4 h-4" />
-              <span className="sr-only">Get instant estimate</span>
+              <span className="sr-only">Check Availability</span>
             </Button>
             <Button
               variant="outline"
@@ -285,8 +285,10 @@ export default function App() {
         {/* Hero / About */}
         <section
           id="about"
-          className="flex min-h-[100svh] bg-[radial-gradient(circle_at_top,_#fffaf3,_#f3ece2)] pb-12 pt-5 md:block md:min-h-0 md:pb-16 md:pt-12"
+          className="relative flex min-h-[100svh] overflow-hidden bg-[radial-gradient(circle_at_76%_16%,rgba(199,161,91,0.22),transparent_28rem),radial-gradient(circle_at_20%_6%,#fffaf3,transparent_24rem),linear-gradient(180deg,#fff8ec,#f0e5d2)] pb-12 pt-5 md:block md:min-h-0 md:pb-16 md:pt-12"
         >
+          <div className="pointer-events-none absolute -left-28 top-28 size-72 rounded-full border border-brand-chrome/50 opacity-45" aria-hidden="true" />
+          <div className="pointer-events-none absolute -right-24 bottom-8 size-80 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.72),rgba(199,161,91,0.12)_48%,transparent_70%)]" aria-hidden="true" />
           <div className="mx-auto flex w-full max-w-6xl flex-col px-4">
             {/* Logo Hero Image */}
             <div className="-mx-4 mb-2 hidden justify-center md:flex">
@@ -309,41 +311,41 @@ export default function App() {
                 <span className="inline-flex size-5 items-center justify-center rounded-full bg-brand-sea/10 text-brand-sea">
                   <Star className="size-3" />
                 </span>
-                Licensed & insured mobile bar • Tri-Cities & beyond
+                <span className="luxury-eyebrow tracking-[0.14em]">Vintage Mobile Bar • Tri-Cities, WA</span>
               </div>
 
               <h1 className="text-balance text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
-                A vintage mobile bar made for unforgettable celebrations.
+                A vintage mobile bar experience built for unforgettable events.
               </h1>
 
               <p className="text-lg sm:text-xl leading-relaxed text-brand-ink/80">
-                Rikki's brings polished bar service, curated cocktails, and a 1978 Club Wagon centerpiece to weddings, private parties, and standout events across the Tri-Cities.
+                Craft cocktails, polished service, curated food options, and event-ready tech from a restored 1978 Club Wagon.
               </p>
               <div className="mt-4 hidden flex-wrap gap-2 text-sm text-brand-ink/80 md:flex">
                 <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
-                  1978 Club Wagon • MCM-inspired bar
+                  Licensed mobile bar service
                 </Badge>
                 <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
-                  Licensed & insured
+                  Custom event setups
                 </Badge>
                 <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
-                  Custom menus + light food to meet requirements
+                  Food options available
                 </Badge>
               </div>
 
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4 md:justify-start">
                 <Button
-                  className="rounded-2xl border-brand-sea bg-brand-sea text-white shadow-[0_14px_40px_rgba(0,0,0,0.24)]"
+                  className="chrome-button rounded-2xl border-brand-sea bg-brand-sea text-white"
                   onClick={() => scrollToSection("book")}
                 >
-                  Get instant estimate
+                  Check Availability
                 </Button>
                 <button
                   type="button"
-                  onClick={() => scrollToSection("packages")}
-                  className="text-sm font-medium text-brand-ink/80 hover:text-brand-ink"
+                  onClick={() => scrollToSection("menu")}
+                  className="text-sm font-semibold text-brand-ink/80 hover:text-brand-ink"
                 >
-                  View packages
+                  Explore Services
                 </button>
               </div>
 
@@ -498,49 +500,76 @@ export default function App() {
           </div>
         </section>
 
-        {/* Menu / Drinks */}
-        <section id="menu" className="border-t border-brand-chrome/70 bg-white/70 py-14">
+        {/* Services */}
+        <section id="menu" className="border-t border-brand-chrome/70 bg-[linear-gradient(180deg,#fffaf3_0%,#ffffff_100%)] py-16 md:py-20">
           <div className="mx-auto max-w-6xl px-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div className="max-w-xl space-y-2">
-                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">The drinks come first.</h2>
-                <p className="text-lg leading-relaxed text-brand-ink/80 md:text-xl">
-                  Custom menus built for your event—classics, signatures, or zero-proof options.
-                </p>
+                <p className="luxury-eyebrow">Services</p>
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Premium service, shaped around your event.</h2>
+                <div className="luxury-divider mt-4 w-40" />
               </div>
-              <p className="max-w-sm text-base text-brand-ink/70 md:text-lg">
-                Balanced selections for fast service and happy guests.
+              <p className="max-w-md text-base leading-relaxed text-brand-ink/72 md:text-lg">
+                Start with your date, guest count, and event style. We’ll help shape the right setup.
               </p>
             </div>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {[
                 {
-                  title: "Cocktails",
-                  items: ["Classic builds (think margaritas, sours, old fashioneds)", "One or two signatures"],
+                  title: "Mobile Bar Service",
+                  bestFor: "Best for weddings, parties & private events",
+                  body: "Licensed service from the vintage Club Wagon with setup, bar flow, and breakdown handled.",
                 },
                 {
-                  title: "Beer & Wine",
-                  items: ["Thoughtful beer & wine picks suited to your crowd and venue"],
+                  title: "Cocktails, Beer & Wine",
+                  bestFor: "Best for fast, polished guest service",
+                  body: "Curated menus with classics, signatures, beer, wine, and intentional zero-proof options.",
                 },
                 {
-                  title: "Zero-Proof",
-                  items: ["Intentionally built mocktails so non-drinkers don’t feel like an afterthought"],
+                  title: "Curated Food Options",
+                  bestFor: "Best for venue needs & guest comfort",
+                  body: "Light food options and planning support for event requirements and a smoother guest experience.",
                 },
-              ].map((section) => (
-                <Card key={section.title} className="rounded-2xl border-brand-chrome bg-white/90">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-semibold">{section.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-base text-brand-ink/80 md:text-lg font-medium">
-                      {section.items.map((item) => (
-                        <li key={item}>• {item}</li>
-                      ))}
-                    </ul>
+                {
+                  title: "Audio, DJ & Event Tech",
+                  bestFor: "Best for full-event support",
+                  body: "Optional audio, DJ support, WiFi, displays, and event-ready tech add-ons.",
+                },
+              ].map((service) => (
+                <Card
+                  key={service.title}
+                  className="luxury-panel group h-full rounded-[1.5rem] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_30px_80px_rgba(37,25,19,0.14)]"
+                >
+                  <CardContent className="flex h-full flex-col p-5">
+                    <div className="mb-5 flex size-10 items-center justify-center rounded-full border border-brand-chrome/80 bg-[linear-gradient(135deg,#ffffff,#d8d4cc,#ffffff)] text-brand-ink shadow-inner">
+                      <Star className="size-4 text-brand-rust" />
+                    </div>
+                    <h3 className="text-xl font-bold leading-tight">{service.title}</h3>
+                    <p className="mt-3 rounded-full border border-brand-chrome/70 bg-white/70 px-3 py-1.5 text-xs font-semibold leading-relaxed text-brand-ink/68">
+                      {service.bestFor}
+                    </p>
+                    <p className="mt-4 text-sm leading-relaxed text-brand-ink/75 md:text-base">{service.body}</p>
                   </CardContent>
                 </Card>
               ))}
+            </div>
+
+            <div className="luxury-panel mt-8 overflow-hidden rounded-[1.75rem] p-5 md:flex md:items-center md:justify-between md:p-6">
+              <div>
+                <p className="luxury-eyebrow">Start here</p>
+                <h3 className="mt-2 text-2xl font-bold">Ready to shape the right setup?</h3>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-brand-ink/72 md:text-base">
+                  Share the date, guest count, and event style. We’ll confirm availability and help tune the service mix.
+                </p>
+              </div>
+              <Button
+                className="chrome-button mt-5 w-full rounded-2xl border-brand-sea bg-brand-sea text-white md:mt-0 md:w-auto"
+                onClick={() => scrollToSection("book")}
+                size="lg"
+              >
+                Check Availability
+              </Button>
             </div>
           </div>
         </section>
@@ -619,7 +648,7 @@ export default function App() {
                 {
                   name: "Beer & Wine Bar",
                   subtitle: "Simple, fast, and intentional.",
-                  blurb: "Beer & wine plus a small set of simple mixed drinks—built for clean service flow and happy guests.",
+                  blurb: "Alcohol included: beer, wine, and a small set of simple mixed drinks built for clean service flow and happy guests.",
                   examples: "Examples: spritz, rum & coke, jack & diet, classic margarita.",
                   isPopular: false,
                 },
@@ -662,7 +691,8 @@ export default function App() {
                       {pkg.examples && <p className="mt-2 text-sm md:text-base text-brand-ink/70">{pkg.examples}</p>}
                     </div>
                     <ul className="space-y-2 text-base font-medium">
-                      <li>• Curated drink menu</li>
+                      <li>• Alcohol for your selected drink program</li>
+                      <li>• Drinkware/cups</li>
                       <li>• Professional bartending</li>
                       <li>• Food service included</li>
                     </ul>
@@ -673,7 +703,7 @@ export default function App() {
                       onClick={() => scrollToSection("book")}
                       size="lg"
                     >
-                      Get instant estimate
+                      Check Availability
                     </Button>
                   </div>
                 </Card>
@@ -715,7 +745,7 @@ export default function App() {
                   Built for the details
                 </p>
                 <h3 className="text-2xl font-bold leading-tight md:text-3xl">
-                  Menus, garnish, glassware, and service flow all work together.
+                  Menus, garnish, drinkware, and service flow all work together.
                 </h3>
                 <p className="text-base leading-relaxed text-brand-ink/75">
                   The experience should look composed in photos and feel easy at the bar. That balance is the whole point.
@@ -739,9 +769,9 @@ export default function App() {
         <section id="book" className="bg-[linear-gradient(180deg,#ffffff_0%,#f3ece2_100%)] py-14 pb-28 md:py-20 md:pb-20">
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-8 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Get your instant event estimate</h2>
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Check availability and build your live estimate</h2>
               <p className="mt-3 mx-auto max-w-2xl text-base leading-relaxed text-brand-ink/80 md:text-lg">
-                Build a live estimate as you answer a few event questions. We'll confirm availability and refine your final quote after review.
+                Start with your date, guest count, and event style. We'll help shape the right setup and show a live estimate as you go.
               </p>
             </div>
 
@@ -767,22 +797,26 @@ export default function App() {
             </Card>
 
             {/* Social Proof */}
-            <div className="mb-8 grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-4">
+            <div className="mb-8 grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
                 <div className="font-semibold text-brand-ink mb-1">Experience</div>
                 <div className="text-xs text-brand-ink/70">20+ years</div>
               </div>
               <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">Licensed & insured</div>
+                <div className="font-semibold text-brand-ink mb-1">Licensed mobile bar service</div>
                 <div className="text-xs text-brand-ink/70">venue docs available</div>
               </div>
               <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">Built by operators</div>
-                <div className="text-xs text-brand-ink/70">not rental companies</div>
+                <div className="font-semibold text-brand-ink mb-1">Tri-Cities based</div>
+                <div className="text-xs text-brand-ink/70">venue-friendly service</div>
               </div>
               <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">Tri-Cities–based</div>
-                <div className="text-xs text-brand-ink/70">venue-friendly service</div>
+                <div className="font-semibold text-brand-ink mb-1">Custom event setups</div>
+                <div className="text-xs text-brand-ink/70">built around the room</div>
+              </div>
+              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
+                <div className="font-semibold text-brand-ink mb-1">Food options available</div>
+                <div className="text-xs text-brand-ink/70">planning support included</div>
               </div>
             </div>
 
@@ -791,7 +825,7 @@ export default function App() {
               <CardContent className="p-4 text-center">
                 <div className="font-semibold text-brand-ink mb-1">This takes about 2 minutes.</div>
                 <div className="text-sm text-brand-ink/70">
-                  Get a live estimate and next steps — no payment required.
+                  Check availability, see a live estimate, and get next steps - no payment required.
                 </div>
               </CardContent>
             </Card>
@@ -831,7 +865,7 @@ export default function App() {
           <div className="space-y-1">
             <div className="text-sm font-semibold">Rikki’s Mobile Bar</div>
             <p className="text-xs text-brand-ink/70">
-              Vintage whites • Chrome trim • Woodgrain • Rounded corners
+              1978 Club Wagon • Premium mobile bar • Tri-Cities
             </p>
           </div>
           <div className="text-xs text-brand-ink/70">
@@ -866,7 +900,7 @@ export default function App() {
             className="w-full rounded-2xl border-brand-sea bg-brand-sea text-white shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
             onClick={() => scrollToSection("book")}
           >
-            Get instant estimate
+            Check Availability
           </Button>
         </div>
       )}

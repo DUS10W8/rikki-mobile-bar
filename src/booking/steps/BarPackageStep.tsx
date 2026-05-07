@@ -43,6 +43,9 @@ export function BarPackageStep({ value, onChange, config }: BarPackageStepProps)
                     </div>
                   </div>
                   <div className="text-sm text-brand-ink/70 mb-2">{pkg.description}</div>
+                  <div className="mb-3 rounded-xl border border-brand-sea/25 bg-brand-sea/10 px-3 py-2 text-xs font-semibold text-brand-ink">
+                    Alcohol is included with this drink program.
+                  </div>
                   <div className="pt-3 border-t border-brand-chrome/50 text-xs text-brand-ink/60 space-y-1">
                     <div className="font-semibold">Includes:</div>
                     <div>{pkg.glassware}</div>
