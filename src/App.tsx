@@ -27,7 +27,7 @@ import ComingSoon from "./components/ui/ComingSoon";
 const BASE = import.meta.env.BASE_URL;
 const R_LOGO_SRC = `${BASE}r-logo.png`;
 const HERO_VIDEO_SRC = `${BASE}header-video.mp4`;
-const HERO_VIDEO_POSTER_SRC = `${BASE}rikkis-hero-image-1200.jpg`;
+const HERO_VIDEO_POSTER_SRC = `${BASE}epic-negative-r.png`;
 
 type SectionId =
   | "about"
