@@ -8,7 +8,6 @@ import {
   Truck,
   Instagram,
   Menu as MenuIcon,
-  Martini,
   Check,
 } from "lucide-react";
 
@@ -27,6 +26,8 @@ import ComingSoon from "./components/ui/ComingSoon";
 /** Use Vite base for all public assets so GitHub Pages project URLs work. */
 const BASE = import.meta.env.BASE_URL;
 const R_LOGO_SRC = `${BASE}r-logo.png`;
+const HERO_VIDEO_SRC = `${BASE}header-video.mp4`;
+const HERO_VIDEO_POSTER_SRC = `${BASE}rikkis-hero-image-1200.jpg`;
 
 type SectionId =
   | "about"
@@ -37,6 +38,26 @@ type SectionId =
   | "coming-soon"
   | "gallery"
   | "book";
+
+function HeroVideo() {
+  return (
+    <div className="hero-video-medallion" aria-label="Rikki's Mobile Bar vintage service preview">
+      <div className="hero-video-halo" aria-hidden="true" />
+      <div className="hero-video-frame">
+        <video
+          className="hero-video"
+          src={HERO_VIDEO_SRC}
+          poster={HERO_VIDEO_POSTER_SRC}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [active, setActive] = useState<SectionId>("about");
@@ -56,14 +77,14 @@ export default function App() {
   );
 
   const labelMap: Record<SectionId, string> = {
-    about: "About",
+    about: "Home",
     menu: "Drinks",
     food: "Food",
     features: "Van & Experience",
-    packages: "Packages",
+    packages: "Pricing",
     "coming-soon": "Coming Soon",
     gallery: "Gallery",
-    book: "Book",
+    book: "Availability",
   };
 
   /** Observe sections for active state + header style */
@@ -210,7 +231,7 @@ export default function App() {
               className="ml-2 rounded-2xl border-brand-sea bg-brand-sea text-xs font-semibold text-white shadow-[0_10px_30px_rgba(0,0,0,0.22)] hover:bg-brand-sea/90"
               onClick={() => scrollToSection("book")}
             >
-              Get your event estimate
+              Check availability
             </Button>
           </nav>
 
@@ -223,7 +244,7 @@ export default function App() {
               onClick={() => scrollToSection("book")}
             >
               <Calendar className="w-4 h-4" />
-              <span className="sr-only">Book the bar</span>
+              <span className="sr-only">Check availability</span>
             </Button>
             <Button
               variant="outline"
@@ -262,11 +283,14 @@ export default function App() {
 
       <main>
         {/* Hero / About */}
-        <section id="about" className="bg-[radial-gradient(circle_at_top,_#fffaf3,_#f3ece2)] pb-16 pt-8 md:pt-12">
-          <div className="mx-auto max-w-6xl px-4">
+        <section
+          id="about"
+          className="flex min-h-[100svh] bg-[radial-gradient(circle_at_top,_#fffaf3,_#f3ece2)] pb-12 pt-5 md:block md:min-h-0 md:pb-16 md:pt-12"
+        >
+          <div className="mx-auto flex w-full max-w-6xl flex-col px-4">
             {/* Logo Hero Image */}
-            <div className="flex justify-center mb-2 -mx-4">
-              <img 
+            <div className="-mx-4 mb-2 hidden justify-center md:flex">
+              <img
                 src={`${BASE}rikkis-logo.png`}
                 alt="Rikki's Mobile Bar logo"
                 className="h-64 sm:h-80 md:h-96 w-auto max-w-[90%]"
@@ -274,28 +298,28 @@ export default function App() {
               />
             </div>
 
-            <div className="flex flex-col gap-10 md:flex-row md:items-start">
-            {/* Left copy */}
-            <div className="max-w-xl space-y-4">
+            <div className="flex flex-1 flex-col items-center justify-center gap-7 md:flex-row md:items-center md:justify-between md:gap-12">
+              <div className="order-1 flex w-full justify-center md:order-2 md:flex-1 md:justify-end">
+                <HeroVideo />
+              </div>
+
+              {/* Left copy */}
+              <div className="order-2 max-w-xl space-y-4 text-center md:order-1 md:text-left">
               <div className="inline-flex items-center gap-2 rounded-full border border-brand-chrome bg-white/70 px-3 py-1 text-xs font-medium text-brand-ink/80 shadow-[0_12px_40px_rgba(0,0,0,0.12)] backdrop-blur">
                 <span className="inline-flex size-5 items-center justify-center rounded-full bg-brand-sea/10 text-brand-sea">
                   <Star className="size-3" />
                 </span>
-                Licensed mobile bar • Tri-Cities & beyond
+                Licensed & insured mobile bar • Tri-Cities & beyond
               </div>
 
               <h1 className="text-balance text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
-                Mid-century cool. Future-ready service.
+                A vintage mobile bar made for unforgettable celebrations.
               </h1>
 
               <p className="text-lg sm:text-xl leading-relaxed text-brand-ink/80">
-                Rikki's Mobile Bar is a licensed mobile experience company offering elevated bar service, curated food, professional audio and DJ support, and seamless event production.
+                Rikki's brings polished bar service, curated cocktails, and a 1978 Club Wagon centerpiece to weddings, private parties, and standout events across the Tri-Cities.
               </p>
-              <p className="text-lg sm:text-xl leading-relaxed text-brand-ink/80">
-                We handle the details—so you can enjoy a celebration that feels effortless, polished, and unforgettable.
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2 text-sm text-brand-ink/80">
+              <div className="mt-4 hidden flex-wrap gap-2 text-sm text-brand-ink/80 md:flex">
                 <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
                   1978 Club Wagon • MCM-inspired bar
                 </Badge>
@@ -307,12 +331,12 @@ export default function App() {
                 </Badge>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-4">
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-4 md:justify-start">
                 <Button
                   className="rounded-2xl border-brand-sea bg-brand-sea text-white shadow-[0_14px_40px_rgba(0,0,0,0.24)]"
                   onClick={() => scrollToSection("book")}
                 >
-                  Get your event estimate
+                  Check availability
                 </Button>
                 <button
                   type="button"
@@ -323,7 +347,7 @@ export default function App() {
                 </button>
               </div>
 
-              <dl className="mt-6 grid max-w-md grid-cols-2 gap-4 text-xs text-brand-ink/80 md:text-sm">
+              <dl className="mx-auto mt-6 grid max-w-md grid-cols-2 gap-4 text-left text-xs text-brand-ink/80 md:mx-0 md:text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="size-4 text-brand-sea" />
                   <div>
@@ -339,66 +363,120 @@ export default function App() {
                   </div>
                 </div>
               </dl>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* Event fit */}
+        <section className="border-t border-brand-chrome/70 bg-white/75 py-10">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-rust">
+                  Designed for
+                </p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">
+                  Events where the bar should feel intentional.
+                </h2>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm font-semibold text-brand-ink/80 sm:grid-cols-3 md:flex md:flex-wrap md:justify-end">
+                {["Weddings", "Backyard parties", "Corporate events", "Birthdays", "Bridal showers", "Private dinners"].map(
+                  (eventType) => (
+                    <div
+                      key={eventType}
+                      className="rounded-full border border-brand-chrome/70 bg-brand-primary/70 px-4 py-2 text-center shadow-sm"
+                    >
+                      {eventType}
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Van moment */}
+        <section className="border-t border-brand-chrome/70 bg-brand-primary/80 py-16">
+          <div className="mx-auto grid max-w-6xl gap-8 px-4 md:grid-cols-[1.05fr_0.95fr] md:items-center">
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-sea">
+                The centerpiece
+              </p>
+              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                The bar is part of the moment.
+              </h2>
+              <p className="text-lg leading-relaxed text-brand-ink/80 md:text-xl">
+                Guests walk up to a vintage bar, order something beautiful, and instantly feel like the party was designed with intention.
+              </p>
+              <Button
+                variant="outline"
+                className="rounded-2xl border-brand-ink/20 bg-white/80 text-brand-ink hover:bg-white"
+                onClick={() => scrollToSection("gallery")}
+              >
+                See the build
+              </Button>
             </div>
 
-            {/* Right visual */}
-            <div className="relative flex-1">
-              <Card className="relative rounded-[2rem] border-brand-chrome bg-white/90 shadow-[0_20px_70px_rgba(0,0,0,0.18)]">
-                <CardContent className="space-y-4 p-5">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <p className="text-xs uppercase tracking-[0.18em] text-brand-ink/60">
-                        Rikki’s Mobile Bar
-                      </p>
-                      <p className="text-sm font-semibold text-brand-ink/90">
-                        1978 Ford Club Wagon • Cream & chrome
-                      </p>
-                    </div>
-                    <div className="inline-flex items-center gap-1 rounded-full border border-brand-chrome/60 bg-brand-primary px-2 py-1 text-[11px] font-medium text-brand-ink/80">
-                      <Martini className="size-3" />
-                      In build-out • Booking now
-                    </div>
-                  </div>
-
-                  <div className="relative overflow-hidden rounded-2xl border border-brand-chrome bg-[radial-gradient(circle_at_top,_#fdf7f0,_#ece2d6)]">
-                    <picture className="block aspect-[4/3] w-full">
-                      <source
-                        type="image/webp"
-                        srcSet={`${BASE}rikkis-hero-image-800.webp 800w, ${BASE}rikkis-hero-image-1200.webp 1200w, ${BASE}rikkis-hero-image-1600.webp 1600w`}
-                        sizes="(min-width: 1024px) 50vw, 100vw"
-                      />
-                      <img
-                        src={`${BASE}rikkis-hero-image-1200.jpg`}
-                        srcSet={`${BASE}rikkis-hero-image-800.jpg 800w, ${BASE}rikkis-hero-image-1200.jpg 1200w, ${BASE}rikkis-hero-image-1600.jpg 1600w`}
-                        sizes="(min-width: 1024px) 50vw, 100vw"
-                        alt="1978 Ford Club Wagon mobile bar with fold-out bar"
-                        className="h-full w-full object-cover"
-                        loading="eager"
-                        decoding="async"
-                      />
-                    </picture>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3 text-center text-xs text-brand-ink/80">
-                    <div>
-                      <div className="font-semibold">Cold storage</div>
-                      <div className="text-[11px] text-brand-ink/70">for mixers & garnishes</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold">Fold-out bar</div>
-                      <div className="text-[11px] text-brand-ink/70">with MCM profiles</div>
-                    </div>
-                    <div>
-                      <div className="font-semibold">Satellite bar</div>
-                    <div className="text-[11px] text-brand-ink/70">for extra service points</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="pointer-events-none absolute -left-6 -top-6 size-28 rounded-full bg-brand-sea/10 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-8 -right-8 size-32 rounded-full bg-brand-rust/10 blur-3xl" />
+            <div className="grid gap-3">
+              {[
+                "Vintage 1978 Ford Club Wagon presence",
+                "Cream, chrome, and warm mid-century details",
+                "Photo-worthy guest experience without slowing service",
+              ].map((detail) => (
+                <div key={detail} className="flex items-start gap-3 rounded-2xl border border-brand-chrome bg-white/80 p-4 shadow-sm">
+                  <span className="mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-sea/10 text-brand-sea">
+                    <Check className="size-4" />
+                  </span>
+                  <p className="text-base font-medium leading-relaxed text-brand-ink/80 md:text-lg">{detail}</p>
+                </div>
+              ))}
             </div>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section className="border-t border-brand-chrome/70 bg-white py-16">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="mb-8 max-w-2xl space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-rust">
+                How it works
+              </p>
+              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                Premium service, simple planning.
+              </h2>
+              <p className="text-lg leading-relaxed text-brand-ink/80">
+                Tell us the shape of your event. We help dial in the bar program, setup, staffing, and guest flow.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                {
+                  step: "01",
+                  title: "Choose your service style",
+                  body: "Beer and wine, classic cocktails, or a signature-forward menu with elevated zero-proof options.",
+                },
+                {
+                  step: "02",
+                  title: "Customize the guest experience",
+                  body: "We plan drinks, garnishes, light food requirements, staffing, and optional audio or DJ support.",
+                },
+                {
+                  step: "03",
+                  title: "We handle the service flow",
+                  body: "Setup, bar service, cleanup, and venue-friendly communication are handled with calm, polished hospitality.",
+                },
+              ].map((item) => (
+                <Card key={item.step} className="rounded-2xl border-brand-chrome bg-brand-primary/55">
+                  <CardContent className="p-5">
+                    <div className="text-sm font-semibold text-brand-rust">{item.step}</div>
+                    <h3 className="mt-3 text-xl font-bold">{item.title}</h3>
+                    <p className="mt-3 text-base leading-relaxed text-brand-ink/75">{item.body}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </section>
@@ -500,9 +578,9 @@ export default function App() {
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div className="max-w-xl space-y-2">
-                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Drink programs, scaled to you.</h2>
+                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Clear starting points, customized to your event.</h2>
                 <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
-                  Choose a drink program. We’ll scale staffing and volume to your guest count.
+                  Choose a service direction. We'll scale staffing, menu depth, and setup needs to your guest count.
                 </p>
                 <p className="text-sm text-brand-ink/70 mt-2">
                   Pricing is based on two things: your guest count and the drink program you choose.
@@ -574,7 +652,7 @@ export default function App() {
                       onClick={() => scrollToSection("book")}
                       size="lg"
                     >
-                      Get your event estimate
+                      Check availability
                     </Button>
                   </div>
                 </Card>
@@ -591,9 +669,9 @@ export default function App() {
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">In-progress snapshots.</h2>
+                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">A closer look at the experience.</h2>
                 <p className="mt-1 text-sm text-brand-ink/80">
-                  As we convert the van and refine the bar setup, we’ll keep sharing how it all comes together.
+                  The van, the drinks, the setup details, and the kind of guest moments the bar is built to create.
                 </p>
               </div>
               <div className="hidden text-xs uppercase tracking-[0.16em] text-brand-ink/60 md:block">
@@ -609,9 +687,9 @@ export default function App() {
         <section id="book" className="bg-white/60 py-16 pb-28 md:pb-16">
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-8 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Get your event estimate</h2>
+              <h2 className="text-3xl md:text-4xl font-bold leading-tight">Check availability for your event</h2>
               <p className="mt-3 mx-auto max-w-2xl text-base leading-relaxed text-brand-ink/80 md:text-lg">
-                Complete the booking flow below to get an instant estimate. We'll confirm availability and finalize your quote after review.
+                Share a few event details for an instant starting estimate. We'll confirm availability and refine your quote after review.
               </p>
             </div>
 
@@ -708,13 +786,13 @@ export default function App() {
           </div>
           <div className="flex justify-start gap-4 text-xs md:justify-end">
             <button type="button" onClick={() => scrollToSection("packages")} className="hover:text-brand-ink">
-              Packages
+              Pricing
             </button>
             <button type="button" onClick={() => scrollToSection("gallery")} className="hover:text-brand-ink">
               Gallery
             </button>
             <button type="button" onClick={() => scrollToSection("book")} className="hover:text-brand-ink">
-              Book
+              Availability
             </button>
             <a
               href="https://instagram.com/rikkismobile"
@@ -728,6 +806,17 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {scrolled && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-brand-chrome/70 bg-brand-primary/95 px-4 py-3 shadow-[0_-12px_30px_rgba(0,0,0,0.16)] backdrop-blur md:hidden">
+          <Button
+            className="w-full rounded-2xl border-brand-sea bg-brand-sea text-white shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
+            onClick={() => scrollToSection("book")}
+          >
+            Check availability
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
