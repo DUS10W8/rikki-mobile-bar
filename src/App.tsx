@@ -398,8 +398,8 @@ export default function App() {
         </section>
 
         {/* Van moment */}
-        <section className="border-t border-brand-chrome/70 bg-brand-primary/80 py-16">
-          <div className="mx-auto grid max-w-6xl gap-8 px-4 md:grid-cols-[1.05fr_0.95fr] md:items-center">
+        <section className="border-t border-brand-chrome/70 bg-brand-primary/80 py-14 md:py-20">
+          <div className="mx-auto grid max-w-6xl gap-8 px-4 md:grid-cols-[0.95fr_1.05fr] md:items-center">
             <div className="space-y-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-sea">
                 The centerpiece
@@ -419,19 +419,36 @@ export default function App() {
               </Button>
             </div>
 
-            <div className="grid gap-3">
+            <div className="space-y-4">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-white shadow-[0_24px_70px_rgba(20,20,20,0.18)]">
+                <img
+                  src={`${BASE}gallery/editorial-bar-service-guests-1200.jpg`}
+                  alt="Guests ordering from Rikki's Mobile Bar at an outdoor event"
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent p-5">
+                  <p className="max-w-xs text-xs font-semibold leading-relaxed text-white/95 md:text-sm">
+                    Warm service, real guests, and the van doing what it was built to do.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-2.5">
               {[
                 "Vintage 1978 Ford Club Wagon presence",
                 "Cream, chrome, and warm mid-century details",
                 "Photo-worthy guest experience without slowing service",
               ].map((detail) => (
-                <div key={detail} className="flex items-start gap-3 rounded-2xl border border-brand-chrome bg-white/80 p-4 shadow-sm">
+                <div key={detail} className="flex items-start gap-3 rounded-[1.25rem] border border-brand-chrome bg-white/80 px-4 py-3 shadow-sm">
                   <span className="mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-sea/10 text-brand-sea">
                     <Check className="size-4" />
                   </span>
-                  <p className="text-base font-medium leading-relaxed text-brand-ink/80 md:text-lg">{detail}</p>
+                  <p className="text-sm font-medium leading-relaxed text-brand-ink/80 md:text-base">{detail}</p>
                 </div>
               ))}
+              </div>
             </div>
           </div>
         </section>
@@ -574,7 +591,7 @@ export default function App() {
         </section>
 
         {/* Packages */}
-        <section id="packages" className="border-t border-brand-chrome/70 bg-white py-16">
+        <section id="packages" className="border-t border-brand-chrome/70 bg-[linear-gradient(180deg,#fffaf3_0%,#ffffff_100%)] py-14 md:py-20">
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div className="max-w-xl space-y-2">
@@ -582,17 +599,17 @@ export default function App() {
                 <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
                   Choose a service direction. We'll scale staffing, menu depth, and setup needs to your guest count.
                 </p>
-                <p className="text-sm text-brand-ink/70 mt-2">
-                  Pricing is based on two things: your guest count and the drink program you choose.
+                <p className="mt-2 text-sm text-brand-ink/70">
+                  Every estimate includes the real logistics: planning, service, setup, cleanup, and the right bar flow for the guest count.
                 </p>
               </div>
-              <div className="text-xs text-brand-ink/80 md:text-sm">
-                <p className="font-semibold text-base">What's always included:</p>
-                <ul className="mt-2 space-y-2 text-base">
-                  <li>• Licensed bar service</li>
-                  <li>• Custom menu planning</li>
-                  <li>• Required food service</li>
-                  <li>• Setup & breakdown</li>
+              <div className="rounded-[1.5rem] border border-brand-chrome bg-white/85 p-5 text-sm text-brand-ink/80 shadow-[0_18px_50px_rgba(20,20,20,0.08)]">
+                <p className="font-semibold text-base">Always included</p>
+                <ul className="mt-3 grid gap-2 text-base md:grid-cols-2">
+                  <li>Licensed bar service</li>
+                  <li>Custom menu planning</li>
+                  <li>Required food service</li>
+                  <li>Setup & breakdown</li>
                 </ul>
               </div>
             </div>
@@ -623,7 +640,11 @@ export default function App() {
                   isPopular: false,
                 },
               ].map((pkg) => (
-                <Card key={pkg.name} className="flex h-full flex-col rounded-2xl border-brand-chrome bg-white">
+                <Card
+                  key={pkg.name}
+                  className="relative flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-brand-chrome bg-white/95 shadow-[0_20px_60px_rgba(20,20,20,0.08)]"
+                >
+                  <div className="h-1.5 bg-[linear-gradient(90deg,#b96b4d,#2e9b8a,#c69d4f)]" />
                   <CardHeader>
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-xl md:text-2xl font-bold">{pkg.name}</CardTitle>
@@ -665,9 +686,9 @@ export default function App() {
         <ComingSoon />
 
         {/* Gallery */}
-        <section id="gallery" className="border-t border-brand-chrome/70 bg-brand-primary/80 py-16">
+        <section id="gallery" className="border-t border-brand-chrome/70 bg-brand-primary/80 py-14 md:py-20">
           <div className="mx-auto max-w-6xl px-4">
-            <div className="mb-6 flex items-center justify-between gap-4">
+            <div className="mb-8 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight md:text-3xl">A closer look at the experience.</h2>
                 <p className="mt-1 text-sm text-brand-ink/80">
@@ -679,12 +700,43 @@ export default function App() {
               </div>
             </div>
 
+            <div className="mb-5 grid overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-white/88 shadow-[0_24px_70px_rgba(20,20,20,0.12)] md:grid-cols-[1.3fr_0.7fr]">
+              <div className="aspect-[4/3] md:aspect-[16/10]">
+                <img
+                  src={`${BASE}gallery/editorial-team-service-flow-1200.jpg`}
+                  alt="Rikki's Mobile Bar team member preparing drinks behind the bar"
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <div className="flex flex-col justify-center gap-3 p-5 md:p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-rust">
+                  Built for the details
+                </p>
+                <h3 className="text-2xl font-bold leading-tight md:text-3xl">
+                  Menus, garnish, glassware, and service flow all work together.
+                </h3>
+                <p className="text-base leading-relaxed text-brand-ink/75">
+                  The experience should look composed in photos and feel easy at the bar. That balance is the whole point.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-brand-chrome bg-brand-primary/60 px-3 py-1 text-xs font-semibold text-brand-ink/75">
+                    Custom menus
+                  </span>
+                  <span className="rounded-full border border-brand-chrome bg-brand-primary/60 px-3 py-1 text-xs font-semibold text-brand-ink/75">
+                    Service-ready setup
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <Gallery items={galleryItems} />
           </div>
         </section>
 
         {/* Book / Contact */}
-        <section id="book" className="bg-white/60 py-16 pb-28 md:pb-16">
+        <section id="book" className="bg-[linear-gradient(180deg,#ffffff_0%,#f3ece2_100%)] py-14 pb-28 md:py-20 md:pb-20">
           <div className="mx-auto max-w-6xl px-4">
             <div className="mb-8 text-center">
               <h2 className="text-3xl md:text-4xl font-bold leading-tight">Check availability for your event</h2>
@@ -694,11 +746,12 @@ export default function App() {
             </div>
 
             {/* Pricing Anchor */}
-            <Card className="mb-8 rounded-2xl border-brand-chrome bg-white/90">
-              <CardContent className="p-6">
-                <div className="text-center space-y-3">
+            <Card className="mb-8 overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-white/92 shadow-[0_24px_70px_rgba(20,20,20,0.1)]">
+              <div className="h-1.5 bg-[linear-gradient(90deg,#c69d4f,#2e9b8a,#b96b4d)]" />
+              <CardContent className="p-6 md:p-8">
+                <div className="mx-auto max-w-3xl text-center space-y-3">
                   <div>
-                    <div className="text-2xl font-bold text-brand-sea">Events start at $800</div>
+                    <div className="text-3xl font-bold text-brand-sea md:text-4xl">Events start at $800</div>
                     <div className="text-sm text-brand-ink/70 mt-1">
                       Includes planning, licensed & insured service, travel, setup, and breakdown.
                     </div>
@@ -714,27 +767,27 @@ export default function App() {
             </Card>
 
             {/* Social Proof */}
-            <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4 text-sm">
-              <div className="text-center p-4 rounded-xl bg-white/70 border border-brand-chrome/50">
+            <div className="mb-8 grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
                 <div className="font-semibold text-brand-ink mb-1">10+ years</div>
                 <div className="text-xs text-brand-ink/70">hospitality experience</div>
               </div>
-              <div className="text-center p-4 rounded-xl bg-white/70 border border-brand-chrome/50">
+              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
                 <div className="font-semibold text-brand-ink mb-1">Licensed & insured</div>
                 <div className="text-xs text-brand-ink/70">venue docs available</div>
               </div>
-              <div className="text-center p-4 rounded-xl bg-white/70 border border-brand-chrome/50">
+              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
                 <div className="font-semibold text-brand-ink mb-1">Built by operators</div>
                 <div className="text-xs text-brand-ink/70">not rental companies</div>
               </div>
-              <div className="text-center p-4 rounded-xl bg-white/70 border border-brand-chrome/50">
+              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
                 <div className="font-semibold text-brand-ink mb-1">Tri-Cities–based</div>
                 <div className="text-xs text-brand-ink/70">venue-friendly service</div>
               </div>
             </div>
 
             {/* Consolidated Reassurance */}
-            <Card className="mb-8 rounded-2xl border-brand-chrome bg-white/90">
+            <Card className="mb-8 rounded-[1.5rem] border border-brand-chrome bg-white/90 shadow-sm">
               <CardContent className="p-4 text-center">
                 <div className="font-semibold text-brand-ink mb-1">This takes about 2 minutes.</div>
                 <div className="text-sm text-brand-ink/70">
