@@ -424,8 +424,8 @@ export default function App() {
             <div className="space-y-4">
               <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-white shadow-[0_24px_70px_rgba(20,20,20,0.18)]">
                 <img
-                  src={`${BASE}gallery/editorial-bar-service-guests-1200.jpg`}
-                  alt="Guests ordering from Rikki's Mobile Bar at an outdoor event"
+                  src={`${BASE}gallery/editorial-bar-moment-1200.jpg`}
+                  alt="Rikki's Mobile Bar team member behind the vintage bar setup"
                   className="h-full w-full object-cover"
                   loading="lazy"
                   decoding="async"
