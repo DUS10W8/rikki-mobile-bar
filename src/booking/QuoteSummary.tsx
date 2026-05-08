@@ -183,7 +183,7 @@ export function QuoteSummary({ quote, selection, className, onReset }: QuoteSumm
               {barTier.valueInclusions.map((item) => (
                 <div key={item}>✓ {item}</div>
               ))}
-              <div>✓ Licensed & insured service</div>
+              <div>✓ Licensed alcohol purchasing & service</div>
               <div>✓ Setup & breakdown</div>
             </div>
           </div>

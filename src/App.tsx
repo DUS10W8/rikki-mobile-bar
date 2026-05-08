@@ -178,7 +178,7 @@ export default function App() {
       <div className="w-full bg-[linear-gradient(90deg,#251913,#8e6b35,#251913)] text-white text-xs sm:text-sm py-2">
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-4">
           <Truck className="size-4" />
-          <span>Vintage Mobile Bar • Tri-Cities, WA • Licensed service</span>
+          <span>Vintage Mobile Bar • Tri-Cities, WA • Licensed to purchase & serve alcohol</span>
         </div>
       </div>
 
@@ -319,11 +319,11 @@ export default function App() {
               </h1>
 
               <p className="text-lg sm:text-xl leading-relaxed text-brand-ink/80">
-                Craft cocktails, polished service, curated food options, and event-ready tech from a restored 1978 Club Wagon.
+                Licensed to purchase and serve alcohol for qualifying events, with craft cocktails, curated food options, and event-ready tech from a restored 1978 Club Wagon.
               </p>
               <div className="mt-4 hidden flex-wrap gap-2 text-sm text-brand-ink/80 md:flex">
                 <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
-                  Licensed mobile bar service
+                  Licensed alcohol purchasing & service
                 </Badge>
                 <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
                   Custom event setups
@@ -410,7 +410,7 @@ export default function App() {
                 The bar is part of the moment.
               </h2>
               <p className="text-lg leading-relaxed text-brand-ink/80 md:text-xl">
-                Guests walk up to a vintage bar, order something beautiful, and instantly feel like the party was designed with intention.
+                Guests walk up to a vintage bar, order something beautiful, and know the alcohol sourcing and service are handled professionally.
               </p>
               <Button
                 variant="outline"
@@ -440,7 +440,7 @@ export default function App() {
               <div className="grid gap-2.5">
               {[
                 "Vintage 1978 Ford Club Wagon presence",
-                "Cream, chrome, and warm mid-century details",
+                "Licensed to purchase and serve alcohol",
                 "Photo-worthy guest experience without slowing service",
               ].map((detail) => (
                 <div key={detail} className="flex items-start gap-3 rounded-[1.25rem] border border-brand-chrome bg-white/80 px-4 py-3 shadow-sm">
@@ -474,8 +474,8 @@ export default function App() {
               {[
                 {
                   step: "01",
-                  title: "Choose your service style",
-                  body: "Beer and wine, classic cocktails, or a signature-forward menu with elevated zero-proof options.",
+                  title: "Streamline alcohol logistics",
+                  body: "Rikki's is licensed to purchase and serve alcohol for qualifying events, so sourcing and service stay under one polished plan.",
                 },
                 {
                   step: "02",
@@ -519,7 +519,7 @@ export default function App() {
                 {
                   title: "Mobile Bar Service",
                   bestFor: "Best for weddings, parties & private events",
-                  body: "Licensed service from the vintage Club Wagon with setup, bar flow, and breakdown handled.",
+                  body: "Licensed alcohol purchasing and service from the vintage Club Wagon with setup, bar flow, and breakdown handled.",
                 },
                 {
                   title: "Cocktails, Beer & Wine",
@@ -629,13 +629,13 @@ export default function App() {
                   Choose a service direction. We'll scale staffing, menu depth, and setup needs to your guest count.
                 </p>
                 <p className="mt-2 text-sm text-brand-ink/70">
-                  Every estimate includes the real logistics: planning, service, setup, cleanup, and the right bar flow for the guest count.
+                  Every estimate includes the real logistics: alcohol sourcing, licensed service, planning, setup, cleanup, and the right bar flow for the guest count.
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-brand-chrome bg-white/85 p-5 text-sm text-brand-ink/80 shadow-[0_18px_50px_rgba(20,20,20,0.08)]">
                 <p className="font-semibold text-base">Always included</p>
                 <ul className="mt-3 grid gap-2 text-base md:grid-cols-2">
-                  <li>Licensed bar service</li>
+                  <li>Licensed alcohol purchasing & service</li>
                   <li>Custom menu planning</li>
                   <li>Required food service</li>
                   <li>Setup & breakdown</li>
@@ -656,7 +656,7 @@ export default function App() {
                   name: "Classic Cocktail Bar",
                   subtitle: "Classics + a few signatures.",
                   blurb:
-                    "A curated menu of crowd-pleasing classics with a limited signature set—balanced for speed, consistency, and polish.",
+                    "Alcohol purchasing and service included with a curated menu of crowd-pleasing classics, balanced for speed, consistency, and polish.",
                   examples: "Examples: margarita, whiskey sour, old fashioned + 2–3 signatures.",
                   isPopular: true,
                 },
@@ -664,7 +664,7 @@ export default function App() {
                   name: "Premium / Mocktail Bar",
                   subtitle: "Signature-forward + zero-proof done right.",
                   blurb:
-                    "An expanded signature cocktail menu with elevated ingredients, garnishes, and intentional zero-proof options.",
+                    "Alcohol purchasing and service included with expanded signatures, elevated ingredients, and intentional zero-proof options.",
                   examples: "Includes: 3–5 signatures + elevated mocktails.",
                   isPopular: false,
                 },
@@ -783,7 +783,7 @@ export default function App() {
                   <div>
                     <div className="text-3xl font-bold text-brand-sea md:text-4xl">Events start at $800</div>
                     <div className="text-sm text-brand-ink/70 mt-1">
-                      Includes planning, licensed & insured service, travel, setup, and breakdown.
+                      Includes planning, alcohol sourcing, licensed service, travel, setup, and breakdown.
                     </div>
                   </div>
                   <div className="text-xs text-brand-ink/60 pt-3 border-t border-brand-chrome/50">
@@ -803,8 +803,8 @@ export default function App() {
                 <div className="text-xs text-brand-ink/70">20+ years</div>
               </div>
               <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">Licensed mobile bar service</div>
-                <div className="text-xs text-brand-ink/70">venue docs available</div>
+                <div className="font-semibold text-brand-ink mb-1">Licensed alcohol purchasing & service</div>
+                <div className="text-xs text-brand-ink/70">streamlined for qualifying events</div>
               </div>
               <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
                 <div className="font-semibold text-brand-ink mb-1">Tri-Cities based</div>

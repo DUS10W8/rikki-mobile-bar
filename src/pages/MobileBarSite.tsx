@@ -168,7 +168,7 @@ export default function MobileBarSite() {
               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-sea/10 text-brand-sea">
                 <Star className="w-3 h-3" />
               </span>
-              <span>Licensed mobile bar • Tri-Cities & beyond</span>
+              <span>Licensed alcohol purchasing & service • Tri-Cities</span>
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-[3.2rem] font-extrabold tracking-tight leading-tight">
@@ -176,12 +176,12 @@ export default function MobileBarSite() {
             </h1>
             <p className="mt-4 text-base md:text-lg text-brand-ink/80 leading-relaxed">
               Rikki’s Mobile Bar is a 1978 Ford Club Wagon turned mid-century modern inspired bar.
-              We pull up, pop out the bar, and serve a curated menu of cocktails, mocktails, beer, and wine.
+              We pull up, pop out the bar, and streamline alcohol purchasing and service for a curated menu of cocktails, mocktails, beer, and wine.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Badge className="rounded-full bg-white border-brand-chrome text-brand-ink/80 text-xs md:text-[11px]">
-                Licensed & insured
+                Licensed purchasing & service
               </Badge>
               <Badge className="rounded-full bg-white border-brand-chrome text-brand-ink/80 text-xs md:text-[11px]">
                 Custom menus for your event
@@ -294,7 +294,7 @@ export default function MobileBarSite() {
                   <div>
                     <div className="font-semibold">Dialed-in drink service</div>
                     <p className="mt-1">
-                      A curated menu of cocktails, mocktails, beer, and wine designed around your event.
+                      Alcohol purchasing and service for a curated menu of cocktails, mocktails, beer, and wine designed around your event.
                     </p>
                   </div>
                 </div>
@@ -411,7 +411,7 @@ export default function MobileBarSite() {
           <div className="text-sm text-brand-ink/70">
             <div className="font-semibold">What’s always included</div>
             <ul className="mt-1 space-y-1">
-              <li>• Licensed bar service</li>
+              <li>• Licensed alcohol purchasing & service</li>
               <li>• Custom menu planning</li>
               <li>• Required food service covered in a simple, compliant way</li>
               <li>• Setup & breakdown of the bar area</li>
@@ -431,7 +431,7 @@ export default function MobileBarSite() {
               name: "Classic Cocktail Bar",
               subtitle: "Classics + a few signatures.",
               blurb:
-                "A curated menu of crowd-pleasing classics with a limited signature set—balanced for speed, consistency, and polish.",
+                "Alcohol purchasing and service for crowd-pleasing classics with a limited signature set, balanced for speed, consistency, and polish.",
               examples: "Examples: margarita, whiskey sour, old fashioned + 2–3 signatures.",
             },
             {
@@ -538,12 +538,12 @@ export default function MobileBarSite() {
           <div className="space-y-3">
             {[
               [
-                "Are you licensed and insured?",
-                "Yes—Rikki’s Mobile Bar is a licensed mobile bar service with appropriate insurance. We can provide documentation to your venue if needed.",
+                "Are you licensed to purchase and serve alcohol?",
+                "Yes. Rikki's Mobile Bar is licensed to purchase and serve alcohol for qualifying mobile events, with appropriate insurance and venue documentation available when needed.",
               ],
               [
                 "Do you provide food?",
-                "Yes. We provide food options that meet Washington’s requirements for serving alcohol. That might look like simple, well-chosen bites or coordination with your caterer or venue.",
+                "Yes. We provide food options that meet Washington's requirements when alcohol is served. That might look like simple, well-chosen bites or coordination with your caterer or venue.",
               ],
               [
                 "What does a typical event look like?",
@@ -555,7 +555,7 @@ export default function MobileBarSite() {
               ],
               [
                 "Do you have insurance?",
-                "Yes—fully licensed and insured. Venue certificates available on request.",
+                "Yes. We carry appropriate insurance, and venue certificates are available on request.",
               ],
               [
                 "What power/water is required?",

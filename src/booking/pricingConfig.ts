@@ -4,7 +4,7 @@ export const pricingConfig: PricingConfig = {
   serviceTypes: {
     bar: {
       label: "Bar service",
-      description: "Premium mobile bar service with licensed bartenders.",
+      description: "Premium mobile bar service with licensed alcohol purchasing and service.",
     },
     tech: {
       label: "Event tech",
