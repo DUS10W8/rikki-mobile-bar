@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import BartenderPage from "./bartender/BartenderPage";
 import OrderPage from "./order/OrderPage";
+import ConnectPage from "./pages/ConnectPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import TipPage from "./pages/TipPage";
@@ -16,11 +17,13 @@ const Root =
       ? OrderPage
       : routePath === "/bartender"
         ? BartenderPage
-        : routePath === "/privacy"
-          ? PrivacyPage
-          : routePath === "/terms"
-            ? TermsPage
-            : App;
+        : routePath === "/connect"
+          ? ConnectPage
+          : routePath === "/privacy"
+            ? PrivacyPage
+            : routePath === "/terms"
+              ? TermsPage
+              : App;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

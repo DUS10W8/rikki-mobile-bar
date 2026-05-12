@@ -8,7 +8,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const distDir = path.join(rootDir, "dist");
 const sourceIndex = path.join(distDir, "index.html");
 /** SPA fallbacks that need the full React bundle (same as index.html). */
-const spaRoutes = ["tip", "order", "bartender"];
+const spaRoutes = ["tip", "order", "bartender", "connect"];
 
 for (const route of spaRoutes) {
   const routeDir = path.join(distDir, route);
