@@ -4,7 +4,7 @@ import { Instagram, Martini, Sparkles, Star, UserRoundPlus } from "lucide-react"
 const BASE = import.meta.env.BASE_URL;
 
 const LINKS = {
-  googleReview: "https://share.google/rWmy9Y602W20Ynrff",
+  googleReview: "https://g.page/r/CWNxLHvZMBo5EBM/review",
   instagram: "https://www.instagram.com/rikkismobile/",
   facebook: "https://www.facebook.com/people/Rikkis-Mobile/61584650340060/",
   book: "https://www.rikkismobile.com",
