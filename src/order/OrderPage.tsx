@@ -344,11 +344,12 @@ export default function OrderPage() {
               {ENABLE_DRINK_LIMITS && <p className="mt-4 text-sm text-brand-ink/60">{confirmation.confirmationMessage}</p>}
               {ENABLE_DRINK_LIMITS && <p className="mt-2 text-sm font-bold text-brand-sea">{confirmation.ticketLabel}</p>}
               <div className="mt-6 grid gap-3">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-ink/45">Loved the service?</p>
                 <a
-                  className="flex min-h-12 items-center justify-center rounded-2xl border border-[#c7a86b] bg-brand-ink px-5 py-3 font-black text-[#fffaf2] shadow-[0_16px_34px_rgba(20,20,20,0.18)]"
+                  className="tip-primary-cta"
                   href={TIP_URL}
                 >
-                  Tip Your Bartender
+                  Tip the Bar Team
                 </a>
                 <a
                   className="flex min-h-12 items-center justify-center rounded-2xl border border-brand-chrome bg-[#fffaf2] px-5 py-3 font-black text-brand-ink shadow-sm"
