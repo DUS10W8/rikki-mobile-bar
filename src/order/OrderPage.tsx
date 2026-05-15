@@ -12,6 +12,7 @@ const TIP_URL = "https://www.rikkismobile.com/tip";
 const CONNECT_URL = "https://www.rikkismobile.com/connect";
 const ORDER_POLL_INTERVAL_MS = 4000;
 const MAX_DRINK_TICKETS = 2;
+const ACTIVE_ORDER_STORAGE_KEY = "rikki-active-order";
 const TICKET_COUNT_STATUSES = ["new", "in_progress", "ready", "completed", "New", "In Progress", "Ready", "Completed"];
 const ACTIVE_QUEUE_STATUSES = ["new", "in_progress", "New", "In Progress"];
 const PAYMENT_LINKS = {
@@ -53,6 +54,10 @@ type OrderConfirmation = Order & {
   payment: DrinkPayment | null;
 };
 
+type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_station" | "created_at"> & {
+  orderCode: string;
+};
+
 type DrinkPayment = {
   kind: "beer" | "wine" | "cocktail";
   price: 3 | 4 | 5;
@@ -79,6 +84,7 @@ export default function OrderPage() {
   const [guestOrderCount, setGuestOrderCount] = useState<number | null>(null);
   const [checkingTicketCount, setCheckingTicketCount] = useState(false);
   const [liveUpdateError, setLiveUpdateError] = useState(false);
+  const [restoreError, setRestoreError] = useState(false);
   const [soundAlertEnabled, setSoundAlertEnabled] = useState(false);
   const previousStatusRef = useRef<Order["status"] | null>(null);
   const trackingOrderId = confirmation?.id;
@@ -99,6 +105,48 @@ export default function OrderPage() {
 
     return () => {
       orderSupabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    const savedOrder = readStoredActiveOrder();
+    if (!savedOrder?.id) return;
+
+    let ignore = false;
+
+    const restoreOrder = async () => {
+      const { data, error } = await getOrderById(savedOrder.id);
+      if (ignore) return;
+
+      if (error || !data) {
+        setRestoreError(true);
+        return;
+      }
+
+      const normalizedStatus = normalizeStatus(data.status);
+      if (normalizedStatus === "new" || normalizedStatus === "in_progress" || normalizedStatus === "ready") {
+        const { count } = await countActiveQueuedDrinks();
+        if (ignore) return;
+        setConfirmation(buildStoredConfirmation(data, count));
+        persistActiveOrder(data);
+        setRestoreError(false);
+        return;
+      }
+
+      if (normalizedStatus === "completed") {
+        setConfirmation(buildStoredConfirmation(data, null));
+        persistActiveOrder(data);
+        setRestoreError(false);
+        return;
+      }
+
+      clearStoredActiveOrder();
+    };
+
+    restoreOrder();
+
+    return () => {
+      ignore = true;
     };
   }, []);
 
@@ -149,7 +197,12 @@ export default function OrderPage() {
       }
 
       setLiveUpdateError(false);
-      setConfirmation((current) => (current ? { ...current, ...data } : current));
+      setConfirmation((current) => {
+        if (!current) return current;
+        const nextConfirmation = { ...current, ...data };
+        persistActiveOrder(nextConfirmation);
+        return nextConfirmation;
+      });
 
       const nextStatus = normalizeStatus(data.status);
       const previousStatus = previousStatusRef.current ? normalizeStatus(previousStatusRef.current) : "";
@@ -223,17 +276,27 @@ export default function OrderPage() {
     setSubmitting(false);
 
     setGuestOrderCount(existingTicketCount + 1);
-    setConfirmation({
+    const nextConfirmation = {
       ...data,
       ticketUsed: existingTicketCount + 1,
       ticketLabel: getSubmittedDrinkLabel(existingTicketCount, selectedDrink),
       confirmationMessage: getConfirmationMessage(existingTicketCount),
       estimatedWaitMinutes: activeQueueDepth,
       payment: ENABLE_DRINK_LIMITS && existingTicketCount >= MAX_DRINK_TICKETS ? getDrinkPayment(selectedDrink) : null,
-    });
+    };
+    setConfirmation(nextConfirmation);
+    persistActiveOrder(nextConfirmation);
     setSelectedDrink(null);
     setName("");
     setPhone("");
+  };
+
+  const placeAnotherOrder = () => {
+    clearStoredActiveOrder();
+    setConfirmation(null);
+    setRestoreError(false);
+    setLiveUpdateError(false);
+    previousStatusRef.current = null;
   };
 
   const reloadDrinks = () => {
@@ -301,7 +364,7 @@ export default function OrderPage() {
                   Complete Payment
                 </a>
               )}
-              <button className="mt-6 w-full rounded-2xl bg-brand-sea px-5 py-4 font-bold text-white shadow-[0_14px_32px_rgba(46,155,138,0.25)]" onClick={() => setConfirmation(null)}>
+              <button className="mt-6 w-full rounded-2xl bg-brand-sea px-5 py-4 font-bold text-white shadow-[0_14px_32px_rgba(46,155,138,0.25)]" onClick={placeAnotherOrder}>
                 Place another order
               </button>
             </div>
@@ -336,6 +399,7 @@ export default function OrderPage() {
         </header>
 
         {error && <Alert>{error}</Alert>}
+        {restoreError && <RestoreOrderAlert onClear={placeAnotherOrder} />}
         {loading && <Loading label="Loading menu" />}
         {menuUnavailable && !loading && <MenuUnavailable onRefresh={reloadDrinks} />}
 
@@ -427,6 +491,17 @@ function MenuUnavailable({ onRefresh }: { onRefresh: () => void }) {
       <button className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-brand-rust px-4 py-3 font-bold text-white" onClick={onRefresh} type="button">
         <RefreshCw className="h-4 w-4" />
         Refresh menu
+      </button>
+    </div>
+  );
+}
+
+function RestoreOrderAlert({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="my-3 rounded-2xl border border-brand-rust/30 bg-[#fff4eb] px-4 py-3 text-sm font-semibold text-brand-rust">
+      <p>We couldn't restore your last order. Please listen for your name at pickup.</p>
+      <button className="mt-3 rounded-xl bg-brand-rust px-4 py-2 font-black text-white" type="button" onClick={onClear}>
+        Place another order
       </button>
     </div>
   );
@@ -576,6 +651,57 @@ function formatPhone(value: string) {
 
 function shortOrderId(id: string) {
   return String(id).replace(/-/g, "").slice(0, 6).toUpperCase();
+}
+
+function buildStoredConfirmation(order: Order, estimatedWaitMinutes: number | null): OrderConfirmation {
+  return {
+    ...order,
+    ticketUsed: 0,
+    ticketLabel: "",
+    confirmationMessage: "Your drink order has been placed.",
+    estimatedWaitMinutes,
+    payment: null,
+  };
+}
+
+function persistActiveOrder(order: Order) {
+  try {
+    const activeOrder: StoredActiveOrder = {
+      id: order.id,
+      orderCode: shortOrderId(order.id),
+      name: order.name,
+      drink: order.drink,
+      created_at: order.created_at,
+      status: order.status,
+      bar_station: order.bar_station,
+    };
+    localStorage.setItem(ACTIVE_ORDER_STORAGE_KEY, JSON.stringify(activeOrder));
+  } catch (error) {
+    console.warn("[Order restore unavailable]", error);
+  }
+}
+
+function readStoredActiveOrder() {
+  try {
+    const rawOrder = localStorage.getItem(ACTIVE_ORDER_STORAGE_KEY);
+    if (!rawOrder) return null;
+
+    const parsedOrder = JSON.parse(rawOrder) as Partial<StoredActiveOrder>;
+    if (!parsedOrder.id || typeof parsedOrder.id !== "string") return null;
+
+    return parsedOrder;
+  } catch (error) {
+    console.warn("[Order restore parse failed]", error);
+    return null;
+  }
+}
+
+function clearStoredActiveOrder() {
+  try {
+    localStorage.removeItem(ACTIVE_ORDER_STORAGE_KEY);
+  } catch (error) {
+    console.warn("[Order restore clear failed]", error);
+  }
 }
 
 function getDrinkPayment(drink: Drink): DrinkPayment {
