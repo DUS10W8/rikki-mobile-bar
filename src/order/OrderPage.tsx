@@ -58,6 +58,8 @@ type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_s
   orderCode: string;
 };
 
+type QueuePositionOrder = Pick<Order, "id" | "created_at" | "status">;
+
 type DrinkPayment = {
   kind: "beer" | "wine" | "cocktail";
   price: 3 | 4 | 5;
@@ -125,9 +127,9 @@ export default function OrderPage() {
 
       const normalizedStatus = normalizeStatus(data.status);
       if (normalizedStatus === "new" || normalizedStatus === "in_progress" || normalizedStatus === "ready") {
-        const { count } = await countActiveQueuedDrinks();
+        const { position } = await countOrderQueuePosition(data);
         if (ignore) return;
-        setConfirmation(buildStoredConfirmation(data, count));
+        setConfirmation(buildStoredConfirmation(data, position));
         persistActiveOrder(data);
         setRestoreError(false);
         return;
@@ -196,10 +198,13 @@ export default function OrderPage() {
         return;
       }
 
+      const { position } = await countOrderQueuePosition(data);
+      if (ignore) return;
+
       setLiveUpdateError(false);
       setConfirmation((current) => {
         if (!current) return current;
-        const nextConfirmation = { ...current, ...data };
+        const nextConfirmation = { ...current, ...data, estimatedWaitMinutes: position };
         persistActiveOrder(nextConfirmation);
         return nextConfirmation;
       });
@@ -272,7 +277,7 @@ export default function OrderPage() {
       return;
     }
 
-    const { count: activeQueueDepth } = await countActiveQueuedDrinks();
+    const { position: queuePosition } = await countOrderQueuePosition(data);
     setSubmitting(false);
 
     setGuestOrderCount(existingTicketCount + 1);
@@ -281,7 +286,7 @@ export default function OrderPage() {
       ticketUsed: existingTicketCount + 1,
       ticketLabel: getSubmittedDrinkLabel(existingTicketCount, selectedDrink),
       confirmationMessage: getConfirmationMessage(existingTicketCount),
-      estimatedWaitMinutes: activeQueueDepth,
+      estimatedWaitMinutes: queuePosition,
       payment: ENABLE_DRINK_LIMITS && existingTicketCount >= MAX_DRINK_TICKETS ? getDrinkPayment(selectedDrink) : null,
     };
     setConfirmation(nextConfirmation);
@@ -318,9 +323,7 @@ export default function OrderPage() {
                 <p className="text-sm uppercase tracking-wide text-white/70">Order</p>
                 <p className="mt-1 text-4xl font-black">#{shortOrderId(confirmation.id)}</p>
               </div>
-              <p className="mt-4 text-base font-bold text-brand-ink">
-                {getWaitTimeMessage(confirmation.estimatedWaitMinutes)}
-              </p>
+              <p className="mt-4 text-base font-bold text-brand-ink">{getConfirmationStatusMessage(confirmation)}</p>
               <p className="mt-2 text-sm text-brand-ink/65">Please listen for your name at the pickup area.</p>
               <LiveOrderTracker order={confirmation} liveUpdateError={liveUpdateError} />
               <button
@@ -572,21 +575,37 @@ async function getOrderById(id: string) {
   }
 }
 
-async function countActiveQueuedDrinks() {
-  const configError = requireSupabase("orders.activeQueueCount");
-  if (configError || !orderSupabase) return { count: null, error: configError };
+async function countOrderQueuePosition(order: Order) {
+  const normalizedStatus = normalizeStatus(order.status);
+  if (normalizedStatus !== "new" && normalizedStatus !== "in_progress") {
+    return { position: null, error: null };
+  }
+
+  const configError = requireSupabase("orders.queuePosition");
+  if (configError || !orderSupabase) return { position: null, error: configError };
 
   try {
-    const { count, error } = await orderSupabase
+    const { data, error } = await orderSupabase
       .from("orders")
-      .select("id", { count: "exact", head: true })
-      .in("status", ACTIVE_QUEUE_STATUSES);
+      .select("id,created_at,status")
+      .in("status", ACTIVE_QUEUE_STATUSES)
+      .order("created_at", { ascending: true, nullsFirst: false })
+      .order("id", { ascending: true });
 
-    if (error) return { count: null, error };
-    return { count: count ?? 0, error: null };
+    if (error) return { position: null, error };
+
+    const activeOrders = ((data || []) as QueuePositionOrder[]).filter((item) => {
+      if (!order.created_at || !item.created_at) return true;
+      if (item.created_at < order.created_at) return true;
+      if (item.created_at === order.created_at) return item.id <= order.id;
+      return false;
+    });
+
+    const position = activeOrders.findIndex((item) => item.id === order.id);
+    return { position: position >= 0 ? position + 1 : Math.max(activeOrders.length, 1), error: null };
   } catch (error) {
-    logSupabaseFailure("orders.activeQueueCount", error);
-    return { count: null, error: error instanceof Error ? error : new Error(String(error)) };
+    logSupabaseFailure("orders.queuePosition", error);
+    return { position: null, error: error instanceof Error ? error : new Error(String(error)) };
   }
 }
 
@@ -740,7 +759,17 @@ function getConfirmationMessage(existingCount: number) {
   return "Your order has been placed. This drink requires payment.";
 }
 
-function getWaitTimeMessage(minutes: number | null) {
+function getConfirmationStatusMessage(order: OrderConfirmation) {
+  const normalizedStatus = normalizeStatus(order.status);
+  const stationName = getStationLabel(order.bar_station);
+
+  if (normalizedStatus === "in_progress" && stationName) return `Your drink is being made at the ${stationName}.`;
+  if (normalizedStatus === "in_progress") return "Your drink is being made now.";
+  if (normalizedStatus === "ready" && stationName) return `Your drink is ready at the ${stationName}!`;
+  if (normalizedStatus === "ready") return "Your drink is ready for pickup.";
+  if (normalizedStatus === "completed") return "Enjoy your drink!";
+
+  const minutes = order.estimatedWaitMinutes;
   if (minutes === null) return "Your drink should be ready soon.";
   return `Your drink should be ready in about ${minutes} ${minutes === 1 ? "minute" : "minutes"}.`;
 }
