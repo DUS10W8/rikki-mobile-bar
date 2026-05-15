@@ -7,8 +7,8 @@ const tipLinks = {
   ten: "https://square.link/u/04gWsv5P",
   twenty: "https://square.link/u/GXcwa9jm",
   custom: "https://square.link/u/NvnGkuD1",
-  venmo: "https://venmo.com/REPLACE-WITH-YOUR-VENMO",
-  cashApp: "https://cash.app/$REPLACEWITHYOURCASHTAG",
+  venmo: "https://venmo.com/code?user_id=4582001378067513032&created=1778814267.6042771&printed=1",
+  cashApp: "https://cash.app/$rikkismobile",
 };
 
 export default function TipPage() {

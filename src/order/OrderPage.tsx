@@ -1,13 +1,19 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
-import { Check, CheckCircle2, GlassWater, Loader2, Martini, MessageSquare, RefreshCw } from "lucide-react";
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { Check, CheckCircle2, GlassWater, Loader2, Martini, RefreshCw } from "lucide-react";
 
+import { ENABLE_DRINK_LIMITS } from "./eventConfig";
+import { EVENT_DRINK_MENU } from "./eventMenu";
 import { orderSupabase, orderSupabaseConfig } from "./orderSupabaseClient";
 import "./OrderPage.css";
 
 const BAR_NAME = "Rikki's Mobile Bar";
 const BASE = import.meta.env.BASE_URL;
+const TIP_URL = "https://www.rikkismobile.com/tip";
+const CONNECT_URL = "https://www.rikkismobile.com/connect";
+const ORDER_POLL_INTERVAL_MS = 4000;
 const MAX_DRINK_TICKETS = 2;
 const TICKET_COUNT_STATUSES = ["new", "in_progress", "ready", "completed", "New", "In Progress", "Ready", "Completed"];
+const ACTIVE_QUEUE_STATUSES = ["new", "in_progress", "New", "In Progress"];
 const PAYMENT_LINKS = {
   beer: "https://square.link/u/i3mPQjF9",
   wine: "https://square.link/u/aqBA7xBE",
@@ -20,21 +26,30 @@ type Drink = {
   description?: string | null;
   category: string | null;
   active: boolean;
+  is_available?: boolean;
+  display_order?: number | null;
 };
+
+type OrderStatus = "new" | "in_progress" | "ready" | "completed" | "New" | "In Progress" | "Ready" | "Completed";
 
 type Order = {
   id: string;
   name: string;
   phone: string;
   drink: string;
-  status: "New" | "In Progress" | "Ready" | "Completed";
+  status: OrderStatus;
+  bar_station?: BarStation | null;
   created_at?: string;
+  updated_at?: string;
 };
+
+type BarStation = "white_bar" | "brown_bar";
 
 type OrderConfirmation = Order & {
   ticketUsed: number;
   ticketLabel: string;
   confirmationMessage: string;
+  estimatedWaitMinutes: number | null;
   payment: DrinkPayment | null;
 };
 
@@ -56,7 +71,6 @@ export default function OrderPage() {
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [smsConsent, setSmsConsent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -64,6 +78,11 @@ export default function OrderPage() {
   const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
   const [guestOrderCount, setGuestOrderCount] = useState<number | null>(null);
   const [checkingTicketCount, setCheckingTicketCount] = useState(false);
+  const [liveUpdateError, setLiveUpdateError] = useState(false);
+  const [soundAlertEnabled, setSoundAlertEnabled] = useState(false);
+  const previousStatusRef = useRef<Order["status"] | null>(null);
+  const trackingOrderId = confirmation?.id;
+  const trackingOrderStatus = confirmation?.status;
 
   useEffect(() => {
     const loadOptions = { setDrinks, setLoading, setError, setUnavailable: setMenuUnavailable };
@@ -84,6 +103,12 @@ export default function OrderPage() {
   }, []);
 
   useEffect(() => {
+    if (!ENABLE_DRINK_LIMITS) {
+      setGuestOrderCount(null);
+      setCheckingTicketCount(false);
+      return undefined;
+    }
+
     if (!isValidPhone(phone)) {
       setGuestOrderCount(null);
       setCheckingTicketCount(false);
@@ -104,6 +129,46 @@ export default function OrderPage() {
     };
   }, [phone]);
 
+  useEffect(() => {
+    if (!trackingOrderId || !trackingOrderStatus) {
+      previousStatusRef.current = null;
+      setLiveUpdateError(false);
+      return undefined;
+    }
+
+    previousStatusRef.current = trackingOrderStatus;
+    let ignore = false;
+
+    const pollOrder = async () => {
+      const { data, error } = await getOrderById(trackingOrderId);
+      if (ignore) return;
+
+      if (error || !data) {
+        setLiveUpdateError(true);
+        return;
+      }
+
+      setLiveUpdateError(false);
+      setConfirmation((current) => (current ? { ...current, ...data } : current));
+
+      const nextStatus = normalizeStatus(data.status);
+      const previousStatus = previousStatusRef.current ? normalizeStatus(previousStatusRef.current) : "";
+
+      if (nextStatus === "ready" && previousStatus !== "ready") {
+        if ("vibrate" in navigator) navigator.vibrate?.(180);
+        if (soundAlertEnabled) playCustomerChime();
+      }
+
+      previousStatusRef.current = data.status;
+    };
+
+    const pollId = window.setInterval(pollOrder, ORDER_POLL_INTERVAL_MS);
+    return () => {
+      ignore = true;
+      window.clearInterval(pollId);
+    };
+  }, [trackingOrderId, trackingOrderStatus, soundAlertEnabled]);
+
   const groupedDrinks = useMemo(() => {
     return drinks.reduce<Record<string, Drink[]>>((groups, drink) => {
       const key = drink.category || "House";
@@ -113,24 +178,27 @@ export default function OrderPage() {
     }, {});
   }, [drinks]);
 
-  const canSubmit = Boolean(selectedDrink && name.trim().length >= 2 && isValidPhone(phone) && smsConsent && !submitting);
-  const selectedDrinkPayment = selectedDrink ? getDrinkPayment(selectedDrink) : null;
-  const nextDrinkLabel = getNextDrinkLabel(guestOrderCount, selectedDrinkPayment);
-  const isPaidNextDrink = Boolean(guestOrderCount !== null && guestOrderCount >= MAX_DRINK_TICKETS && selectedDrinkPayment);
+  const phoneIsValid = isValidPhone(phone);
+  const canSubmit = Boolean(selectedDrink && name.trim().length >= 2 && !submitting);
+  const selectedDrinkPayment = ENABLE_DRINK_LIMITS && selectedDrink ? getDrinkPayment(selectedDrink) : null;
+  const nextDrinkLabel = ENABLE_DRINK_LIMITS ? getNextDrinkLabel(guestOrderCount, selectedDrinkPayment) : "";
+  const isPaidNextDrink = Boolean(ENABLE_DRINK_LIMITS && guestOrderCount !== null && guestOrderCount >= MAX_DRINK_TICKETS && selectedDrinkPayment);
   const submitButtonLabel = isPaidNextDrink && selectedDrinkPayment ? `Order Drink ($${selectedDrinkPayment.price})` : "Order Drink";
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
 
-    if (!selectedDrink || !canSubmit) {
-      setError("Choose a drink, enter your name, add a valid phone, and accept SMS updates.");
+    if (!selectedDrink || name.trim().length < 2) {
+      setError("Choose a drink and enter your name.");
       return;
     }
 
     setSubmitting(true);
-    const normalizedPhone = normalizePhone(phone);
-    const { count: existingTicketCount, error: ticketError } = await countGuestOrders(normalizedPhone);
+    const normalizedPhone = phoneIsValid ? normalizePhone(phone) : phone.trim();
+    const { count: existingTicketCount, error: ticketError } = ENABLE_DRINK_LIMITS && normalizedPhone
+      ? await countGuestOrders(normalizedPhone)
+      : { count: 0, error: null };
 
     if (ticketError || existingTicketCount === null) {
       setSubmitting(false);
@@ -142,15 +210,17 @@ export default function OrderPage() {
       name: name.trim(),
       phone: normalizedPhone,
       drink: selectedDrink.name,
-      status: "New",
+      status: "new",
     });
 
-    setSubmitting(false);
-
     if (orderError || !data) {
+      setSubmitting(false);
       setError(`Order could not be submitted. ${orderError?.message || "Please try again."}`);
       return;
     }
+
+    const { count: activeQueueDepth } = await countActiveQueuedDrinks();
+    setSubmitting(false);
 
     setGuestOrderCount(existingTicketCount + 1);
     setConfirmation({
@@ -158,12 +228,12 @@ export default function OrderPage() {
       ticketUsed: existingTicketCount + 1,
       ticketLabel: getSubmittedDrinkLabel(existingTicketCount, selectedDrink),
       confirmationMessage: getConfirmationMessage(existingTicketCount),
-      payment: existingTicketCount >= MAX_DRINK_TICKETS ? getDrinkPayment(selectedDrink) : null,
+      estimatedWaitMinutes: activeQueueDepth,
+      payment: ENABLE_DRINK_LIMITS && existingTicketCount >= MAX_DRINK_TICKETS ? getDrinkPayment(selectedDrink) : null,
     });
     setSelectedDrink(null);
     setName("");
     setPhone("");
-    setSmsConsent(false);
   };
 
   const reloadDrinks = () => {
@@ -177,7 +247,7 @@ export default function OrderPage() {
           <div className="flex flex-1 flex-col justify-center">
             <div className="rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/90 p-6 text-center shadow-[0_28px_80px_rgba(46,46,46,0.14)] backdrop-blur">
               <CheckCircle2 className="mx-auto h-14 w-14 text-brand-sea" />
-              <h1 className="mt-4 text-3xl font-bold text-brand-ink">Order received</h1>
+              <h1 className="mt-4 text-3xl font-bold text-brand-ink">Your order is in!</h1>
               <p className="mt-3 text-brand-ink/70">
                 {confirmation.name}, your {confirmation.drink} is in the queue.
               </p>
@@ -185,8 +255,42 @@ export default function OrderPage() {
                 <p className="text-sm uppercase tracking-wide text-white/70">Order</p>
                 <p className="mt-1 text-4xl font-black">#{shortOrderId(confirmation.id)}</p>
               </div>
-              <p className="mt-4 text-sm text-brand-ink/60">{confirmation.confirmationMessage}</p>
-              <p className="mt-2 text-sm font-bold text-brand-sea">{confirmation.ticketLabel}</p>
+              <p className="mt-4 text-base font-bold text-brand-ink">
+                {getWaitTimeMessage(confirmation.estimatedWaitMinutes)}
+              </p>
+              <p className="mt-2 text-sm text-brand-ink/65">Please listen for your name at the pickup area.</p>
+              <LiveOrderTracker order={confirmation} liveUpdateError={liveUpdateError} />
+              <button
+                className={`mt-4 w-full rounded-2xl border px-4 py-3 text-sm font-black ${
+                  soundAlertEnabled
+                    ? "border-brand-sea/30 bg-brand-sea/10 text-brand-sea"
+                    : "border-brand-chrome bg-white/55 text-brand-ink"
+                }`}
+                type="button"
+                onClick={() => {
+                  setSoundAlertEnabled(true);
+                  playCustomerChime();
+                }}
+              >
+                {soundAlertEnabled ? "Sound alert enabled" : "Enable sound alert"}
+              </button>
+              <p className="mt-4 text-sm font-bold text-brand-sea">Want another drink later? Save this page.</p>
+              {ENABLE_DRINK_LIMITS && <p className="mt-4 text-sm text-brand-ink/60">{confirmation.confirmationMessage}</p>}
+              {ENABLE_DRINK_LIMITS && <p className="mt-2 text-sm font-bold text-brand-sea">{confirmation.ticketLabel}</p>}
+              <div className="mt-6 grid gap-3">
+                <a
+                  className="flex min-h-12 items-center justify-center rounded-2xl border border-[#c7a86b] bg-brand-ink px-5 py-3 font-black text-[#fffaf2] shadow-[0_16px_34px_rgba(20,20,20,0.18)]"
+                  href={TIP_URL}
+                >
+                  Tip Your Bartender
+                </a>
+                <a
+                  className="flex min-h-12 items-center justify-center rounded-2xl border border-brand-chrome bg-[#fffaf2] px-5 py-3 font-black text-brand-ink shadow-sm"
+                  href={CONNECT_URL}
+                >
+                  Connect With Rikki's
+                </a>
+              </div>
               {confirmation.payment && (
                 <a
                   className="mt-5 flex min-h-12 items-center justify-center rounded-2xl bg-brand-ink px-5 py-3 font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)]"
@@ -267,7 +371,7 @@ export default function OrderPage() {
                 <input className="order-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="Alex" autoComplete="name" />
               </label>
               <label className="grid gap-1">
-                <span className="text-sm font-bold text-brand-ink/75">Phone</span>
+                <span className="text-sm font-bold text-brand-ink/75">Phone <span className="font-medium text-brand-ink/45">(optional)</span></span>
                 <input
                   className="order-input"
                   value={phone}
@@ -277,11 +381,7 @@ export default function OrderPage() {
                   autoComplete="tel"
                 />
               </label>
-              <label className="flex items-start gap-3 rounded-2xl border border-brand-chrome/80 bg-white/60 p-3">
-                <input className="mt-1 h-5 w-5 accent-brand-sea" type="checkbox" checked={smsConsent} onChange={(event) => setSmsConsent(event.target.checked)} />
-                <span className="text-sm font-medium text-brand-ink/75">I agree to receive one SMS update for this drink order.</span>
-              </label>
-              {isValidPhone(phone) && (
+              {ENABLE_DRINK_LIMITS && isValidPhone(phone) && (
                 <div className="rounded-2xl border border-brand-chrome/80 bg-white/60 p-3 text-sm font-bold text-brand-ink/75">
                   {checkingTicketCount ? "Checking drink status..." : nextDrinkLabel}
                 </div>
@@ -292,7 +392,7 @@ export default function OrderPage() {
           <div className="fixed inset-x-0 bottom-0 border-t border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_-18px_45px_rgba(46,46,46,0.10)] backdrop-blur">
             <div className="mx-auto max-w-md">
               <button disabled={!canSubmit} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink px-5 py-4 text-lg font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)] disabled:cursor-not-allowed disabled:bg-brand-chrome disabled:text-brand-ink/50 disabled:shadow-none">
-                {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageSquare className="h-5 w-5" />}
+                {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Martini className="h-5 w-5" />}
                 {submitButtonLabel}
               </button>
             </div>
@@ -348,14 +448,6 @@ function logSupabaseFailure(operation: string, error: unknown) {
   });
 }
 
-function friendlyDataError(action: string, error: Error) {
-  if (orderSupabaseConfig.error) return `${action} ${orderSupabaseConfig.error}`;
-  if (error.message === "Failed to fetch") {
-    return `${action} Could not reach Supabase. Check VITE_SUPABASE_URL, network access, CORS, and whether the project URL is correct.`;
-  }
-  return `${action} ${error.message || "Unknown error."}`;
-}
-
 async function createOrder(order: Omit<Order, "id" | "created_at">) {
   const configError = requireSupabase("orders.insert");
   if (configError || !orderSupabase) return { data: null, error: configError };
@@ -387,38 +479,80 @@ async function countGuestOrders(phone: string) {
   }
 }
 
+async function getOrderById(id: string) {
+  const configError = requireSupabase("orders.trackerSelect");
+  if (configError || !orderSupabase) return { data: null, error: configError };
+
+  try {
+    const { data, error } = await orderSupabase
+      .from("orders")
+      .select("id,name,phone,drink,status,bar_station,created_at,updated_at")
+      .eq("id", id)
+      .single<Order>();
+
+    return { data, error };
+  } catch (error) {
+    logSupabaseFailure("orders.trackerSelect", error);
+    return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
+  }
+}
+
+async function countActiveQueuedDrinks() {
+  const configError = requireSupabase("orders.activeQueueCount");
+  if (configError || !orderSupabase) return { count: null, error: configError };
+
+  try {
+    const { count, error } = await orderSupabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", ACTIVE_QUEUE_STATUSES);
+
+    if (error) return { count: null, error };
+    return { count: count ?? 0, error: null };
+  } catch (error) {
+    logSupabaseFailure("orders.activeQueueCount", error);
+    return { count: null, error: error instanceof Error ? error : new Error(String(error)) };
+  }
+}
+
 async function loadDrinks({ setDrinks, setLoading, setError, setUnavailable }: LoadDrinksOptions) {
   setLoading(true);
   setUnavailable(false);
 
   const configError = requireSupabase("drinks.select");
   if (configError || !orderSupabase) {
+    setDrinks(EVENT_DRINK_MENU);
     setLoading(false);
-    setDrinks([]);
-    setUnavailable(true);
-    setError(friendlyDataError("Menu could not be loaded.", configError || new Error("Supabase is not configured.")));
+    setError("");
+    setUnavailable(false);
     return;
   }
 
   try {
-    const { data, error } = await orderSupabase.from("drinks").select("*").eq("active", true).order("category").order("name");
+    const { data, error } = await orderSupabase
+      .from("drinks")
+      .select("*")
+      .eq("active", true)
+      .eq("is_available", true)
+      .order("display_order", { ascending: true, nullsFirst: false })
+      .order("name", { ascending: true });
 
     setLoading(false);
-    if (error) {
-      setDrinks([]);
-      setUnavailable(true);
-      setError(friendlyDataError("Menu could not be loaded.", error));
-    } else {
+    if (error || !data?.length) {
+      setDrinks(EVENT_DRINK_MENU);
       setError("");
-      setDrinks((data || []) as Drink[]);
+      setUnavailable(false);
+      return;
     }
+
+    setError("");
+    setDrinks(data as Drink[]);
   } catch (error) {
-    const requestError = error instanceof Error ? error : new Error(String(error));
-    logSupabaseFailure("drinks.select", requestError);
+    logSupabaseFailure("drinks.select", error);
     setLoading(false);
-    setDrinks([]);
-    setUnavailable(true);
-    setError(friendlyDataError("Menu could not be loaded.", requestError));
+    setDrinks(EVENT_DRINK_MENU);
+    setError("");
+    setUnavailable(false);
   }
 }
 
@@ -478,4 +612,80 @@ function getSubmittedDrinkLabel(existingCount: number, drink: Drink) {
 function getConfirmationMessage(existingCount: number) {
   if (existingCount < MAX_DRINK_TICKETS) return "Your drink order has been placed.";
   return "Your order has been placed. This drink requires payment.";
+}
+
+function getWaitTimeMessage(minutes: number | null) {
+  if (minutes === null) return "Your drink should be ready soon.";
+  return `Your drink should be ready in about ${minutes} ${minutes === 1 ? "minute" : "minutes"}.`;
+}
+
+function LiveOrderTracker({ order, liveUpdateError }: { order: OrderConfirmation; liveUpdateError: boolean }) {
+  const normalizedStatus = normalizeStatus(order.status);
+  const stationName = getStationLabel(order.bar_station);
+
+  return (
+    <section className="mt-5 rounded-2xl border border-brand-chrome/80 bg-white/55 p-4 text-left">
+      <p className="text-xs font-black uppercase tracking-wide text-brand-ink/45">Live status</p>
+      <div className="mt-3 grid gap-2">
+        {[
+          { id: "received", label: "Order received", active: true },
+          { id: "queue", label: "In the queue", active: ["new", "in_progress", "ready", "completed"].includes(normalizedStatus) },
+          { id: "making", label: "Being made", active: ["in_progress", "ready", "completed"].includes(normalizedStatus) },
+          { id: "ready", label: normalizedStatus === "completed" ? "Completed / picked up" : "Ready for pickup", active: ["ready", "completed"].includes(normalizedStatus) },
+        ].map((step) => (
+          <div key={step.id} className={`flex items-center gap-2 text-sm font-bold ${step.active ? "text-brand-ink" : "text-brand-ink/35"}`}>
+            <span className={`h-3 w-3 rounded-full ${step.active ? "bg-brand-sea" : "bg-brand-chrome"}`} />
+            {step.label}
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-base font-black text-brand-ink">{getLiveStatusMessage(normalizedStatus, stationName)}</p>
+      {liveUpdateError && (
+        <p className="mt-3 rounded-xl border border-brand-rust/30 bg-[#fff4eb] px-3 py-2 text-sm font-bold text-brand-rust">
+          Live updates are having trouble. Please listen for your name at pickup.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function normalizeStatus(status: string) {
+  return status.toLowerCase().replace(/\s+/g, "_");
+}
+
+function getStationLabel(station?: BarStation | null) {
+  if (station === "white_bar") return "White Bar";
+  if (station === "brown_bar") return "Brown Bar";
+  return "";
+}
+
+function getLiveStatusMessage(status: string, stationName: string) {
+  if (status === "in_progress" && stationName) return `Your drink is being made at the ${stationName}.`;
+  if (status === "ready" && stationName) return `Your drink is ready at the ${stationName}!`;
+  if (status === "ready") return "Your drink is ready! Please head to the pickup area.";
+  if (status === "completed") return "Your drink has been picked up. Cheers!";
+  return "Your drink is in the queue.";
+}
+
+function playCustomerChime() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const audioContext = new AudioContextClass();
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(740, audioContext.currentTime);
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.22);
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.24);
+  } catch (error) {
+    console.warn("[Customer sound unavailable]", error);
+  }
 }
