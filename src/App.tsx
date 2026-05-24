@@ -940,24 +940,8 @@ export default function App() {
               </a>
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-[0.82fr_0.9fr] lg:items-stretch lg:justify-center">
-              <div className="luxury-panel flex flex-col justify-between rounded-[1.75rem] p-6">
-                <div>
-                  <div className="inline-flex size-11 items-center justify-center rounded-full border border-brand-chrome bg-white text-brand-ink">
-                    <Instagram className="size-5" aria-hidden="true" />
-                  </div>
-                  <h3 className="mt-5 text-2xl font-bold md:text-3xl">Latest from @rikkismobile</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-brand-ink/72 md:text-base">
-                    Swipe through featured clips and play them right here without loading a full Instagram wall.
-                  </p>
-                </div>
-                <div className="mt-6 rounded-[1.25rem] border border-brand-chrome/70 bg-white/72 p-4 text-sm text-brand-ink/72">
-                  <span className="font-semibold text-brand-ink">{activeInstagramIndex + 1} of {instagramPosts.length}:</span>{" "}
-                  {activeInstagramPost.label}
-                </div>
-              </div>
-
-              <Card className="mx-auto w-full max-w-[32rem] overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-white shadow-[0_18px_54px_rgba(20,20,20,0.08)]">
+            <div className="flex justify-center">
+              <Card className="w-full max-w-[32rem] overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-white shadow-[0_18px_54px_rgba(20,20,20,0.08)]">
                 <CardContent className="p-0">
                   <div className="mx-auto w-fit max-w-full p-3">
                     <div className="rounded-[2.15rem] bg-[conic-gradient(from_135deg,#f9f8f1,#77736b,#ffffff,#b9b1a6,#5f5b54,#f4efe4,#ffffff,#8d867c,#f9f8f1)] p-[5px] shadow-[0_24px_70px_rgba(20,20,20,0.18),inset_0_1px_0_rgba(255,255,255,0.85)]">
