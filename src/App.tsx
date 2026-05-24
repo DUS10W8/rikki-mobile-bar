@@ -9,6 +9,9 @@ import {
   Instagram,
   Menu as MenuIcon,
   Check,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import { Button } from "./components/ui/button";
@@ -28,6 +31,64 @@ const BASE = import.meta.env.BASE_URL;
 const R_LOGO_SRC = `${BASE}r-logo.png`;
 const HERO_VIDEO_SRC = `${BASE}header-video.mp4`;
 const HERO_VIDEO_POSTER_SRC = `${BASE}epic-negative-r.png`;
+const GOOGLE_PROFILE_URL = "https://g.page/r/CWNxLHvZMBo5EBM";
+const GOOGLE_REVIEW_URL = "https://g.page/r/CWNxLHvZMBo5EBM/review";
+
+const googleReviews = [
+  {
+    name: "Melanie Burton",
+    meta: "Local Guide · a day ago",
+    quote:
+      "Absolutely amazing mobile bar service! The drinks were fantastic, service was fast with no waiting, and they brought everything - the liquor, the bar setup, and an incredible atmosphere. Super professional, friendly, and made the party feel elevated and stress-free.",
+  },
+  {
+    name: "Noemi Pena",
+    meta: "2 days ago",
+    quote:
+      "Absolutely amazing experience with this mobile bartender service! The staff was incredibly friendly, professional, and kept everything running smoothly all night. The service was super fast, even when things got busy, and every drink was made perfectly.",
+  },
+  {
+    name: "Nikhil Malhan",
+    meta: "5 days ago",
+    quote:
+      "I had them serve for a 350 person grand opening party for my dental office and they absolutely crushed it. They bring the entire setup, know how to make a proper cocktail, keep up with a bustling crowd and get it done with class.",
+  },
+  {
+    name: "Casey Casillas",
+    meta: "a week ago",
+    quote: "Great experience, great drinks, great people.",
+  },
+  {
+    name: "socks",
+    meta: "a week ago",
+    quote:
+      "The cocktails were fresh and professionally made, the setup looked beautiful, and the bartenders were friendly and organized the entire evening. Everything felt seamless, polished, and stress free from start to finish.",
+  },
+] as const;
+
+const instagramPosts = [
+  {
+    href: "https://www.instagram.com/p/DYu2xKRjPhf/",
+    video: "/social/event-cocktails.mp4",
+    poster: "/social/event-cocktails-poster.jpg",
+    alt: "Guest smiling with a sunflower-garnished cocktail in front of Rikki's mobile bar",
+    label: "Event cocktails",
+  },
+  {
+    href: "https://www.instagram.com/p/DYgT-BISrg1/",
+    video: "/social/bar-details.mp4",
+    poster: "/social/bar-details-poster.jpg",
+    alt: "Rikki's Mobile Bar setup with menus and a cocktail",
+    label: "Bar details",
+  },
+  {
+    href: "https://www.instagram.com/p/DYDxzDRyHP8/",
+    video: "/social/rikki-promo.mp4",
+    poster: "",
+    alt: "Rikki's Mobile Bar team serving behind the bar",
+    label: "Rikki's promo",
+  },
+] as const;
 
 type SectionId =
   | "about"
@@ -35,6 +96,7 @@ type SectionId =
   | "food"
   | "features"
   | "packages"
+  | "reviews"
   | "coming-soon"
   | "gallery"
   | "book";
@@ -63,16 +125,20 @@ export default function App() {
   const [active, setActive] = useState<SectionId>("about");
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeReviewIndex, setActiveReviewIndex] = useState(0);
+  const [activeInstagramIndex, setActiveInstagramIndex] = useState(0);
+  const activeReview = googleReviews[activeReviewIndex];
+  const activeInstagramPost = instagramPosts[activeInstagramIndex];
 
   // Sections on the page, in order
   const sections = useMemo<SectionId[]>(
-    () => ["about", "menu", "features", "packages", "coming-soon", "gallery", "book"],
+    () => ["about", "menu", "features", "packages", "reviews", "coming-soon", "gallery", "book"],
     []
   );
 
   // Header nav (order matters) - removed "food" to de-emphasize food service
   const visibleNavIds = useMemo<SectionId[]>(
-    () => ["about", "menu", "features", "packages", "coming-soon", "gallery", "book"],
+    () => ["about", "menu", "features", "packages", "reviews", "coming-soon", "gallery", "book"],
     []
   );
 
@@ -82,6 +148,7 @@ export default function App() {
     food: "Food",
     features: "Van & Experience",
     packages: "Pricing",
+    reviews: "Reviews",
     "coming-soon": "Coming Soon",
     gallery: "Gallery",
     book: "Availability",
@@ -171,6 +238,24 @@ export default function App() {
       "focus-visible:ring-2 focus-visible:ring-brand-sea/50",
       isActive ? "!text-white bg-brand-sea" : "text-brand-ink/80 hover:text-brand-ink hover:bg-brand-ink/10",
     ].join(" ");
+
+  const showReview = (direction: "previous" | "next") => {
+    setActiveReviewIndex((current) => {
+      if (direction === "previous") {
+        return current === 0 ? googleReviews.length - 1 : current - 1;
+      }
+      return current === googleReviews.length - 1 ? 0 : current + 1;
+    });
+  };
+
+  const showInstagramPost = (direction: "previous" | "next") => {
+    setActiveInstagramIndex((current) => {
+      if (direction === "previous") {
+        return current === 0 ? instagramPosts.length - 1 : current - 1;
+      }
+      return current === instagramPosts.length - 1 ? 0 : current + 1;
+    });
+  };
 
   return (
     <div className="min-h-screen luxury-page-shell text-brand-ink">
@@ -712,6 +797,247 @@ export default function App() {
           </div>
         </section>
 
+        {/* Google reviews */}
+        <section id="reviews" className="border-t border-brand-chrome/70 bg-white py-14 md:py-20">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-rust">
+                  Google reviews
+                </p>
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  See what guests are saying about Rikki's.
+                </h2>
+                <p className="text-base leading-relaxed text-brand-ink/78 md:text-lg">
+                  Recent 5-star Google reviews from events, grand openings, and parties.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row md:flex-col lg:flex-row">
+                <a
+                  href={GOOGLE_PROFILE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-brand-ink/20 bg-white px-5 py-3 text-sm font-semibold !text-brand-ink shadow-[0_12px_32px_rgba(37,25,19,0.1)] transition hover:bg-brand-primary/55 hover:opacity-100"
+                >
+                  View on Google
+                  <ExternalLink className="size-4" aria-hidden="true" />
+                </a>
+                <a
+                  href={GOOGLE_REVIEW_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-brand-sea bg-brand-sea px-5 py-3 text-sm font-semibold !text-white shadow-[0_16px_42px_rgba(37,25,19,0.16)] transition hover:bg-brand-sea/90 hover:opacity-100"
+                >
+                  Leave a review
+                  <ExternalLink className="size-4" aria-hidden="true" />
+                </a>
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[0.7fr_1.3fr] lg:items-stretch">
+              <div className="luxury-panel flex flex-col justify-between rounded-[1.75rem] p-6">
+                <div>
+                  <div className="flex gap-1 text-brand-rust" aria-label="Google review star icons">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Star key={index} className="size-5 fill-current" />
+                    ))}
+                  </div>
+                  <h3 className="mt-5 text-2xl font-bold md:text-3xl">5.0 on Google</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-brand-ink/72 md:text-base">
+                    Five recent reviews, all 5 stars, mention fast service, polished setup, professional bartenders, and stress-free hosting.
+                  </p>
+                </div>
+                <div className="mt-6 rounded-[1.25rem] border border-brand-chrome/70 bg-white/72 p-4 text-sm text-brand-ink/72">
+                  <span className="font-semibold text-brand-ink">Recently served by Rikki's?</span> A short Google review helps other hosts feel confident booking a local mobile bar.
+                </div>
+              </div>
+
+              <Card className="overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-brand-primary/55 shadow-[0_18px_54px_rgba(20,20,20,0.08)]">
+                <CardContent className="flex h-full flex-col p-5 md:p-6">
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div className="flex gap-0.5 text-brand-rust" aria-label="Five star review">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <Star key={index} className="size-4 fill-current md:size-5" />
+                      ))}
+                    </div>
+                    <div className="rounded-full border border-brand-chrome/70 bg-white/70 px-3 py-1 text-xs font-semibold text-brand-ink/62">
+                      {activeReviewIndex + 1} / {googleReviews.length}
+                    </div>
+                  </div>
+
+                  <blockquote className="flex-1 text-lg leading-relaxed text-brand-ink/80 md:text-xl">
+                    "{activeReview.quote}"
+                  </blockquote>
+
+                  <div className="mt-6 flex flex-col gap-4 border-t border-brand-chrome/70 pt-5 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <div className="text-lg font-bold leading-tight text-brand-ink">{activeReview.name}</div>
+                      <div className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-brand-ink/48">
+                        {activeReview.meta}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => showReview("previous")}
+                        className="inline-flex size-11 items-center justify-center rounded-full border border-brand-chrome bg-white/85 text-brand-ink shadow-sm transition hover:bg-white"
+                        aria-label="Show previous review"
+                      >
+                        <ChevronLeft className="size-5" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => showReview("next")}
+                        className="inline-flex size-11 items-center justify-center rounded-full border border-brand-chrome bg-white/85 text-brand-ink shadow-sm transition hover:bg-white"
+                        aria-label="Show next review"
+                      >
+                        <ChevronRight className="size-5" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex justify-center gap-2" aria-label="Select a review">
+                    {googleReviews.map((review, index) => (
+                      <button
+                        key={review.name}
+                        type="button"
+                        onClick={() => setActiveReviewIndex(index)}
+                        className={[
+                          "h-2.5 rounded-full transition-all",
+                          activeReviewIndex === index ? "w-8 bg-brand-sea" : "w-2.5 bg-brand-ink/18 hover:bg-brand-ink/32",
+                        ].join(" ")}
+                        aria-label={`Show review from ${review.name}`}
+                        aria-current={activeReviewIndex === index ? "true" : undefined}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Instagram */}
+        <section className="border-t border-brand-chrome/70 bg-[linear-gradient(180deg,#ffffff_0%,#fff8ec_100%)] py-12 md:py-16">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="max-w-xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-rust">
+                  From Instagram
+                </p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight md:text-3xl">
+                  Follow the latest pours, setups, and event moments.
+                </h2>
+              </div>
+              <a
+                href="https://www.instagram.com/rikkismobile/"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-brand-ink/20 bg-white px-5 py-3 text-sm font-semibold !text-brand-ink shadow-[0_12px_32px_rgba(37,25,19,0.1)] transition hover:bg-brand-primary/55 hover:opacity-100"
+              >
+                <Instagram className="size-4" aria-hidden="true" />
+                Follow @rikkismobile
+              </a>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-[0.82fr_0.9fr] lg:items-stretch lg:justify-center">
+              <div className="luxury-panel flex flex-col justify-between rounded-[1.75rem] p-6">
+                <div>
+                  <div className="inline-flex size-11 items-center justify-center rounded-full border border-brand-chrome bg-white text-brand-ink">
+                    <Instagram className="size-5" aria-hidden="true" />
+                  </div>
+                  <h3 className="mt-5 text-2xl font-bold md:text-3xl">Latest from @rikkismobile</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-brand-ink/72 md:text-base">
+                    Swipe through featured clips and play them right here without loading a full Instagram wall.
+                  </p>
+                </div>
+                <div className="mt-6 rounded-[1.25rem] border border-brand-chrome/70 bg-white/72 p-4 text-sm text-brand-ink/72">
+                  <span className="font-semibold text-brand-ink">{activeInstagramIndex + 1} of {instagramPosts.length}:</span>{" "}
+                  {activeInstagramPost.label}
+                </div>
+              </div>
+
+              <Card className="mx-auto w-full max-w-[32rem] overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-white shadow-[0_18px_54px_rgba(20,20,20,0.08)]">
+                <CardContent className="p-0">
+                  <div className="mx-auto w-fit max-w-full p-3">
+                    <div className="rounded-[2.15rem] bg-[conic-gradient(from_135deg,#f9f8f1,#77736b,#ffffff,#b9b1a6,#5f5b54,#f4efe4,#ffffff,#8d867c,#f9f8f1)] p-[5px] shadow-[0_24px_70px_rgba(20,20,20,0.18),inset_0_1px_0_rgba(255,255,255,0.85)]">
+                      <div className="rounded-[1.85rem] bg-[#f7f0e4] p-[7px] shadow-[inset_0_2px_4px_rgba(255,255,255,0.85),inset_0_-2px_8px_rgba(37,25,19,0.16)]">
+                        <div className="aspect-[3/4] max-h-[36rem] w-[min(72vw,27rem)] overflow-hidden rounded-[1.45rem] bg-black shadow-[inset_0_0_0_1px_rgba(255,255,255,0.18)]">
+                          <video
+                            key={activeInstagramPost.video}
+                            className="h-full w-full bg-black object-cover"
+                            {...(activeInstagramPost.poster
+                              ? { poster: `${BASE}${activeInstagramPost.poster.replace(/^\//, "")}` }
+                              : {})}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            aria-label={activeInstagramPost.alt}
+                          >
+                            <source src={`${BASE}${activeInstagramPost.video.replace(/^\//, "")}`} type="video/mp4" />
+                          </video>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <div className="text-lg font-bold leading-tight text-brand-ink">{activeInstagramPost.label}</div>
+                      <div className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-brand-ink/48">
+                        Instagram post
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => showInstagramPost("previous")}
+                        className="inline-flex size-11 items-center justify-center rounded-full border border-brand-chrome bg-white/85 text-brand-ink shadow-sm transition hover:bg-white"
+                        aria-label="Show previous Instagram post"
+                      >
+                        <ChevronLeft className="size-5" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => showInstagramPost("next")}
+                        className="inline-flex size-11 items-center justify-center rounded-full border border-brand-chrome bg-white/85 text-brand-ink shadow-sm transition hover:bg-white"
+                        aria-label="Show next Instagram post"
+                      >
+                        <ChevronRight className="size-5" aria-hidden="true" />
+                      </button>
+                      <a
+                        href={activeInstagramPost.href}
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-brand-sea bg-brand-sea px-4 py-3 text-sm font-semibold !text-white transition hover:bg-brand-sea/90 hover:opacity-100"
+                        aria-label={`Open ${activeInstagramPost.label} on Instagram`}
+                      >
+                        View on Instagram
+                        <ExternalLink className="size-4" aria-hidden="true" />
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center gap-2 px-5 pb-5" aria-label="Select an Instagram post">
+                    {instagramPosts.map((post, index) => (
+                      <button
+                        key={post.href}
+                        type="button"
+                        onClick={() => setActiveInstagramIndex(index)}
+                        className={[
+                          "h-2.5 rounded-full transition-all",
+                          activeInstagramIndex === index ? "w-8 bg-brand-sea" : "w-2.5 bg-brand-ink/18 hover:bg-brand-ink/32",
+                        ].join(" ")}
+                        aria-label={`Show ${post.label} Instagram post`}
+                        aria-current={activeInstagramIndex === index ? "true" : undefined}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
         {/* Coming soon as its own section */}
         <ComingSoon />
 
@@ -894,7 +1220,7 @@ export default function App() {
         </div>
       </footer>
 
-      {scrolled && (
+      {scrolled && active !== "book" && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-brand-chrome/70 bg-brand-primary/95 px-4 py-3 shadow-[0_-12px_30px_rgba(0,0,0,0.16)] backdrop-blur md:hidden">
           <Button
             className="w-full rounded-2xl border-brand-sea bg-brand-sea text-white shadow-[0_12px_30px_rgba(0,0,0,0.22)]"
