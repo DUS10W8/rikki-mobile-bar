@@ -2,21 +2,32 @@ import React, { useState } from "react";
 import { X, RotateCcw } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { QuoteSummary } from "./QuoteSummary";
+import { pricingConfig } from "./pricingConfig";
 import type { Quote, BookingSelection } from "./types";
 
 interface MobileSummaryDrawerProps {
   quote: Quote;
   selection?: BookingSelection;
   onReset?: () => void;
+  onEdit?: () => void;
 }
 
-export function MobileSummaryDrawer({ quote, selection, onReset }: MobileSummaryDrawerProps) {
+export function MobileSummaryDrawer({ quote, selection, onReset, onEdit }: MobileSummaryDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
-
-  // Only show if there's something to display
-  if (quote.estimatedRange.max === 0) {
-    return null;
-  }
+  const hasEstimate = quote.estimatedRange.max > 0;
+  const serviceLabel = selection?.serviceType
+    ? selection.serviceType === "bar"
+      ? "Bar service"
+      : selection.serviceType === "tech"
+        ? "Event tech"
+        : "Bar + tech"
+    : null;
+  const paymentLabel = selection?.barPaymentModel
+    ? pricingConfig.barPaymentModels.find((model) => model.id === selection.barPaymentModel)?.summaryLabel
+    : null;
+  const estimateLabel = quote.estimatedRange.min === quote.estimatedRange.max
+    ? `$${quote.estimatedRange.min.toLocaleString()}`
+    : `$${quote.estimatedRange.min.toLocaleString()} - $${quote.estimatedRange.max.toLocaleString()}`;
 
   return (
     <>
@@ -24,17 +35,29 @@ export function MobileSummaryDrawer({ quote, selection, onReset }: MobileSummary
       <div className="md:hidden fixed bottom-0 inset-x-0 z-[45] bg-white border-t-2 border-brand-chrome shadow-[0_-8px_28px_rgba(0,0,0,0.12)]">
         <div className="px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex-1">
-            <div className="text-xs text-brand-ink/60 mb-1">Estimated Range</div>
-            <div className="text-xl font-bold text-brand-sea">
-              ${quote.estimatedRange.min.toLocaleString()} – ${quote.estimatedRange.max.toLocaleString()}
+            <div className="text-xs text-brand-ink/60 mb-1">{pricingConfig.estimateLanguage.rangeLabel}</div>
+            <div className="text-xl font-bold text-brand-sea transition-all duration-200">
+              {hasEstimate
+                ? estimateLabel
+                : "Build your event"}
             </div>
+            {(serviceLabel || paymentLabel) && (
+              <div className="text-xs text-brand-ink/60 mt-1">
+                {[serviceLabel, paymentLabel].filter(Boolean).join(" / ")}
+              </div>
+            )}
+            {selection?.promoCode && (
+              <div className="text-xs font-semibold text-brand-sea mt-1">
+                {selection.promoCode.code}: -${selection.promoCode.discountAmount.toLocaleString()}
+              </div>
+            )}
           </div>
           <button
             type="button"
             onClick={() => setIsOpen(true)}
             className="px-6 py-2.5 rounded-2xl bg-brand-sea text-white font-semibold text-sm shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
           >
-            View estimate
+            View details
           </button>
         </div>
       </div>
@@ -65,18 +88,22 @@ export function MobileSummaryDrawer({ quote, selection, onReset }: MobileSummary
             </div>
             <div className="overflow-y-auto" style={{ maxHeight: "calc(85vh - 73px)" }}>
               <div className="p-4">
-                <QuoteSummary quote={quote} selection={selection} onReset={onReset} />
+                <QuoteSummary quote={quote} selection={selection} onReset={onReset} onEdit={onEdit} />
               </div>
             </div>
-            {onReset && (selection?.serviceType !== null || 
-              selection?.eventType !== null || 
-              selection?.guestCount !== null ||
-              selection?.duration !== null ||
-              selection?.barTier !== null ||
-              selection?.travelType !== null ||
-              selection?.djService ||
-              selection?.customBranding ||
-              (selection?.techModules && (selection.techModules.starlinkWifi || selection.techModules.tvDisplay || selection.techModules.soundMic))) && (
+            {onReset && selection && (
+              selection.serviceType !== null ||
+              selection.eventType !== null ||
+              selection.guestCount !== null ||
+              selection.duration !== null ||
+              selection.barPaymentModel !== null ||
+              selection.barTier !== null ||
+              selection.travelType !== null ||
+              selection.djService ||
+              selection.customBranding ||
+              selection.promoCode !== null ||
+              (selection.techModules.starlinkWifi || selection.techModules.tvDisplay || selection.techModules.soundMic)
+            ) && (
               <div className="p-4 border-t border-brand-chrome">
                 <Button
                   type="button"

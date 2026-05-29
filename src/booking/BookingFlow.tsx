@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 import { pricingConfig } from "./pricingConfig";
 import { calculateQuote } from "./calcQuote";
 import type { BookingSelection, Quote, ServiceType } from "./types";
@@ -16,6 +17,7 @@ import { DurationStep } from "./steps/DurationStep";
 import { TravelStep } from "./steps/TravelStep";
 import { TechModulesStep } from "./steps/TechModulesStep";
 import { MocktailMenuStep } from "./steps/MocktailMenuStep";
+import { BarPaymentModelStep } from "./steps/BarPaymentModelStep";
 import { QuoteSummary } from "./QuoteSummary";
 import { MobileSummaryDrawer } from "./MobileSummaryDrawer";
 
@@ -23,7 +25,7 @@ interface BookingFlowProps {
   formspreeId: string;
 }
 
-type Step = "serviceType" | "eventType" | "guestCount" | "duration" | "foodService" | "barTier" | "mocktailMenu" | "techModules" | "travelType" | "addons" | "contact";
+type Step = "serviceType" | "eventType" | "guestCount" | "duration" | "foodService" | "barPaymentModel" | "barTier" | "mocktailMenu" | "techModules" | "travelType" | "addons" | "contact";
 
 // Helper function to get initial selection state
 const getInitialSelection = (): BookingSelection => ({
@@ -32,6 +34,8 @@ const getInitialSelection = (): BookingSelection => ({
   guestCount: null,
   duration: null,
   foodPlan: null,
+  barPaymentModel: null,
+  drinkTicketsPerGuest: pricingConfig.defaultDrinkTicketsPerGuest,
   barTier: null,
   mocktailMenu: false,
   techModules: {
@@ -39,10 +43,11 @@ const getInitialSelection = (): BookingSelection => ({
     tvDisplay: false,
     soundMic: false,
   },
-    travelType: null,
-    djService: false,
-    customBranding: false,
-    contact: {
+  travelType: null,
+  djService: false,
+  customBranding: false,
+  promoCode: null,
+  contact: {
       name: "",
       email: "",
       phone: "",
@@ -81,8 +86,11 @@ const normalizeSelectionForServiceType = (
     return {
       ...prevSelection,
       barTier: null,
+      barPaymentModel: null,
+      drinkTicketsPerGuest: pricingConfig.defaultDrinkTicketsPerGuest,
       mocktailMenu: false,
       foodPlan: null,
+      promoCode: null,
       // customBranding stays - it's available for all service types
     };
   }
@@ -96,6 +104,8 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitErrors, setSubmitErrors] = useState<SubmitError[]>([]);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoFeedback, setPromoFeedback] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<Step>("serviceType");
   const [selection, setSelection] = useState<BookingSelection>(getInitialSelection());
   
@@ -127,6 +137,8 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
         )) ||
         (currentServiceType === "tech" && (
           currentSelection.barTier !== null ||
+          currentSelection.barPaymentModel !== null ||
+          currentSelection.drinkTicketsPerGuest !== pricingConfig.defaultDrinkTicketsPerGuest ||
           currentSelection.mocktailMenu ||
           currentSelection.foodPlan !== null
         ));
@@ -190,7 +202,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
     const steps: Step[] = ["serviceType", "eventType", "guestCount", "duration"];
     
     if (hasBar) {
-      steps.push("foodService", "barTier", "mocktailMenu");
+      steps.push("foodService", "barPaymentModel", "barTier", "mocktailMenu");
     }
     
     if (hasTech) {
@@ -219,6 +231,11 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
         return selection.duration !== null;
       case "foodService":
         return hasBar ? selection.foodPlan !== null : true;
+      case "barPaymentModel":
+        return hasBar
+          ? selection.barPaymentModel !== null &&
+              (selection.barPaymentModel !== "ticketed" || selection.drinkTicketsPerGuest > 0)
+          : true;
       case "barTier":
         return hasBar ? selection.barTier !== null : true;
       case "mocktailMenu":
@@ -242,6 +259,23 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   };
 
   const canAdvance = isStepValid(currentStep);
+  const isContactStep = currentStep === "contact";
+  const isBuilderComplete = currentStep === "addons";
+  const autoAdvanceSteps: Step[] = [
+    "serviceType",
+    "eventType",
+    "guestCount",
+    "duration",
+    "foodService",
+    "barPaymentModel",
+    "barTier",
+    "mocktailMenu",
+    "travelType",
+  ];
+  const isAutoAdvanceStep = autoAdvanceSteps.includes(currentStep);
+  const builderSteps = activeSteps.filter((step): step is Exclude<Step, "contact"> => step !== "contact");
+  const builderStepCount = builderSteps.length;
+  const builderStepIndex = builderSteps.indexOf(currentStep as Exclude<Step, "contact">);
 
   // Navigation
   const goToNext = () => {
@@ -257,7 +291,6 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
     updateFn: (prev: BookingSelection) => BookingSelection,
     step: Step
   ) => {
-    const wasValid = isStepValid(step);
     const tempSelection = updateFn(selection);
     
     // Check if step will be valid with the new selection
@@ -278,8 +311,17 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
       case "foodService":
         isValid = hasBar ? tempSelection.foodPlan !== null : true;
         break;
+      case "barPaymentModel":
+        isValid = hasBar
+          ? tempSelection.barPaymentModel !== null &&
+              (tempSelection.barPaymentModel !== "ticketed" || tempSelection.drinkTicketsPerGuest > 0)
+          : true;
+        break;
       case "barTier":
         isValid = hasBar ? tempSelection.barTier !== null : true;
+        break;
+      case "mocktailMenu":
+        isValid = true;
         break;
       case "travelType":
         isValid = tempSelection.travelType !== null;
@@ -290,8 +332,8 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
     
     setSelection(updateFn);
     
-    // Auto-advance if step wasn't valid before and is now valid
-    if (!wasValid && isValid && currentStep === step) {
+    // Choice-based steps advance as soon as the selection is saved.
+    if (isValid && currentStep === step) {
       const stepIndex = activeSteps.indexOf(step);
       const nextIndex = stepIndex + 1;
       if (nextIndex < activeSteps.length) {
@@ -309,6 +351,68 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
     if (prevIndex >= 0) {
       setCurrentStep(activeSteps[prevIndex]);
     }
+  };
+
+  const openContactStep = () => {
+    setCurrentStep("contact");
+  };
+
+  const goToBuilderStart = () => {
+    setCurrentStep("serviceType");
+  };
+
+  const applyPromoCode = () => {
+    const normalizedCode = promoInput.trim().toUpperCase();
+    const promo = pricingConfig.promoCodes.find((item) => item.code === normalizedCode);
+
+    if (!normalizedCode) {
+      setPromoFeedback("Enter a promo code to apply it.");
+      return;
+    }
+
+    if (!promo) {
+      setSelection((prev) => ({ ...prev, promoCode: null }));
+      setPromoFeedback("That promo code is not active.");
+      return;
+    }
+
+    setSelection((prev) => ({
+      ...prev,
+      promoCode: {
+        code: promo.code,
+        label: promo.label,
+        description: promo.description,
+        discountAmount: promo.discountAmount,
+        status: "applied",
+        message: `${promo.label} applied pending first-${promo.maxRedemptions} redemption confirmation.`,
+      },
+    }));
+    setPromoInput(promo.code);
+    setPromoFeedback(`${promo.label} applied: $${promo.discountAmount.toLocaleString()} off pending confirmation.`);
+  };
+
+  const removePromoCode = () => {
+    setSelection((prev) => ({ ...prev, promoCode: null }));
+    setPromoInput("");
+    setPromoFeedback(null);
+  };
+
+  const reservePromoCode = async (currentSelection: BookingSelection) => {
+    if (!currentSelection.promoCode) return null;
+
+    const response = await fetch("/api/promo-code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: currentSelection.promoCode.code,
+        name: currentSelection.contact.name,
+        email: currentSelection.contact.email,
+        phone: currentSelection.contact.phone,
+        eventDate: currentSelection.contact.eventDate,
+      }),
+    });
+
+    return response.json() as Promise<{ status: "reserved" | "pending" | "applied"; message: string }>;
   };
 
   // Handle form submission
@@ -361,6 +465,15 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
     }
 
     // Bar service
+    if (hasBar && selection.barPaymentModel) {
+      const paymentModel = pricingConfig.barPaymentModels.find((model) => model.id === selection.barPaymentModel);
+      if (paymentModel) {
+        formData.append("barPaymentModel", paymentModel.summaryLabel);
+      }
+      if (selection.barPaymentModel === "ticketed") {
+        formData.append("drinkTicketsPerGuest", selection.drinkTicketsPerGuest.toString());
+      }
+    }
     if (hasBar && selection.barTier) {
       const barTier = pricingConfig.barTiers.find((tier) => tier.id === selection.barTier);
       if (barTier) {
@@ -391,18 +504,48 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
       formData.append("addOnEventBranding", "true");
     }
 
+    let nextSelection = selection;
+    if (selection.promoCode) {
+      const reservation = await reservePromoCode(selection).catch(() => null);
+      const reservedPromo = reservation
+        ? {
+            ...selection.promoCode,
+            status: reservation.status,
+            message: reservation.message,
+          }
+        : {
+            ...selection.promoCode,
+            status: "pending" as const,
+            message: "Promo noted for manual first-3 redemption confirmation.",
+          };
+
+      nextSelection = { ...selection, promoCode: reservedPromo };
+      setSelection(nextSelection);
+      formData.append("promoCode", reservedPromo.code);
+      formData.append("promoLabel", reservedPromo.label);
+      formData.append("promoDiscount", reservedPromo.discountAmount.toString());
+      formData.append("promoStatus", reservedPromo.status);
+      formData.append("promoMessage", reservedPromo.message);
+    }
+
     // Pricing breakdown
     formData.append(
       "estimated_range",
-      `$${quote.estimatedRange.min.toLocaleString()} – $${quote.estimatedRange.max.toLocaleString()}`
+      `$${quote.estimatedRange.min.toLocaleString()} - $${quote.estimatedRange.max.toLocaleString()}`
     );
     formData.append("addons_subtotal", `$${quote.addonsSubtotal.toLocaleString()}`);
 
     // Full quote JSON
     formData.append("quote_json", JSON.stringify({
       lineItems: quote.lineItems,
+      breakdownItems: quote.breakdownItems,
       addonsSubtotal: quote.addonsSubtotal,
       estimatedRange: quote.estimatedRange,
+      serviceNotes: quote.serviceNotes,
+      disclaimers: quote.disclaimers,
+      barPaymentModel: nextSelection.barPaymentModel,
+      drinkTicketsPerGuest: nextSelection.drinkTicketsPerGuest,
+      promoCode: nextSelection.promoCode,
     }));
 
     // Submit to Formspree
@@ -439,9 +582,9 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
         <CardContent className="p-8">
           <div className="text-center space-y-6">
             <div>
-              <h3 className="text-3xl font-bold mb-2">Estimate request received! 🎉</h3>
+              <h3 className="text-3xl font-bold mb-2">Estimate request received!</h3>
               <p className="text-brand-ink/80">
-                We've received your estimate request and will confirm availability and finalize your quote soon. No payment required.
+                We've received your starting estimate request and will confirm availability, service details, and your final quote soon. No payment required.
               </p>
             </div>
 
@@ -453,13 +596,13 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
               <h4 className="font-semibold text-lg mb-3">What happens next?</h4>
               <div className="text-sm text-brand-ink/70 space-y-2 text-left max-w-md mx-auto">
                 <p>
-                  • We'll review your event details and check availability for your date.
+                  - We'll review your event details and check availability for your date.
                 </p>
                 <p>
-                  • You'll receive a confirmation email with a finalized quote and next steps.
+                  - You'll receive a confirmation email with your starting range, final quote path, and next steps.
                 </p>
                 <p>
-                  • We'll coordinate any final details to make sure everything is perfect for your event.
+                  - We'll coordinate any final details to make sure everything is perfect for your event.
                 </p>
               </div>
             </div>
@@ -484,19 +627,38 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
       {/* Left: Steps Form */}
       <div className="space-y-6">
         {/* Step indicator */}
-        <div className="flex items-center gap-2 text-sm text-brand-ink/60">
-          <span>Step {currentStepIndex + 1} of {activeSteps.length}</span>
+        <div className="space-y-1">
+          <h3 className="text-2xl font-bold">Build Your Event</h3>
+          <div className="flex items-center gap-2 text-sm text-brand-ink/60">
+            <span>{isContactStep ? "Availability details" : `Builder step ${builderStepIndex + 1} of ${builderStepCount}`}</span>
+          </div>
+          <p className="text-sm text-brand-ink/70">
+            Adjust options to fit your event and watch the estimated starting range update live.
+          </p>
         </div>
 
         {/* Current step content */}
-        <div ref={stepContentRef} className="min-h-[400px] pb-28">
+        <div ref={stepContentRef} className="pb-4 md:min-h-[400px] md:pb-8">
           {currentStep === "serviceType" && (
             <ServiceTypeStep
               value={selection.serviceType}
               onChange={(value) => {
                 handleSingleSelectChange(
                   (prev) => {
-                    const updated = { ...prev, serviceType: value };
+                    const updated = {
+                      ...prev,
+                      serviceType: value,
+                      barPaymentModel:
+                        value === "bar" || value === "both"
+                          ? prev.serviceType === "bar" || prev.serviceType === "both"
+                            ? prev.barPaymentModel
+                            : null
+                          : null,
+                      drinkTicketsPerGuest:
+                        value === "bar" || value === "both"
+                          ? prev.drinkTicketsPerGuest
+                          : pricingConfig.defaultDrinkTicketsPerGuest,
+                    };
                     // Normalize immediately when serviceType changes
                     return normalizeSelectionForServiceType(value, updated);
                   },
@@ -571,13 +733,32 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
                 "barTier"
               )}
               config={pricingConfig}
+              paymentModel={selection.barPaymentModel}
+            />
+          )}
+
+          {currentStep === "barPaymentModel" && (
+            <BarPaymentModelStep
+              value={selection.barPaymentModel}
+              ticketsPerGuest={selection.drinkTicketsPerGuest}
+              onChange={(value) => handleSingleSelectChange(
+                (prev) => ({ ...prev, barPaymentModel: value }),
+                "barPaymentModel"
+              )}
+              onTicketsPerGuestChange={(value) =>
+                setSelection((prev) => ({ ...prev, drinkTicketsPerGuest: value }))
+              }
+              config={pricingConfig}
             />
           )}
 
           {currentStep === "mocktailMenu" && (
             <MocktailMenuStep
               value={selection.mocktailMenu}
-              onChange={(value) => setSelection((prev) => ({ ...prev, mocktailMenu: value }))}
+              onChange={(value) => handleSingleSelectChange(
+                (prev) => ({ ...prev, mocktailMenu: value }),
+                "mocktailMenu"
+              )}
             />
           )}
 
@@ -635,8 +816,43 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
           )}
         </div>
 
+        <div className="rounded-2xl border border-brand-chrome bg-white/82 p-4 shadow-sm">
+          <div className="mb-3">
+            <div className="text-sm font-bold text-brand-ink">Promo code</div>
+            <div className="text-xs text-brand-ink/65">
+              Try <span className="font-semibold text-brand-ink">CLUBWAGON</span> for the first 3 confirmed bookings.
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={promoInput}
+              onChange={(event) => {
+                setPromoInput(event.target.value.toUpperCase());
+                if (promoFeedback) setPromoFeedback(null);
+              }}
+              placeholder="CLUBWAGON"
+              className="uppercase"
+              disabled={Boolean(selection.promoCode)}
+            />
+            {selection.promoCode ? (
+              <Button type="button" variant="outline" onClick={removePromoCode} className="shrink-0">
+                Remove
+              </Button>
+            ) : (
+              <Button type="button" onClick={applyPromoCode} className="shrink-0">
+                Apply
+              </Button>
+            )}
+          </div>
+          {(promoFeedback || selection.promoCode) && (
+            <div className="mt-2 text-xs text-brand-ink/70">
+              {promoFeedback || selection.promoCode?.message}
+            </div>
+          )}
+        </div>
+
         {/* Navigation buttons - Sticky to bottom */}
-        <div className="sticky bottom-0 bg-brand-primary/95 backdrop-blur border-t border-brand-chrome shadow-[0_-6px_20px_rgba(0,0,0,0.08)] p-4 rounded-b-3xl">
+        <div className="sticky bottom-[74px] md:bottom-0 bg-brand-primary/95 backdrop-blur border-t border-brand-chrome shadow-[0_-6px_20px_rgba(0,0,0,0.08)] p-4 rounded-b-3xl">
           <div className="flex items-center justify-between gap-4">
             <Button
               type="button"
@@ -648,7 +864,21 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
               Back
             </Button>
 
-            {canGoNext ? (
+            {isBuilderComplete ? (
+              <div className="space-y-3 flex-1">
+                <div className="text-xs text-brand-ink/70 text-center px-4">
+                  Your estimate stays editable. Check availability when you're ready.
+                </div>
+                <Button
+                  type="button"
+                  onClick={openContactStep}
+                  disabled={quote.estimatedRange.max === 0}
+                  className="w-full"
+                >
+                  Check Availability
+                </Button>
+              </div>
+            ) : canGoNext && !isAutoAdvanceStep ? (
               <Button
                 type="button"
                 onClick={goToNext}
@@ -657,10 +887,14 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
               >
                 Next
               </Button>
+            ) : isAutoAdvanceStep ? (
+              <div className="flex-1 text-right text-xs text-brand-ink/60">
+                Select an option to continue.
+              </div>
             ) : (
               <div className="space-y-3 flex-1">
                 <div className="text-xs text-brand-ink/70 text-center px-4">
-                  You'll see a live estimate here as you build your event. No payment required.
+                  Send your event details once. No payment required.
                 </div>
                 <Button
                   type="button"
@@ -669,7 +903,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
                   loading={submitting}
                   className="w-full"
                 >
-                  {submitting ? "Sending estimate..." : "Send estimate request"}
+                  {submitting ? "Sending estimate..." : "Send My Estimate"}
                 </Button>
               </div>
             )}
@@ -687,11 +921,11 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
 
       {/* Right: Quote Summary (Desktop) */}
       <div className="hidden md:block sticky top-24">
-        <QuoteSummary quote={quote} selection={selection} onReset={handleReset} />
+        <QuoteSummary quote={quote} selection={selection} onReset={handleReset} onEdit={goToBuilderStart} />
       </div>
 
       {/* Mobile: Sticky bottom bar with drawer */}
-      <MobileSummaryDrawer quote={quote} selection={selection} onReset={handleReset} />
+      <MobileSummaryDrawer quote={quote} selection={selection} onReset={handleReset} onEdit={goToBuilderStart} />
     </div>
   );
 }

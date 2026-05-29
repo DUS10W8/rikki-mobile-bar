@@ -43,8 +43,8 @@ export function ContactSubmitStep({ value, onChange, onSubmit }: ContactSubmitSt
     <div className="space-y-4">
       <div>
         <h3 className="text-2xl font-bold mb-2">Send your estimate request</h3>
-        <p className="text-brand-ink/70 text-sm">We’ll use this to confirm your date and finalize the estimate.</p>
-        <p className="text-xs text-brand-ink/60 mt-2">No payment required • Takes about 30 seconds</p>
+        <p className="text-brand-ink/70 text-sm">We'll use this to confirm your date, review details, and shape your final quote.</p>
+        <p className="text-xs text-brand-ink/60 mt-2">No payment required - Takes about 30 seconds</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

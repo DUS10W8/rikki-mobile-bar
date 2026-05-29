@@ -45,7 +45,7 @@ export function TechModulesStep({ value, onChange }: TechModulesStepProps) {
       <div>
         <h3 className="text-2xl font-bold mb-2">Event Tech Modules</h3>
         <p className="text-brand-ink/70 text-sm">
-          Select only what you need — we'll handle setup and a clean, reliable run.
+          Select only what you need - we'll handle setup and a clean, reliable run.
         </p>
       </div>
       <div className="grid gap-4">

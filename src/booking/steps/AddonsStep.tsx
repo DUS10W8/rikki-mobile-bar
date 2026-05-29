@@ -15,8 +15,10 @@ export function AddonsStep({ serviceType, djService, customBranding, onChange }:
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-2xl font-bold mb-2">Tech & experience add-ons</h3>
-        <p className="text-brand-ink/70 text-sm">Optional enhancements that pair well with your event.</p>
+        <h3 className="text-2xl font-bold mb-2">Optional enhancements</h3>
+        <p className="text-brand-ink/70 text-sm">
+          Add polish now, or refine enhancements during your confirmation call.
+        </p>
       </div>
       <div className="grid gap-4">
         {hasTech && (
@@ -87,7 +89,7 @@ export function AddonsStep({ serviceType, djService, customBranding, onChange }:
                       <div>
                         <div className="font-bold text-lg">Event Branding & Custom Drinkware</div>
                         <div className="text-sm text-brand-ink/70 mt-1">
-                          Personalized cups, napkins, and straws with a cohesive bar presentation.
+                          A luxury enhancement with personalized cups, napkins, and straws for a cohesive bar presentation.
                           Final design approved by you before production.
                         </div>
                       </div>

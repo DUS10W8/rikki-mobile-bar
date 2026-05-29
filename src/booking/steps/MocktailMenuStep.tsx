@@ -39,7 +39,7 @@ export function MocktailMenuStep({ value, onChange }: MocktailMenuStepProps) {
                 >
                   {value === true && <div className="h-2.5 w-2.5 rounded-full bg-white" />}
                 </div>
-                <div className="font-bold text-lg">Yes — include a mocktail menu</div>
+                <div className="font-bold text-lg">Yes - include a mocktail menu</div>
               </div>
             </CardContent>
           </Card>
@@ -68,14 +68,14 @@ export function MocktailMenuStep({ value, onChange }: MocktailMenuStepProps) {
                 >
                   {value === false && <div className="h-2.5 w-2.5 rounded-full bg-white" />}
                 </div>
-                <div className="font-bold text-lg">No — standard menu only</div>
+                <div className="font-bold text-lg">No - standard menu only</div>
               </div>
             </CardContent>
           </Card>
         </button>
       </div>
       <div className="text-xs text-brand-ink/60 bg-brand-chrome/30 rounded-xl p-4">
-        Mocktails are thoughtfully crafted, non-alcoholic drinks designed to feel intentional — not an afterthought.
+        Mocktails are thoughtfully crafted, non-alcoholic drinks designed to feel intentional - not an afterthought.
       </div>
     </div>
   );

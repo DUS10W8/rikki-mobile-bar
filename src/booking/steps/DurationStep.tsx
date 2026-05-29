@@ -7,8 +7,8 @@ interface DurationStepProps {
 }
 
 const durationOptions = [
-  { id: "2-3", label: "2–3 hours", description: "Best for streamlined service windows." },
-  { id: "4-5", label: "4–5 hours", description: "Most events choose this range." },
+  { id: "2-3", label: "2-3 hours", description: "Best for streamlined service windows." },
+  { id: "4-5", label: "4-5 hours", description: "Most events choose this range." },
   { id: "6+", label: "6+ hours", description: "Ideal for extended receptions." },
 ];
 

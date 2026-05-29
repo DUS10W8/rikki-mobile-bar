@@ -7,6 +7,7 @@ export type TravelType = "local" | "extended";
 export type FoodPlanStatus = "yes" | "planned" | "unsure";
 export type FoodProvider = "caterer" | "food_truck" | "venue" | "host" | "other";
 export type ServiceType = "bar" | "tech" | "both";
+export type BarPaymentModel = "client-hosted" | "guest-purchase" | "ticketed";
 
 export interface FoodPlan {
   status: FoodPlanStatus;
@@ -32,6 +33,23 @@ export interface BarTierConfig {
   };
 }
 
+export interface PromoCodeConfig {
+  code: string;
+  label: string;
+  description: string;
+  discountAmount: number;
+  maxRedemptions: number;
+}
+
+export interface AppliedPromoCode {
+  code: string;
+  label: string;
+  description: string;
+  discountAmount: number;
+  status: "applied" | "pending" | "reserved";
+  message: string;
+}
+
 export interface PricingConfig {
   barTiers: BarTierConfig[];
   travelRangeMultiplier: {
@@ -39,8 +57,52 @@ export interface PricingConfig {
     extended: number;
   };
   baseProductionRange: Range;
+  barPaymentModels: BarPaymentModelConfig[];
+  guestPurchasePricing: {
+    entryRange: Range;
+    includedGuests: number;
+    includedDuration: DurationRange;
+    additionalGuestRange: Range;
+    durationUpliftRanges: Record<DurationRange, Range>;
+    tierUpliftRanges: Record<BarTier, Range>;
+    additionalBartender: {
+      threshold: number;
+      range: Range;
+    };
+    satelliteBar: {
+      threshold: number;
+      range: Range;
+    };
+    publicLabel: string;
+    publicNote: string;
+  };
+  clientHostedMinimumRange: Range;
+  defaultDrinkTicketsPerGuest: number;
+  ticketedBarPricingFactor: number;
+  estimateRangeTighteningFactor: number;
+  estimateRounding: {
+    increment: number;
+    minDirection: "nearest" | "down" | "up";
+    maxDirection: "nearest" | "down" | "up";
+  };
+  gratuity: {
+    percent: number;
+    includeInEstimate: boolean;
+    showLineItem: boolean;
+    summaryCopy: string;
+  };
+  optionalEnhancements: {
+    customBrandingRange: Range;
+    mocktailMenuRange: Range;
+  };
+  promoCodes: PromoCodeConfig[];
+  estimateLanguage: {
+    rangeLabel: string;
+    pendingCopy: string;
+    disclaimerText: string;
+    optionalEnhancementCopy: string;
+  };
   defaultRangePadding: number;
-  disclaimerText?: string;
   // Legacy fields retained for unused steps
   serviceTypes: {
     bar: { label: string; description: string };
@@ -64,6 +126,8 @@ export interface BookingSelection {
   guestCount: number | null;
   duration: DurationRange | null;
   foodPlan: FoodPlan | null;
+  barPaymentModel: BarPaymentModel | null;
+  drinkTicketsPerGuest: number;
   barTier: BarTier | null;
   mocktailMenu: boolean;
   techModules: {
@@ -74,6 +138,7 @@ export interface BookingSelection {
   travelType: TravelType | null;
   djService: boolean;
   customBranding: boolean;
+  promoCode: AppliedPromoCode | null;
   contact: {
     name: string;
     email: string;
@@ -110,15 +175,31 @@ export interface BookingSelection {
 export interface LineItem {
   label: string;
   amount: number;
-  category: "core" | "addon";
+  category: "core" | "addon" | "discount";
   details?: string;
+}
+
+export interface BreakdownItem {
+  label: string;
+  range?: Range;
+  amount?: number;
+  note?: string;
 }
 
 export interface Quote {
   lineItems: LineItem[];
+  breakdownItems: BreakdownItem[];
   estimatedRange: Range;
   addonsSubtotal: number;
   disclaimers: string[];
+  serviceNotes: string[];
+}
+
+export interface BarPaymentModelConfig {
+  id: BarPaymentModel;
+  label: string;
+  summaryLabel: string;
+  description: string;
 }
 
 // Legacy types retained for unused steps

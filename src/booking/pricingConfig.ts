@@ -97,6 +97,100 @@ export const pricingConfig: PricingConfig = {
     min: 800,
     max: 800,
   },
+  barPaymentModels: [
+    {
+      id: "client-hosted",
+      label: "Client-hosted bar",
+      summaryLabel: "Client-hosted bar",
+      description: "You cover the estimated hosted drink service for your guests.",
+    },
+    {
+      id: "guest-purchase",
+      label: "Guest-purchase bar",
+      summaryLabel: "Guest-purchase bar",
+      description: "You cover the mobile bar experience and professional beverage service; guests purchase drinks at the event.",
+    },
+    {
+      id: "ticketed",
+      label: "Ticketed hosted bar",
+      summaryLabel: "Ticketed bar",
+      description: "You cover a set number of drink tickets per guest; guests purchase additional drinks after tickets are used.",
+    },
+  ],
+  guestPurchasePricing: {
+    entryRange: {
+      min: 800,
+      max: 800,
+    },
+    includedGuests: 30,
+    includedDuration: "2-3",
+    additionalGuestRange: {
+      min: 5,
+      max: 8,
+    },
+    durationUpliftRanges: {
+      "2-3": { min: 0, max: 0 },
+      "4-5": { min: 250, max: 450 },
+      "6+": { min: 550, max: 850 },
+    },
+    tierUpliftRanges: {
+      "beer-wine": { min: 0, max: 0 },
+      "classic-cocktail": { min: 250, max: 400 },
+      premium: { min: 500, max: 750 },
+    },
+    additionalBartender: {
+      threshold: 50,
+      range: { min: 175, max: 275 },
+    },
+    satelliteBar: {
+      threshold: 75,
+      range: { min: 175, max: 325 },
+    },
+    publicLabel: "Mobile bar experience & service",
+    publicNote: "Includes vintage mobile bar setup, professional bartending, guest beverage service, setup & breakdown, and licensed mobile bar operations.",
+  },
+  clientHostedMinimumRange: {
+    min: 2000,
+    max: 2800,
+  },
+  defaultDrinkTicketsPerGuest: 2,
+  ticketedBarPricingFactor: 0.75,
+  estimateRangeTighteningFactor: 0.5,
+  estimateRounding: {
+    increment: 50,
+    minDirection: "up",
+    maxDirection: "nearest",
+  },
+  gratuity: {
+    percent: 0.2,
+    includeInEstimate: false,
+    showLineItem: false,
+    summaryCopy: "",
+  },
+  optionalEnhancements: {
+    customBrandingRange: {
+      min: 250,
+      max: 350,
+    },
+    mocktailMenuRange: {
+      min: 150,
+      max: 250,
+    },
+  },
+  promoCodes: [
+    {
+      code: "CLUBWAGON",
+      label: "Founder's Code",
+      description: "First Pour Offer for the first 3 confirmed bookings.",
+      discountAmount: 150,
+      maxRedemptions: 3,
+    },
+  ],
+  estimateLanguage: {
+    rangeLabel: "Estimated starting range",
+    pendingCopy: "Complete the steps to see your estimated starting range",
+    disclaimerText: "Most events like this start around the range shown. Final quote may adjust based on guest count, event length, beverage program, staffing, travel, and event complexity.",
+    optionalEnhancementCopy: "Optional enhancements can be added or refined during confirmation.",
+  },
   defaultRangePadding: 140,
-  disclaimerText: "This is an estimate. Final quote confirmed after we review your details and availability.",
 };

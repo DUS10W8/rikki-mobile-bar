@@ -8,7 +8,7 @@ interface FoodServiceStepProps {
 }
 
 const foodStatusOptions: { id: FoodPlanStatus; label: string }[] = [
-  { id: "yes", label: "Yes — food will be provided" },
+  { id: "yes", label: "Yes - food will be provided" },
   { id: "planned", label: "Not yet, but it will be arranged" },
   { id: "unsure", label: "I'm not sure yet" },
 ];
@@ -144,7 +144,7 @@ export function FoodServiceStep({ value, onChange }: FoodServiceStepProps) {
       {(value?.status === "planned" || value?.status === "unsure") && (
         <div className="pt-2">
           <div className="text-sm text-brand-ink/60 bg-brand-chrome/30 rounded-xl p-4">
-            That's okay — food just needs to be arranged before final booking. We'll confirm this with you after your estimate.
+            That's okay - food just needs to be arranged before final booking. We'll confirm this with you after your estimate.
           </div>
         </div>
       )}

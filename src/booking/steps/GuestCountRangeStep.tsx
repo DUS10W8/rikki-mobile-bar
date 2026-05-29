@@ -8,8 +8,8 @@ interface GuestCountRangeStepProps {
 
 const guestRanges = [
   { id: "lt-50", label: "<50", description: "Staffing and preparation scale with guest count to maintain service quality." },
-  { id: "50-100", label: "50–100", description: "Staffing and preparation scale with guest count to maintain service quality." },
-  { id: "100-150", label: "100–150", description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "50-100", label: "50-100", description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "100-150", label: "100-150", description: "Staffing and preparation scale with guest count to maintain service quality." },
   { id: "150-plus", label: "150+", description: "Staffing and preparation scale with guest count to maintain service quality." },
 ];
 
