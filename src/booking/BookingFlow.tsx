@@ -816,40 +816,42 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
           )}
         </div>
 
-        <div className="rounded-2xl border border-brand-chrome bg-white/82 p-4 shadow-sm">
-          <div className="mb-3">
-            <div className="text-sm font-bold text-brand-ink">Promo code</div>
-            <div className="text-xs text-brand-ink/65">
-              Try <span className="font-semibold text-brand-ink">CLUBWAGON</span> for the first 3 confirmed bookings.
+        {isContactStep && (
+          <div className="rounded-2xl border border-brand-chrome bg-white/82 p-4 shadow-sm">
+            <div className="mb-3">
+              <div className="text-sm font-bold text-brand-ink">Promo code</div>
+              <div className="text-xs text-brand-ink/65">
+                Optional, if you have one.
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              value={promoInput}
-              onChange={(event) => {
-                setPromoInput(event.target.value.toUpperCase());
-                if (promoFeedback) setPromoFeedback(null);
-              }}
-              placeholder="CLUBWAGON"
-              className="uppercase"
-              disabled={Boolean(selection.promoCode)}
-            />
-            {selection.promoCode ? (
-              <Button type="button" variant="outline" onClick={removePromoCode} className="shrink-0">
-                Remove
-              </Button>
-            ) : (
-              <Button type="button" onClick={applyPromoCode} className="shrink-0">
-                Apply
-              </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                value={promoInput}
+                onChange={(event) => {
+                  setPromoInput(event.target.value.toUpperCase());
+                  if (promoFeedback) setPromoFeedback(null);
+                }}
+                placeholder="Enter promo code"
+                className="uppercase"
+                disabled={Boolean(selection.promoCode)}
+              />
+              {selection.promoCode ? (
+                <Button type="button" variant="outline" onClick={removePromoCode} className="shrink-0">
+                  Remove
+                </Button>
+              ) : (
+                <Button type="button" onClick={applyPromoCode} className="shrink-0">
+                  Apply
+                </Button>
+              )}
+            </div>
+            {(promoFeedback || selection.promoCode) && (
+              <div className="mt-2 text-xs text-brand-ink/70">
+                {promoFeedback || selection.promoCode?.message}
+              </div>
             )}
           </div>
-          {(promoFeedback || selection.promoCode) && (
-            <div className="mt-2 text-xs text-brand-ink/70">
-              {promoFeedback || selection.promoCode?.message}
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Navigation buttons - Sticky to bottom */}
         <div className="sticky bottom-[74px] md:bottom-0 bg-brand-primary/95 backdrop-blur border-t border-brand-chrome shadow-[0_-6px_20px_rgba(0,0,0,0.08)] p-4 rounded-b-3xl">
