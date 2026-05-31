@@ -55,7 +55,7 @@ export function FoodServiceStep({ value, onChange }: FoodServiceStepProps) {
               onClick={() => handleStatusChange(option.id)}
               className={`text-left transition-all ${
                 value?.status === option.id
-                  ? "ring-4 ring-brand-sea ring-offset-2"
+                  ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2"
                   : "hover:ring-2 hover:ring-brand-chrome"
               }`}
             >
@@ -101,7 +101,7 @@ export function FoodServiceStep({ value, onChange }: FoodServiceStepProps) {
                 onClick={() => handleProviderChange(option.id)}
                 className={`text-left transition-all ${
                   value?.provider === option.id
-                    ? "ring-2 ring-brand-sea ring-offset-1"
+                    ? "estimator-choice-selected ring-2 ring-brand-sea ring-offset-1"
                     : "hover:ring-1 hover:ring-brand-chrome"
                 }`}
               >

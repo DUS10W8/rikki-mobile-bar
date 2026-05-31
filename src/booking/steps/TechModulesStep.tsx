@@ -57,7 +57,7 @@ export function TechModulesStep({ value, onChange }: TechModulesStepProps) {
               type="button"
               onClick={() => toggleModule(module.id)}
               className={`text-left transition-all ${
-                isSelected ? "ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
+                isSelected ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
               }`}
             >
               <Card

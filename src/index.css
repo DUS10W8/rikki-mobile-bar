@@ -194,6 +194,27 @@ html { scroll-behavior: smooth; }
   background: #141414;
 }
 
+@keyframes estimator-choice-confirm {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(46, 155, 138, 0);
+  }
+  45% {
+    transform: translateY(3px) scale(0.965);
+    box-shadow:
+      0 1px 0 rgba(37, 25, 19, 0.12),
+      inset 0 3px 7px rgba(37, 25, 19, 0.1);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 3px rgba(46, 155, 138, 0.14);
+  }
+}
+
+.estimator-choice-selected {
+  animation: estimator-choice-confirm 190ms cubic-bezier(0.2, 0.85, 0.35, 1);
+}
+
 @media (min-width: 768px) {
   .hero-video-medallion {
     width: clamp(320px, 34vw, 430px);

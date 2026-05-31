@@ -41,7 +41,7 @@ export function ServiceTypeStep({ value, onChange, config }: ServiceTypeStepProp
             onClick={() => onChange(option.type)}
             className={`text-left transition-all ${
               value === option.type
-                ? "ring-4 ring-brand-sea ring-offset-2"
+                ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2"
                 : "hover:ring-2 hover:ring-brand-chrome"
             }`}
           >

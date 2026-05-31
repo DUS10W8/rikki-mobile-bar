@@ -337,10 +337,11 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
       const stepIndex = activeSteps.indexOf(step);
       const nextIndex = stepIndex + 1;
       if (nextIndex < activeSteps.length) {
-        // Use setTimeout to ensure state update is processed before advancing
+        // Leave the selected card visible long enough for the confirmation
+        // animation to register before the next question appears.
         setTimeout(() => {
           setCurrentStep(activeSteps[nextIndex]);
-        }, 0);
+        }, 280);
       }
     }
   };

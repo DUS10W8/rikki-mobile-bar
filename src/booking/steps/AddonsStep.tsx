@@ -26,7 +26,7 @@ export function AddonsStep({ serviceType, djService, customBranding, onChange }:
             type="button"
             onClick={() => onChange({ djService: !djService })}
             className={`text-left transition-all ${
-              djService ? "ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
+              djService ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
             }`}
           >
             <Card
@@ -71,7 +71,7 @@ export function AddonsStep({ serviceType, djService, customBranding, onChange }:
           type="button"
           onClick={() => onChange({ customBranding: !customBranding })}
           className={`text-left transition-all ${
-            customBranding ? "ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
+            customBranding ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
           }`}
         >
           <Card

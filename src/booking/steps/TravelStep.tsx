@@ -25,7 +25,7 @@ export function TravelStep({ value, onChange }: TravelStepProps) {
             type="button"
             onClick={() => onChange(option.id)}
             className={`text-left transition-all ${
-              value === option.id ? "ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
+              value === option.id ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
             }`}
           >
             <Card

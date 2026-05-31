@@ -20,7 +20,7 @@ export function MocktailMenuStep({ value, onChange }: MocktailMenuStepProps) {
           type="button"
           onClick={() => onChange(true)}
           className={`text-left transition-all ${
-            value === true ? "ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
+            value === true ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
           }`}
         >
           <Card
@@ -49,7 +49,7 @@ export function MocktailMenuStep({ value, onChange }: MocktailMenuStepProps) {
           type="button"
           onClick={() => onChange(false)}
           className={`text-left transition-all ${
-            value === false ? "ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
+            value === false ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2" : "hover:ring-2 hover:ring-brand-chrome"
           }`}
         >
           <Card

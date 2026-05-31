@@ -42,7 +42,7 @@ export function BarPackageStep({ value, onChange, config, paymentModel }: BarPac
               onClick={() => onChange(pkg.id)}
               className={`text-left transition-all ${
                 value === pkg.id
-                  ? "ring-4 ring-brand-sea ring-offset-2"
+                  ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2"
                   : "hover:ring-2 hover:ring-brand-chrome"
               }`}
             >

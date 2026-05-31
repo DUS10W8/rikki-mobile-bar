@@ -34,7 +34,7 @@ export function BarPaymentModelStep({
             onClick={() => onChange(model.id)}
             className={`text-left transition-all ${
               value === model.id
-                ? "ring-4 ring-brand-sea ring-offset-2"
+                ? "estimator-choice-selected ring-4 ring-brand-sea ring-offset-2"
                 : "hover:ring-2 hover:ring-brand-chrome"
             }`}
           >
