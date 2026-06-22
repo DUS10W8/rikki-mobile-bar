@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { inject } from '@vercel/analytics';
 import App from "./App";
 import BartenderPage from "./bartender/BartenderPage";
 import OrderPage from "./order/OrderPage";
@@ -8,6 +9,8 @@ import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import TipPage from "./pages/TipPage";
 import "./index.css"; // <-- this pulls in Tailwind (via @import "tailwindcss")
+
+inject();
 
 const routePath = window.location.pathname.replace(/\/+$/, "");
 const Root =
