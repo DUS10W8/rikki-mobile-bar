@@ -170,7 +170,7 @@ export default function BartenderPage() {
     setOrders((current) =>
       current.map((item) =>
         item.id === order.id
-          ? { ...item, status, bar_station: nextStation === undefined ? item.bar_station : nextStation, updated_at: new Date().toISOString() }
+          ? { ...item, status: toPersistedOrderStatus(status), bar_station: nextStation === undefined ? item.bar_station : nextStation, updated_at: new Date().toISOString() }
           : item,
       ),
     );
@@ -743,7 +743,7 @@ async function updateOrderStatus(id: string, status: NormalizedOrderStatus, barS
   if (configError || !orderSupabase) return { error: configError || new Error("Supabase is not configured.") };
 
   try {
-    const update: { status: NormalizedOrderStatus; bar_station?: BarStation | null } = { status };
+    const update: { status: OrderStatus; bar_station?: BarStation | null } = { status: toPersistedOrderStatus(status) };
     if (barStation !== undefined) update.bar_station = barStation;
 
     const { error } = await orderSupabase.from("orders").update(update).eq("id", id);
@@ -891,6 +891,16 @@ function getTicketLabelsByOrderId(orders: BartenderOrder[], drinkMenu: DrinkMenu
 
 function isTicketCountedStatus(status: string) {
   return ["new", "in_progress", "ready", "completed", "New", "In Progress", "Ready", "Completed"].includes(status);
+}
+
+function toPersistedOrderStatus(status: NormalizedOrderStatus): OrderStatus {
+  const labels: Record<NormalizedOrderStatus, OrderStatus> = {
+    new: "New",
+    in_progress: "In Progress",
+    ready: "Ready",
+    completed: "Completed",
+  };
+  return labels[status];
 }
 
 function normalizeOrderStatus(status: string): NormalizedOrderStatus {

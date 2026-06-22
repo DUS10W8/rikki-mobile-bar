@@ -268,7 +268,7 @@ export default function OrderPage() {
       name: name.trim(),
       phone: normalizedPhone,
       drink: selectedDrink.name,
-      status: "new",
+      status: "New",
     });
 
     if (orderError || !data) {
