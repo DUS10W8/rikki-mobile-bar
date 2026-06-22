@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { Analytics } from "@vercel/analytics/react";
 import App from "./App";
 import BartenderPage from "./bartender/BartenderPage";
 import OrderPage from "./order/OrderPage";
@@ -28,5 +29,6 @@ const Root =
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Root />
+    <Analytics />
   </React.StrictMode>
 );
