@@ -18,6 +18,23 @@ export default async function handler(request, response) {
     return sendJson(response, 204, {});
   }
 
+  // GET ?code=XXXX — lightweight validation only, no reservation
+  if (request.method === "GET") {
+    const code = String(request.query?.code || "").trim().toUpperCase();
+    const promo = PROMOS[code];
+    if (!promo) {
+      return sendJson(response, 404, { valid: false, message: "That promo code is not active." });
+    }
+    return sendJson(response, 200, {
+      valid: true,
+      code,
+      label: promo.label,
+      description: promo.description ?? `First Pour Offer for the first ${promo.maxRedemptions} confirmed bookings.`,
+      discountAmount: promo.discountAmount,
+      maxRedemptions: promo.maxRedemptions,
+    });
+  }
+
   if (request.method !== "POST") {
     return sendJson(response, 405, { status: "pending", message: "Method not allowed." });
   }

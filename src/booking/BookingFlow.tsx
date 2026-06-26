@@ -106,6 +106,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   const [submitErrors, setSubmitErrors] = useState<SubmitError[]>([]);
   const [promoInput, setPromoInput] = useState("");
   const [promoFeedback, setPromoFeedback] = useState<string | null>(null);
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step>("serviceType");
   const [selection, setSelection] = useState<BookingSelection>(getInitialSelection());
   
@@ -180,13 +181,18 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
 
   // Reset function
   const handleReset = () => {
-    if (window.confirm("Start over? This will clear all your selections.")) {
-      setSelection(getInitialSelection());
-      setCurrentStep("serviceType");
-      setSubmitErrors([]);
-      setSubmitted(false);
-      prevServiceTypeRef.current = null;
-    }
+    setConfirmingReset(true);
+  };
+
+  const confirmReset = () => {
+    setSelection(getInitialSelection());
+    setCurrentStep("serviceType");
+    setSubmitErrors([]);
+    setSubmitted(false);
+    setConfirmingReset(false);
+    setPromoInput("");
+    setPromoFeedback(null);
+    prevServiceTypeRef.current = null;
   };
 
   const hasBar = selection.serviceType === "bar" || selection.serviceType === "both";
@@ -248,8 +254,8 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
         return true;
       case "contact": {
         const { name, email, phone, eventDate } = selection.contact;
-        // Validate date is on or after 2026-04-07
-        const minDate = "2026-04-07";
+        // Validate date is today or later
+        const minDate = new Date().toISOString().split("T")[0];
         const hasValidDate = eventDate && eventDate >= minDate;
         return !!(name && email && phone && hasValidDate);
       }
@@ -362,34 +368,42 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
     setCurrentStep("serviceType");
   };
 
-  const applyPromoCode = () => {
+  const applyPromoCode = async () => {
     const normalizedCode = promoInput.trim().toUpperCase();
-    const promo = pricingConfig.promoCodes.find((item) => item.code === normalizedCode);
 
     if (!normalizedCode) {
       setPromoFeedback("Enter a promo code to apply it.");
       return;
     }
 
-    if (!promo) {
-      setSelection((prev) => ({ ...prev, promoCode: null }));
-      setPromoFeedback("That promo code is not active.");
-      return;
-    }
+    setPromoFeedback("Checking code…");
 
-    setSelection((prev) => ({
-      ...prev,
-      promoCode: {
-        code: promo.code,
-        label: promo.label,
-        description: promo.description,
-        discountAmount: promo.discountAmount,
-        status: "applied",
-        message: `${promo.label} applied pending first-${promo.maxRedemptions} redemption confirmation.`,
-      },
-    }));
-    setPromoInput(promo.code);
-    setPromoFeedback(`${promo.label} applied: $${promo.discountAmount.toLocaleString()} off pending confirmation.`);
+    try {
+      const response = await fetch(`/api/promo-code?code=${encodeURIComponent(normalizedCode)}`);
+      const data = await response.json();
+
+      if (!data.valid) {
+        setSelection((prev) => ({ ...prev, promoCode: null }));
+        setPromoFeedback("That promo code is not active.");
+        return;
+      }
+
+      setSelection((prev) => ({
+        ...prev,
+        promoCode: {
+          code: data.code,
+          label: data.label,
+          description: data.description,
+          discountAmount: data.discountAmount,
+          status: "applied",
+          message: `${data.label} applied pending first-${data.maxRedemptions} redemption confirmation.`,
+        },
+      }));
+      setPromoInput(data.code);
+      setPromoFeedback(`${data.label} applied: $${data.discountAmount.toLocaleString()} off pending confirmation.`);
+    } catch {
+      setPromoFeedback("Couldn't verify the code right now. Try again.");
+    }
   };
 
   const removePromoCode = () => {
@@ -609,13 +623,31 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
             </div>
 
             <Button
-              onClick={() => {
-                window.location.reload();
-              }}
+              onClick={confirmReset}
               variant="secondary"
               className="mt-6"
             >
               Start New Request
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // In-UI reset confirmation overlay
+  if (confirmingReset) {
+    return (
+      <Card className="rounded-3xl">
+        <CardContent className="p-8 text-center space-y-4">
+          <h3 className="text-xl font-bold">Start over?</h3>
+          <p className="text-brand-ink/70 text-sm">This will clear all your selections.</p>
+          <div className="flex justify-center gap-3 pt-2">
+            <Button variant="outline" onClick={() => setConfirmingReset(false)}>
+              Keep editing
+            </Button>
+            <Button onClick={confirmReset} className="bg-brand-rust border-brand-rust text-white hover:bg-brand-rust/90">
+              Yes, start over
             </Button>
           </div>
         </CardContent>
@@ -891,44 +923,4 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
                 Next
               </Button>
             ) : isAutoAdvanceStep ? (
-              <div className="flex-1 text-right text-xs text-brand-ink/60">
-                Select an option to continue.
-              </div>
-            ) : (
-              <div className="space-y-3 flex-1">
-                <div className="text-xs text-brand-ink/70 text-center px-4">
-                  Send your event details once. No payment required.
-                </div>
-                <Button
-                  type="button"
-                  onClick={handleFormSubmit}
-                  disabled={!canAdvance || submitting}
-                  loading={submitting}
-                  className="w-full"
-                >
-                  {submitting ? "Sending estimate..." : "Send My Estimate"}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {submitErrors.length > 0 && (
-          <div className="text-sm text-brand-rust space-y-1">
-            {submitErrors.map((error, idx) => (
-              <div key={idx}>{error.message || "An error occurred"}</div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Right: Quote Summary (Desktop) */}
-      <div className="hidden md:block sticky top-24">
-        <QuoteSummary quote={quote} selection={selection} onReset={handleReset} onEdit={goToBuilderStart} />
-      </div>
-
-      {/* Mobile: Sticky bottom bar with drawer */}
-      <MobileSummaryDrawer quote={quote} selection={selection} onReset={handleReset} onEdit={goToBuilderStart} />
-    </div>
-  );
-}
+              <div className="flex

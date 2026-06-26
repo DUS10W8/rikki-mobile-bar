@@ -138,7 +138,7 @@ export default function App() {
 
   // Header nav (order matters) - removed "food" to de-emphasize food service
   const visibleNavIds = useMemo<SectionId[]>(
-    () => ["about", "menu", "features", "packages", "reviews", "coming-soon", "gallery", "book"],
+    () => ["about", "menu", "features", "packages", "reviews", "gallery", "book"],
     []
   );
 
@@ -366,7 +366,7 @@ export default function App() {
         )}
       </header>
 
-      <main>
+      <main id="main">
         {/* Hero / About */}
         <section
           id="about"
@@ -1152,16 +1152,22 @@ export default function App() {
             {/* Fast facts */}
             <dl className="mt-10 grid gap-6 md:grid-cols-3">
               {[
-                { icon: <MapPin className="size-5" />, term: "Area", desc: "Tri-Cities & Columbia River" },
-                { icon: <Phone className="size-5" />, term: "Text/Call", desc: "5092319354" },
-                { icon: <Mail className="size-5" />, term: "Email", desc: "rikki@rikkismobile.com" },
+                { icon: <MapPin className="size-5" />, term: "Area", href: null, desc: "Tri-Cities & Columbia River" },
+                { icon: <Phone className="size-5" />, term: "Text/Call", href: "tel:+15092319354", desc: "(509) 231-9354" },
+                { icon: <Mail className="size-5" />, term: "Email", href: "mailto:rikki@rikkismobile.com", desc: "rikki@rikkismobile.com" },
               ].map((it) => (
                 <div key={it.term} className="rounded-2xl border border-brand-chrome bg-white p-5">
                   <dt className="flex items-center justify-center gap-2 text-sm font-semibold">
                     <span aria-hidden="true">{it.icon}</span>
                     {it.term}
                   </dt>
-                  <dd className="mt-1 text-center text-xs text-brand-ink/80">{it.desc}</dd>
+                  <dd className="mt-1 text-center text-xs text-brand-ink/80">
+                    {it.href ? (
+                      <a href={it.href} className="hover:underline">{it.desc}</a>
+                    ) : (
+                      it.desc
+                    )}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -1217,3 +1223,4 @@ export default function App() {
     </div>
   );
 }
+                                                                                                                                                     
