@@ -20,9 +20,9 @@ export function BarPaymentModelStep({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-2xl font-bold mb-2">Bar payment model</h3>
+        <h3 className="text-2xl font-bold mb-2">How will guests get their drinks?</h3>
         <p className="text-brand-ink/70 text-sm">
-          Choose the starting investment style that best fits your event.
+          This sets your price floor. Guest count and duration stack on top.
         </p>
       </div>
 

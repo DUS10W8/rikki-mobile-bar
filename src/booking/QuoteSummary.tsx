@@ -35,12 +35,16 @@ export function QuoteSummary({ quote, selection, className, onReset, onEdit }: Q
 
   const guestCountLabel = selection?.guestCount
     ? selection.guestCount === 40
-      ? "~40 guests"
+      ? "Under 50 guests"
       : selection.guestCount === 75
-        ? "~75 guests"
+        ? "50-100 guests"
         : selection.guestCount === 125
-          ? "~125 guests"
-          : "~170 guests"
+          ? "100-150 guests"
+          : selection.guestCount === 175
+            ? "150-200 guests"
+            : selection.guestCount === 250
+              ? "200+ guests"
+              : `~${selection.guestCount} guests`
     : "Guest count pending";
 
   const durationLabel = (duration: DurationRange | null | undefined) => {
@@ -373,7 +377,9 @@ export function QuoteSummary({ quote, selection, className, onReset, onEdit }: Q
 
         {!hasEstimate && (
           <div className="text-sm text-brand-ink/60 text-center py-4">
-            {pricingConfig.estimateLanguage.pendingCopy}
+            {quote.requiresCustomQuote
+              ? "200+ guests — we'll put together a custom quote for your event. Fill out the form to get started."
+              : pricingConfig.estimateLanguage.pendingCopy}
           </div>
         )}
 

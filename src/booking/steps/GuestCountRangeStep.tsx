@@ -7,10 +7,11 @@ interface GuestCountRangeStepProps {
 }
 
 const guestRanges = [
-  { id: "lt-50", label: "<50", description: "Staffing and preparation scale with guest count to maintain service quality." },
-  { id: "50-100", label: "50-100", description: "Staffing and preparation scale with guest count to maintain service quality." },
-  { id: "100-150", label: "100-150", description: "Staffing and preparation scale with guest count to maintain service quality." },
-  { id: "150-plus", label: "150+", description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "lt-50",    label: "Under 50",  description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "50-100",   label: "50-100",    description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "100-150",  label: "100-150",   description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "150-200",  label: "150-200",   description: "Staffing and preparation scale with guest count to maintain service quality." },
+  { id: "200-plus", label: "200+",      description: "Large events -- we'll put together a custom quote for your event." },
 ];
 
 export function GuestCountRangeStep({ value, onChange }: GuestCountRangeStepProps) {

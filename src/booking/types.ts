@@ -59,24 +59,19 @@ export interface PricingConfig {
   baseProductionRange: Range;
   barPaymentModels: BarPaymentModelConfig[];
   guestPurchasePricing: {
-    entryRange: Range;
-    includedGuests: number;
-    includedDuration: DurationRange;
-    additionalGuestRange: Range;
-    durationUpliftRanges: Record<DurationRange, Range>;
-    tierUpliftRanges: Record<BarTier, Range>;
-    additionalBartender: {
-      threshold: number;
-      range: Range;
-    };
-    satelliteBar: {
-      threshold: number;
-      range: Range;
-    };
+    // Base service fee by bar tier (under 50 guests, 2-3 hours)
+    baseFeeByTier: Record<BarTier, number>;
+    // Guest count bracket uplifts -- flat add-on, same across all tiers
+    guestCountUplifts: Array<{ maxGuests: number; uplift: number }>;
+    // Guests above this threshold → custom quote required
+    customQuoteGuestThreshold: number;
+    // Duration add-ons (flat, on top of base + guest uplift)
+    durationAddons: Record<DurationRange, number>;
     publicLabel: string;
     publicNote: string;
   };
   clientHostedMinimumRange: Range;
+  ticketedBarMinimumRange: Range;
   defaultDrinkTicketsPerGuest: number;
   ticketedBarPricingFactor: number;
   estimateRangeTighteningFactor: number;
@@ -121,6 +116,7 @@ export interface PricingConfig {
 
 // User's booking selection state
 export interface BookingSelection {
+  barStyle: string | null; // ID of the selected style card -- drives barPaymentModel pre-selection
   serviceType: ServiceType | null;
   eventType: EventType | null;
   guestCount: number | null;
@@ -193,6 +189,7 @@ export interface Quote {
   addonsSubtotal: number;
   disclaimers: string[];
   serviceNotes: string[];
+  requiresCustomQuote?: boolean;
 }
 
 export interface BarPaymentModelConfig {

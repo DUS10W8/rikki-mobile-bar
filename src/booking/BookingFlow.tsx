@@ -18,6 +18,7 @@ import { TravelStep } from "./steps/TravelStep";
 import { TechModulesStep } from "./steps/TechModulesStep";
 import { MocktailMenuStep } from "./steps/MocktailMenuStep";
 import { BarPaymentModelStep } from "./steps/BarPaymentModelStep";
+import { BarStyleStep } from "./steps/BarStyleStep";
 import { QuoteSummary } from "./QuoteSummary";
 import { MobileSummaryDrawer } from "./MobileSummaryDrawer";
 
@@ -25,10 +26,19 @@ interface BookingFlowProps {
   formspreeId: string;
 }
 
-type Step = "serviceType" | "eventType" | "guestCount" | "duration" | "foodService" | "barPaymentModel" | "barTier" | "mocktailMenu" | "techModules" | "travelType" | "addons" | "contact";
+type Step = "barStyle" | "serviceType" | "eventType" | "guestCount" | "duration" | "foodService" | "barPaymentModel" | "barTier" | "mocktailMenu" | "techModules" | "travelType" | "addons" | "contact";
+
+// Maps a barStyle card ID to the barPaymentModel it pre-selects
+const BAR_STYLE_PAYMENT_MODEL: Record<string, import("./types").BarPaymentModel> = {
+  "cash-bar": "guest-purchase",
+  "hosted-cash": "ticketed",
+  "signature": "client-hosted",
+  "premium": "client-hosted",
+};
 
 // Helper function to get initial selection state
 const getInitialSelection = (): BookingSelection => ({
+  barStyle: null,
   serviceType: null,
   eventType: null,
   guestCount: null,
@@ -107,7 +117,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   const [promoInput, setPromoInput] = useState("");
   const [promoFeedback, setPromoFeedback] = useState<string | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
-  const [currentStep, setCurrentStep] = useState<Step>("serviceType");
+  const [currentStep, setCurrentStep] = useState<Step>("barStyle");
   const [selection, setSelection] = useState<BookingSelection>(getInitialSelection());
   
   // Track previous serviceType to detect changes (safety net for programmatic changes)
@@ -186,7 +196,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
 
   const confirmReset = () => {
     setSelection(getInitialSelection());
-    setCurrentStep("serviceType");
+    setCurrentStep("barStyle");
     setSubmitErrors([]);
     setSubmitted(false);
     setConfirmingReset(false);
@@ -203,21 +213,34 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
     return calculateQuote(selection, pricingConfig);
   }, [selection]);
 
-  // Conditional step order based on serviceType
-  const activeSteps = useMemo<Step[]>(() => {
-    const steps: Step[] = ["serviceType", "eventType", "guestCount", "duration"];
-    
-    if (hasBar) {
-      steps.push("foodService", "barPaymentModel", "barTier", "mocktailMenu");
+  // Pure helper — computes step list from any selection snapshot.
+  // Used both for the memoized activeSteps and inside auto-advance closures
+  // where the React state hasn't flushed yet (stale closure problem).
+  const computeActiveSteps = (sel: BookingSelection): Step[] => {
+    const hBar = sel.serviceType === "bar" || sel.serviceType === "both";
+    const hTech = sel.serviceType === "tech" || sel.serviceType === "both";
+    // barStyle is always first — the 4 package type cards.
+    const steps: Step[] = ["barStyle"];
+    // Show serviceType step only for users on the tech/both path
+    // (i.e., they clicked "event tech" instead of picking a bar style card).
+    if (!sel.barStyle) {
+      steps.push("serviceType");
     }
-    
-    if (hasTech) {
-      steps.push("techModules");
-    }
-    
+    if (hBar) steps.push("barTier"); // barPaymentModel is pre-set by barStyle selection
+    steps.push("guestCount", "duration", "eventType");
+    if (hBar) steps.push("foodService", "mocktailMenu");
+    if (hTech) steps.push("techModules");
     steps.push("travelType", "addons", "contact");
     return steps;
-  }, [hasBar, hasTech]);
+  };
+
+  // Conditional step order based on serviceType + barStyle.
+  // Package (barTier) comes first to establish the price floor,
+  // then payment model, then sizing questions (guests, duration, event type).
+  const activeSteps = useMemo<Step[]>(() => {
+    return computeActiveSteps(selection);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasBar, hasTech, !!selection.barStyle]);
 
   // Get current step index
   const currentStepIndex = activeSteps.indexOf(currentStep);
@@ -227,6 +250,8 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   // Validation per step
   const isStepValid = (step: Step): boolean => {
     switch (step) {
+      case "barStyle":
+        return selection.barStyle !== null;
       case "serviceType":
         return selection.serviceType !== null;
       case "eventType":
@@ -268,12 +293,12 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   const isContactStep = currentStep === "contact";
   const isBuilderComplete = currentStep === "addons";
   const autoAdvanceSteps: Step[] = [
+    "barStyle",
     "serviceType",
     "eventType",
     "guestCount",
     "duration",
     "foodService",
-    "barPaymentModel",
     "barTier",
     "mocktailMenu",
     "travelType",
@@ -302,6 +327,9 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
     // Check if step will be valid with the new selection
     let isValid = false;
     switch (step) {
+      case "barStyle":
+        isValid = tempSelection.barStyle !== null;
+        break;
       case "serviceType":
         isValid = tempSelection.serviceType !== null;
         break;
@@ -337,16 +365,20 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
     }
     
     setSelection(updateFn);
-    
+
     // Choice-based steps advance as soon as the selection is saved.
     if (isValid && currentStep === step) {
-      const stepIndex = activeSteps.indexOf(step);
+      // Use tempSelection (not the stale closed-over activeSteps) to compute
+      // the correct next step — avoids the stale-closure bug where serviceType
+      // changing to "bar" wouldn't include barTier/barPaymentModel yet.
+      const nextSteps = computeActiveSteps(tempSelection);
+      const stepIndex = nextSteps.indexOf(step);
       const nextIndex = stepIndex + 1;
-      if (nextIndex < activeSteps.length) {
+      if (nextIndex < nextSteps.length) {
         // Leave the selected card visible long enough for the confirmation
         // animation to register before the next question appears.
         setTimeout(() => {
-          setCurrentStep(activeSteps[nextIndex]);
+          setCurrentStep(nextSteps[nextIndex]);
         }, 280);
       }
     }
@@ -365,7 +397,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   };
 
   const goToBuilderStart = () => {
-    setCurrentStep("serviceType");
+    setCurrentStep("barStyle");
   };
 
   const applyPromoCode = async () => {
@@ -672,6 +704,34 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
 
         {/* Current step content */}
         <div ref={stepContentRef} className="pb-4 md:min-h-[400px] md:pb-8">
+          {currentStep === "barStyle" && (
+            <BarStyleStep
+              value={selection.barStyle}
+              onChange={(styleId) => {
+                handleSingleSelectChange(
+                  (prev) => ({
+                    ...prev,
+                    barStyle: styleId,
+                    serviceType: "bar",
+                    barPaymentModel: BAR_STYLE_PAYMENT_MODEL[styleId] ?? null,
+                  }),
+                  "barStyle"
+                );
+              }}
+              onTechPath={() => {
+                // Clear bar style and let user pick service type (tech/both) explicitly
+                setSelection((prev) => ({
+                  ...prev,
+                  barStyle: null,
+                  serviceType: null,
+                  barPaymentModel: null,
+                  barTier: null,
+                }));
+                setCurrentStep("serviceType");
+              }}
+            />
+          )}
+
           {currentStep === "serviceType" && (
             <ServiceTypeStep
               value={selection.serviceType}
@@ -721,15 +781,18 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
                     ? "50-100"
                     : selection.guestCount === 125
                       ? "100-150"
-                      : selection.guestCount === 170
-                        ? "150-plus"
-                        : null
+                      : selection.guestCount === 175
+                        ? "150-200"
+                        : selection.guestCount === 250
+                          ? "200-plus"
+                          : null
               }
               onChange={(value) => {
                 const mappedCount =
-                  value === "lt-50" ? 40 :
-                  value === "50-100" ? 75 :
-                  value === "100-150" ? 125 : 170;
+                  value === "lt-50"    ? 40  :
+                  value === "50-100"   ? 75  :
+                  value === "100-150"  ? 125 :
+                  value === "150-200"  ? 175 : 250;
                 handleSingleSelectChange(
                   (prev) => ({ ...prev, guestCount: mappedCount }),
                   "guestCount"
@@ -923,4 +986,49 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
                 Next
               </Button>
             ) : isAutoAdvanceStep ? (
-              <div className="flex
+              <div className="flex-1 text-right text-xs text-brand-ink/60">
+                Select an option to continue.
+              </div>
+            ) : (
+              <div className="space-y-3 flex-1">
+                <div className="text-xs text-brand-ink/70 text-center px-4">
+                  Send your event details once. No payment required.
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleFormSubmit}
+                  disabled={!canAdvance || submitting}
+                  loading={submitting}
+                  className="w-full"
+                >
+                  {submitting ? "Sending estimate..." : "Send My Estimate"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {submitErrors.length > 0 && (
+          <div className="text-sm text-brand-rust space-y-1">
+            {submitErrors.map((error, idx) => (
+              <div key={idx}>{error.message || "An error occurred"}</div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Right: Quote Summary (Desktop) */}
+      <div className="hidden md:block sticky top-24">
+        <QuoteSummary quote={quote} selection={selection} onReset={handleReset} onEdit={goToBuilderStart} />
+      </div>
+
+            {/* Mobile: Sticky bottom summary bar & drawer */}
+      <MobileSummaryDrawer
+        quote={quote}
+        selection={selection}
+        onReset={handleReset}
+        onEdit={goToBuilderStart}
+      />
+    </div>
+  );
+}

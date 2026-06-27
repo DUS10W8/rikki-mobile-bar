@@ -39,7 +39,9 @@ export function MobileSummaryDrawer({ quote, selection, onReset, onEdit }: Mobil
             <div className="text-xl font-bold text-brand-sea transition-all duration-200">
               {hasEstimate
                 ? estimateLabel
-                : "Build your event"}
+                : quote.requiresCustomQuote
+                  ? "Custom quote"
+                  : "Build your event"}
             </div>
             {(serviceLabel || paymentLabel) && (
               <div className="text-xs text-brand-ink/60 mt-1">

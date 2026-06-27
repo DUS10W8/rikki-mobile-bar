@@ -138,7 +138,7 @@ export default function App() {
 
   // Header nav (order matters) - removed "food" to de-emphasize food service
   const visibleNavIds = useMemo<SectionId[]>(
-    () => ["about", "menu", "features", "packages", "reviews", "gallery", "book"],
+    () => ["about", "menu", "features", "reviews", "gallery", "book"],
     []
   );
 
@@ -311,7 +311,6 @@ export default function App() {
               </button>
             ))}
             <Button
-              variant="outline"
               size="sm"
               className="chrome-button ml-2 rounded-2xl border-brand-sea bg-brand-sea text-xs font-semibold text-white hover:bg-brand-sea/90"
               onClick={() => scrollToSection("book")}
@@ -325,7 +324,7 @@ export default function App() {
             <Button
               variant="outline"
               size="sm"
-              className="rounded-2xl border-brand-chrome bg-white/90 p-2"
+              className="rounded-2xl border-brand-sea bg-brand-sea text-white p-2"
               onClick={() => scrollToSection("book")}
             >
               <Calendar className="w-4 h-4" />
@@ -704,98 +703,6 @@ export default function App() {
           </div>
         </section>
 
-        {/* Packages */}
-        <section id="packages" className="border-t border-brand-chrome/70 bg-[linear-gradient(180deg,#fffaf3_0%,#ffffff_100%)] py-14 md:py-20">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div className="max-w-xl space-y-2">
-                <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Clear starting points, customized to your event.</h2>
-                <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
-                  Choose a service direction. We'll scale staffing, menu depth, and setup needs to your guest count.
-                </p>
-                <p className="mt-2 text-sm text-brand-ink/70">
-                  Every estimate includes the real logistics: alcohol sourcing, licensed service, planning, setup, cleanup, and the right bar flow for the guest count.
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-brand-chrome bg-white/85 p-5 text-sm text-brand-ink/80 shadow-[0_18px_50px_rgba(20,20,20,0.08)]">
-                <p className="font-semibold text-base">Always included</p>
-                <ul className="mt-3 grid gap-2 text-base md:grid-cols-2">
-                  <li>Licensed alcohol purchasing & service</li>
-                  <li>Custom menu planning</li>
-                  <li>Required food service</li>
-                  <li>Setup & breakdown</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-3">
-              {[
-                {
-                  name: "Beer & Wine Bar",
-                  subtitle: "Simple, fast, and intentional.",
-                  blurb: "Alcohol included: beer, wine, and a small set of simple mixed drinks built for clean service flow and happy guests.",
-                  examples: "Examples: spritz, rum & coke, jack & diet, classic margarita.",
-                  isPopular: false,
-                },
-                {
-                  name: "Classic Cocktail Bar",
-                  subtitle: "Classics + a few signatures.",
-                  blurb:
-                    "Alcohol purchasing and service included with a curated menu of crowd-pleasing classics, balanced for speed, consistency, and polish.",
-                  examples: "Examples: margarita, whiskey sour, old fashioned + 2–3 signatures.",
-                  isPopular: true,
-                },
-                {
-                  name: "Premium / Mocktail Bar",
-                  subtitle: "Signature-forward + zero-proof done right.",
-                  blurb:
-                    "Alcohol purchasing and service included with expanded signatures, elevated ingredients, and intentional zero-proof options.",
-                  examples: "Includes: 3–5 signatures + elevated mocktails.",
-                  isPopular: false,
-                },
-              ].map((pkg) => (
-                <Card
-                  key={pkg.name}
-                  className="relative flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-brand-chrome bg-white/95 shadow-[0_20px_60px_rgba(20,20,20,0.08)]"
-                >
-                  <div className="h-1.5 bg-[linear-gradient(90deg,#b96b4d,#2e9b8a,#c69d4f)]" />
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-xl md:text-2xl font-bold">{pkg.name}</CardTitle>
-                      {pkg.isPopular && (
-                        <Badge variant="sea" size="sm" className="shrink-0">
-                          Most popular
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-brand-ink/70 mt-1">{pkg.subtitle}</p>
-                  </CardHeader>
-                  <CardContent className="flex flex-1 flex-col justify-between space-y-4 text-base text-brand-ink/80 md:text-lg">
-                    <div>
-                      <p className="font-medium">{pkg.blurb}</p>
-                      {pkg.examples && <p className="mt-2 text-sm md:text-base text-brand-ink/70">{pkg.examples}</p>}
-                    </div>
-                    <ul className="space-y-2 text-base font-medium">
-                      <li>• Alcohol for your selected drink program</li>
-                      <li>• Drinkware/cups</li>
-                      <li>• Professional bartending</li>
-                      <li>• Food service included</li>
-                    </ul>
-                  </CardContent>
-                  <div className="px-6 pb-5">
-                    <Button
-                      className="w-full rounded-2xl border-brand-sea bg-brand-sea text-white"
-                      onClick={() => scrollToSection("book")}
-                      size="lg"
-                    >
-                      Check Availability
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* Google reviews */}
         <section id="reviews" className="border-t border-brand-chrome/70 bg-white py-14 md:py-20">
@@ -1091,7 +998,7 @@ export default function App() {
               <CardContent className="p-6 md:p-8">
                 <div className="mx-auto max-w-3xl text-center space-y-3">
                   <div>
-                    <div className="text-3xl font-bold text-brand-sea md:text-4xl">Events start at $800</div>
+                    <div className="text-3xl font-bold text-brand-sea md:text-4xl">Events start at $600</div>
                     <div className="text-sm text-brand-ink/70 mt-1">
                       Includes planning, alcohol sourcing, licensed service, travel, setup, and breakdown.
                     </div>
@@ -1188,9 +1095,7 @@ export default function App() {
             © {new Date().getFullYear()} Rikki’s Mobile Bar. All rights reserved.
           </div>
           <div className="flex justify-start gap-4 text-xs md:justify-end">
-            <button type="button" onClick={() => scrollToSection("packages")} className="hover:text-brand-ink">
-              Pricing
-            </button>
+            
             <button type="button" onClick={() => scrollToSection("gallery")} className="hover:text-brand-ink">
               Gallery
             </button>
@@ -1223,4 +1128,3 @@ export default function App() {
     </div>
   );
 }
-                                                                                                                                                     

@@ -60,12 +60,13 @@ export function calculateQuote(
     return multipliers.reduce((sum, value) => sum + value, 0) / multipliers.length;
   };
 
-  // Base production fee (always $800)
+  // Base production fee
   const baseRange: Range = {
     min: config.baseProductionRange.min,
     max: config.baseProductionRange.max,
   };
-  const coreServiceRange = isGuestPurchaseBar ? config.guestPurchasePricing.entryRange : baseRange;
+  // For guest-purchase bars, coreServiceRange is overridden inside the bar pricing block
+  let coreServiceRange: Range = isGuestPurchaseBar ? { min: 0, max: 0 } : baseRange;
   if (selection.serviceType && !isGuestPurchaseBar) {
     breakdownItems.push({
       label: "Base production/service fee",
@@ -82,65 +83,47 @@ export function calculateQuote(
     const durationMultiplier = getDurationMultiplier();
 
     if (barPaymentModel === "guest-purchase") {
-      const guestPurchasePricing = config.guestPurchasePricing;
-      breakdownItems.push({
-        label: guestPurchasePricing.publicLabel,
-        range: guestPurchasePricing.entryRange,
-        note: guestPurchasePricing.publicNote,
-      });
+      const gpp = config.guestPurchasePricing;
 
-      const selectedTier = selection.barTier ? getBarTier() : undefined;
-      const tierUpliftRange = selectedTier
-        ? guestPurchasePricing.tierUpliftRanges[selectedTier.id]
-        : { min: 0, max: 0 };
-      if (tierUpliftRange.max > 0) {
-        guestPurchaseUpliftRange = addRange(guestPurchaseUpliftRange, tierUpliftRange);
-        breakdownItems.push({
-          label: `${selectedTier?.name ?? "Drink program"} complexity`,
-          range: tierUpliftRange,
-        });
-      }
+      if (guestCount <= gpp.customQuoteGuestThreshold) {
+        // Base fee by tier (ranges across beer-wine → premium if no tier selected yet)
+        const tierBase: Range = selection.barTier
+          ? { min: gpp.baseFeeByTier[selection.barTier], max: gpp.baseFeeByTier[selection.barTier] }
+          : { min: gpp.baseFeeByTier["beer-wine"], max: gpp.baseFeeByTier["premium"] };
 
-      const durationUpliftRange = selection.duration
-        ? guestPurchasePricing.durationUpliftRanges[selection.duration]
-        : { min: 0, max: 0 };
-      if (durationUpliftRange.max > 0) {
-        guestPurchaseUpliftRange = addRange(guestPurchaseUpliftRange, durationUpliftRange);
-        breakdownItems.push({
-          label: "Extended service window",
-          range: durationUpliftRange,
-        });
-      }
+        coreServiceRange = tierBase;
 
-      const extraGuests = Math.max(0, guestCount - guestPurchasePricing.includedGuests);
-      if (extraGuests > 0) {
-        const guestScaleRange: Range = {
-          min: extraGuests * guestPurchasePricing.additionalGuestRange.min,
-          max: extraGuests * guestPurchasePricing.additionalGuestRange.max,
-        };
-        guestPurchaseUpliftRange = addRange(guestPurchaseUpliftRange, guestScaleRange);
         breakdownItems.push({
-          label: "Guest beverage service scale",
-          range: guestScaleRange,
-          note: `Entry service includes up to ${guestPurchasePricing.includedGuests} guests.`,
+          label: gpp.publicLabel,
+          range: tierBase,
+          note: gpp.publicNote,
         });
-      }
 
-      if (guestCount >= guestPurchasePricing.additionalBartender.threshold) {
-        guestPurchaseUpliftRange = addRange(guestPurchaseUpliftRange, guestPurchasePricing.additionalBartender.range);
-        breakdownItems.push({
-          label: "Professional bartending scale",
-          range: guestPurchasePricing.additionalBartender.range,
-        });
-      }
+        // Guest count bracket uplift (flat, same for all tiers)
+        const bracket = gpp.guestCountUplifts.find((b) => guestCount <= b.maxGuests);
+        const guestUplift = bracket ? bracket.uplift : 0;
+        if (guestUplift > 0) {
+          const upliftRange: Range = { min: guestUplift, max: guestUplift };
+          guestPurchaseUpliftRange = addRange(guestPurchaseUpliftRange, upliftRange);
+          breakdownItems.push({
+            label: "Guest count service scale",
+            range: upliftRange,
+            note: "Flat add-on based on estimated guest count.",
+          });
+        }
 
-      if (guestCount >= guestPurchasePricing.satelliteBar.threshold) {
-        guestPurchaseUpliftRange = addRange(guestPurchaseUpliftRange, guestPurchasePricing.satelliteBar.range);
-        breakdownItems.push({
-          label: "Satellite bar readiness",
-          range: guestPurchasePricing.satelliteBar.range,
-        });
+        // Duration add-on (flat, on top of base + guest uplift)
+        const durationAddon = selection.duration ? gpp.durationAddons[selection.duration] : 0;
+        if (durationAddon > 0) {
+          const durationRange: Range = { min: durationAddon, max: durationAddon };
+          guestPurchaseUpliftRange = addRange(guestPurchaseUpliftRange, durationRange);
+          breakdownItems.push({
+            label: "Extended service hours",
+            range: durationRange,
+          });
+        }
       }
+      // else: 200+ guests -- coreServiceRange stays {0,0}, flagged as requiresCustomQuote at return
     } else {
       const coverageMultiplier =
         barPaymentModel === "ticketed"
@@ -235,6 +218,24 @@ export function calculateQuote(
         label: "Hosted service minimum",
         range: hostedMinimumUplift,
         note: "Keeps the full-service bar experience properly staffed and prepared.",
+      });
+    }
+  }
+
+  if (hasBar && barPaymentModel === "ticketed") {
+    const ticketedMinimumUplift: Range = {
+      min: Math.max(0, Math.round(config.ticketedBarMinimumRange.min * travelMultiplier) - estimatedRange.min),
+      max: Math.max(0, Math.round(config.ticketedBarMinimumRange.max * travelMultiplier) - estimatedRange.max),
+    };
+    estimatedRange = {
+      min: Math.max(estimatedRange.min, Math.round(config.ticketedBarMinimumRange.min * travelMultiplier)),
+      max: Math.max(estimatedRange.max, Math.round(config.ticketedBarMinimumRange.max * travelMultiplier)),
+    };
+    if (ticketedMinimumUplift.max > 0) {
+      breakdownItems.push({
+        label: "Ticketed bar minimum",
+        range: ticketedMinimumUplift,
+        note: "Covers bar setup, professional service, and ticket management for your event.",
       });
     }
   }
@@ -415,6 +416,9 @@ export function calculateQuote(
     estimatedRange = roundRange(estimatedRange, config);
   }
 
+  const requiresCustomQuote =
+    isGuestPurchaseBar && guestCount > config.guestPurchasePricing.customQuoteGuestThreshold;
+
   return {
     lineItems,
     breakdownItems: estimatedRange.max > 0 ? breakdownItems.filter((item) => {
@@ -426,6 +430,7 @@ export function calculateQuote(
     addonsSubtotal,
     disclaimers,
     serviceNotes,
+    requiresCustomQuote,
   };
 }
 
