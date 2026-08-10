@@ -8,52 +8,17 @@ export type EventDrink = {
 
 export const EVENT_DRINK_MENU: EventDrink[] = [
   {
-    id: "event-old-fashioned",
-    name: "Old Fashioned",
+    id: "event-watermelon-rum-cooler",
+    name: "Watermelon Rum Cooler",
     category: "Cocktail",
-    description: "Bourbon, aromatic bitters, simple sugar, expressed orange",
+    description: "White rum, fresh watermelon juice, fresh lime juice, simple syrup, fresh mint, club soda",
     active: true,
   },
   {
-    id: "event-mojito",
-    name: "Mojito",
+    id: "event-honey-lemon-gin-sour",
+    name: "Honey Lemon Gin Sour",
     category: "Cocktail",
-    description: "Fresh mint, lime, white rum, sparkling soda",
-    active: true,
-  },
-  {
-    id: "event-malhan-margarita",
-    name: "Malhan Margarita",
-    category: "Cocktail",
-    description: "Premium tequila, fresh lime, orange liqueur, handcrafted citrus blend",
-    active: true,
-  },
-  {
-    id: "event-no-jito",
-    name: "No-Jito (N/A)",
-    category: "Mocktail / Non-Alcoholic",
-    description: "Fresh mint, lime, cane sugar, sparkling soda",
-    active: true,
-  },
-  {
-    id: "event-bookwalter-prefix",
-    name: "Bookwalter Prefix",
-    category: "Red Wine",
-    description: "Red wine",
-    active: true,
-  },
-  {
-    id: "event-modelo",
-    name: "Modelo",
-    category: "Beer",
-    description: "Beer",
-    active: true,
-  },
-  {
-    id: "event-mac-and-jacks",
-    name: "Mac and Jack's",
-    category: "Beer",
-    description: "Beer",
+    description: "Gin, fresh lemon juice, local honey syrup, egg white, basil leaves",
     active: true,
   },
 ];
