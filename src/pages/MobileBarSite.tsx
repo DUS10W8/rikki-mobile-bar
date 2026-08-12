@@ -47,7 +47,7 @@ export default function MobileBarSite() {
       <div className="w-full bg-gradient-to-r from-brand-rust via-brand-sea to-brand-rust text-white text-sm py-2">
         <div className="max-w-6xl mx-auto px-4 flex items-center gap-2 justify-center">
           <Truck className="w-4 h-4" />
-          <span>Serving the Tri-Cities & greater Columbia River area • Est. 1978 vibes</span>
+          <span>Serving the Tri-Cities & greater Columbia River area • Est. 1985 vibes</span>
         </div>
       </div>
 
@@ -61,7 +61,7 @@ export default function MobileBarSite() {
             <div>
               <div className="font-extrabold text-lg tracking-tight">Rikki’s Mobile Bar</div>
               <div className="text-[11px] uppercase tracking-[0.18em] text-brand-ink/60">
-                Tri-Cities • Since 1978 (at heart)
+                Tri-Cities • Since 1985 (at heart)
               </div>
             </div>
           </a>
@@ -175,7 +175,7 @@ export default function MobileBarSite() {
               A retro club wagon, a polished bar, and the drinks dialed in.
             </h1>
             <p className="mt-4 text-base md:text-lg text-brand-ink/80 leading-relaxed">
-              Rikki’s Mobile Bar is a 1978 Ford Club Wagon turned mid-century modern inspired bar.
+              Rikki’s Mobile Bar is a 1985 Ford Club Wagon turned mid-century modern inspired bar.
               We pull up, pop out the bar, and streamline alcohol purchasing and service for a curated menu of cocktails, mocktails, beer, and wine.
             </p>
 
@@ -259,7 +259,7 @@ export default function MobileBarSite() {
               and the kind of details you remember.
             </p>
             <p className="mt-4 text-brand-ink/80 leading-relaxed">
-              Our 1978 Club Wagon is being thoughtfully converted with cold storage, efficient bar layout, and
+              Our 1985 Club Wagon is being thoughtfully converted with cold storage, efficient bar layout, and
               fold-out service to keep lines moving. We’re starting with a focused, dialed-in drink program and light
               food offerings to meet requirements—with tech-forward add-ons coming soon.
             </p>
@@ -334,7 +334,7 @@ export default function MobileBarSite() {
       >
         <div className="grid md:grid-cols-2 gap-10 items-start">
           <div>
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">A 1978 Club Wagon, reimagined</h2>
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">A 1985 Club Wagon, reimagined</h2>
             <p className="mt-3 text-brand-ink/80 leading-relaxed">
               Think vintage whites, chrome trim, woodgrain finishes, and rounded corners—paired with modern cold
               storage, power, and layout. The bar folds out from the van, creating a defined service zone that feels

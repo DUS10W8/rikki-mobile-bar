@@ -404,7 +404,7 @@ export default function App() {
               </h1>
 
               <p className="text-lg sm:text-xl leading-relaxed text-brand-ink/80">
-                Licensed to purchase and serve alcohol for qualifying events, with craft cocktails, curated food options, and event-ready tech from a restored 1978 Club Wagon.
+                Licensed to purchase and serve alcohol for qualifying events, with craft cocktails, curated food options, and event-ready tech from a restored 1985 Club Wagon.
               </p>
               <div className="mt-4 hidden flex-wrap gap-2 text-sm text-brand-ink/80 md:flex">
                 <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
@@ -524,7 +524,7 @@ export default function App() {
 
               <div className="grid gap-2.5">
               {[
-                "Vintage 1978 Ford Club Wagon presence",
+                "Vintage 1985 Ford Club Wagon presence",
                 "Licensed to purchase and serve alcohol",
                 "Photo-worthy guest experience without slowing service",
               ].map((detail) => (
@@ -1175,7 +1175,7 @@ export default function App() {
           <div className="space-y-1">
             <div className="text-sm font-semibold">Rikki’s Mobile Bar</div>
             <p className="text-xs text-brand-ink/70">
-              1978 Club Wagon • Premium mobile bar • Tri-Cities
+              1985 Club Wagon • Premium mobile bar • Tri-Cities
             </p>
           </div>
           <div className="text-xs text-brand-ink/70">
