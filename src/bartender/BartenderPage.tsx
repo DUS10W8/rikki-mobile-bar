@@ -24,6 +24,7 @@ type BartenderOrder = {
   drink: string;
   status: OrderStatus;
   bar_station?: BarStation | null;
+  table_number?: number | null;
   created_at?: string;
   updated_at?: string;
   ready_sms_sent_at?: string | null;
@@ -502,6 +503,11 @@ function KitchenOrderCard({
             <h2 className="min-w-0 flex-1 truncate font-heading text-3xl font-black leading-tight text-brand-ink" title={order.name}>{getDisplayName(order.name)}</h2>
             <span className="shrink-0 pt-1 text-xs font-black text-brand-ink/45">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
           </div>
+          {order.table_number && (
+            <div className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-brand-rust px-2.5 py-1 text-sm font-black uppercase tracking-wide text-white shadow-sm">
+              Table {order.table_number}
+            </div>
+          )}
           <div className="flex items-start justify-between gap-3">
             <p className="min-w-0 flex-1 text-xl font-black leading-snug text-brand-ink/78">{order.drink}</p>
             {loading ? <Loader2 className="h-5 w-5 animate-spin text-brand-ink/55" /> : <StatusBadge status={order.status} />}
