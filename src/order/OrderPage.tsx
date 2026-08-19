@@ -40,6 +40,7 @@ type Order = {
   drink: string;
   status: OrderStatus;
   bar_station?: BarStation | null;
+  table_number?: number | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -54,7 +55,7 @@ type OrderConfirmation = Order & {
   payment: DrinkPayment | null;
 };
 
-type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_station" | "created_at"> & {
+type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_station" | "table_number" | "created_at"> & {
   orderCode: string;
 };
 
@@ -78,6 +79,7 @@ export default function OrderPage() {
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [tableNumber] = useState<number | null>(() => getTableNumberFromUrl());
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -269,6 +271,7 @@ export default function OrderPage() {
       phone: normalizedPhone,
       drink: selectedDrink.name,
       status: "New",
+      table_number: tableNumber,
     });
 
     if (orderError || !data) {
@@ -322,6 +325,11 @@ export default function OrderPage() {
               <div className="mt-5 rounded-2xl bg-brand-ink px-4 py-5 text-white">
                 <p className="text-sm uppercase tracking-wide text-white/70">Order</p>
                 <p className="mt-1 text-4xl font-black">#{shortOrderId(confirmation.id)}</p>
+                {confirmation.table_number && (
+                  <p className="mt-2 text-sm font-bold uppercase tracking-wide text-white/80">
+                    We'll bring it to Table {confirmation.table_number}
+                  </p>
+                )}
               </div>
               <p className="mt-4 text-base font-bold text-brand-ink">{getConfirmationStatusMessage(confirmation)}</p>
               <p className="mt-2 text-sm text-brand-ink/65">Please listen for your name at the pickup area.</p>
@@ -399,6 +407,11 @@ export default function OrderPage() {
               <h1 className="text-3xl font-black text-brand-ink">Drink menu</h1>
             </div>
           </div>
+          {tableNumber && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-brand-sea/30 bg-brand-sea/10 px-3 py-1.5 text-sm font-black uppercase tracking-wide text-brand-sea">
+              Table {tableNumber}
+            </div>
+          )}
           </div>
         </header>
 
@@ -565,7 +578,7 @@ async function getOrderById(id: string) {
   try {
     const { data, error } = await orderSupabase
       .from("orders")
-      .select("id,name,phone,drink,status,bar_station,created_at,updated_at")
+      .select("id,name,phone,drink,status,bar_station,table_number,created_at,updated_at")
       .eq("id", id)
       .single<Order>();
 
@@ -651,6 +664,22 @@ async function loadDrinks({ setDrinks, setLoading, setError, setUnavailable }: L
   }
 }
 
+function getTableNumberFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get("table");
+    if (!raw) return null;
+
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed < 1 || parsed > 12) return null;
+
+    return parsed;
+  } catch (error) {
+    console.warn("[Table number parse failed]", error);
+    return null;
+  }
+}
+
 function isValidPhone(value: string) {
   const digits = value.replace(/\D/g, "");
   return digits.length === 10 || (digits.length === 11 && digits.startsWith("1"));
@@ -694,6 +723,7 @@ function persistActiveOrder(order: Order) {
       created_at: order.created_at,
       status: order.status,
       bar_station: order.bar_station,
+      table_number: order.table_number,
     };
     localStorage.setItem(ACTIVE_ORDER_STORAGE_KEY, JSON.stringify(activeOrder));
   } catch (error) {
