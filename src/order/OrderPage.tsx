@@ -77,6 +77,7 @@ type LoadDrinksOptions = {
 export default function OrderPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
+  const [customDrinkText, setCustomDrinkText] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [tableNumber] = useState<number | null>(() => getTableNumberFromUrl());
@@ -239,7 +240,12 @@ export default function OrderPage() {
   }, [drinks]);
 
   const phoneIsValid = isValidPhone(phone);
-  const canSubmit = Boolean(selectedDrink && name.trim().length >= 2 && !submitting);
+  const canSubmit = Boolean(
+    selectedDrink &&
+      name.trim().length >= 2 &&
+      !submitting &&
+      (!isCustomDrink(selectedDrink) || customDrinkText.trim().length > 0),
+  );
   const selectedDrinkPayment = ENABLE_DRINK_LIMITS && selectedDrink ? getDrinkPayment(selectedDrink) : null;
   const nextDrinkLabel = ENABLE_DRINK_LIMITS ? getNextDrinkLabel(guestOrderCount, selectedDrinkPayment) : "";
   const isPaidNextDrink = Boolean(ENABLE_DRINK_LIMITS && guestOrderCount !== null && guestOrderCount >= MAX_DRINK_TICKETS && selectedDrinkPayment);
@@ -253,6 +259,15 @@ export default function OrderPage() {
       setError("Choose a drink and enter your name.");
       return;
     }
+
+    if (isCustomDrink(selectedDrink) && !customDrinkText.trim()) {
+      setError("Let us know what you'd like.");
+      return;
+    }
+
+    const drinkName = isCustomDrink(selectedDrink)
+      ? `${selectedDrink.category}: ${customDrinkText.trim()}`
+      : selectedDrink.name;
 
     setSubmitting(true);
     const normalizedPhone = phoneIsValid ? normalizePhone(phone) : phone.trim();
@@ -269,7 +284,7 @@ export default function OrderPage() {
     const { data, error: orderError } = await createOrder({
       name: name.trim(),
       phone: normalizedPhone,
-      drink: selectedDrink.name,
+      drink: drinkName,
       status: "New",
       table_number: tableNumber,
     });
@@ -295,6 +310,7 @@ export default function OrderPage() {
     setConfirmation(nextConfirmation);
     persistActiveOrder(nextConfirmation);
     setSelectedDrink(null);
+    setCustomDrinkText("");
     setName("");
     setPhone("");
   };
@@ -432,7 +448,10 @@ export default function OrderPage() {
                     className={`flex min-h-20 items-center justify-between rounded-2xl border bg-[#fffaf2]/92 px-4 py-3 text-left shadow-[0_10px_28px_rgba(46,46,46,0.07)] transition ${
                       selectedDrink?.id === drink.id ? "border-brand-sea ring-2 ring-brand-sea/20" : "border-brand-chrome/80"
                     }`}
-                    onClick={() => setSelectedDrink(drink)}
+                    onClick={() => {
+                      setSelectedDrink(drink);
+                      if (drink.id !== selectedDrink?.id) setCustomDrinkText("");
+                    }}
                   >
                     <span className="min-w-0 pr-3">
                       <span className="block text-lg font-bold text-brand-ink">{drink.name}</span>
@@ -444,6 +463,23 @@ export default function OrderPage() {
               </div>
             </section>
           ))}
+
+          {selectedDrink && isCustomDrink(selectedDrink) && (
+            <section className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_14px_36px_rgba(46,46,46,0.08)]">
+              <label className="grid gap-1">
+                <span className="text-sm font-bold text-brand-ink/75">
+                  {selectedDrink.category === "N/A" ? "What N/A drink would you like?" : "What classic cocktail would you like?"}
+                </span>
+                <input
+                  className="order-input"
+                  value={customDrinkText}
+                  onChange={(event) => setCustomDrinkText(event.target.value)}
+                  placeholder={selectedDrink.category === "N/A" ? "e.g. Shirley Temple" : "e.g. Old Fashioned"}
+                  autoFocus
+                />
+              </label>
+            </section>
+          )}
 
           <section className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_14px_36px_rgba(46,46,46,0.08)]">
             <div className="grid gap-3">
@@ -752,6 +788,10 @@ function clearStoredActiveOrder() {
   } catch (error) {
     console.warn("[Order restore clear failed]", error);
   }
+}
+
+function isCustomDrink(drink: Drink) {
+  return drink.name.trim().toLowerCase() === "type your own";
 }
 
 function getDrinkPayment(drink: Drink): DrinkPayment {
