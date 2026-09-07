@@ -90,6 +90,9 @@ export default async function handler(request, response) {
   if (!twilioResponse.ok) {
     return sendJson(response, twilioResponse.status, {
       message: twilioPayload.message || "Twilio could not send the quote notification SMS.",
+      code: twilioPayload.code,
+      more_info: twilioPayload.more_info,
+      twilio_status: twilioPayload.status,
     });
   }
 
