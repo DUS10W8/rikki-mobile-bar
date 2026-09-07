@@ -10,51 +10,6 @@ export default async function handler(request, response) {
     return response.status(204).setHeader("Access-Control-Allow-Origin", "*").end();
   }
 
-  // Temporary, safe diagnostic: reports credential shape only (length, whitespace,
-  // masked prefix/suffix) -- never the actual secret value. Remove after debugging.
-  if (request.method === "GET" && request.query?.diag === "rikki2026") {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
-    const authToken = process.env.TWILIO_AUTH_TOKEN || "";
-    const fromNumber = process.env.TWILIO_FROM_NUMBER || "";
-    const notifyNumber = process.env.QUOTE_NOTIFY_PHONE || "";
-    const describe = (value) => ({
-      length: value.length,
-      hasLeadingWhitespace: /^\s/.test(value),
-      hasTrailingWhitespace: /\s$/.test(value),
-      hasInternalWhitespace: /\s/.test(value.trim()),
-      preview: value.length > 4 ? `${value.slice(0, 2)}...${value.slice(-2)}` : "(too short)",
-    });
-    // Also do a minimal, read-only auth check directly against Twilio (fetch the
-    // account resource, not a message send) using the exact same header logic as
-    // the real send path below, to isolate whether Twilio itself accepts these
-    // credentials at all.
-    let twilioAuthCheck = null;
-    try {
-      const checkRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`, {
-        headers: {
-          Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
-        },
-      });
-      const checkBody = await checkRes.json().catch(() => ({}));
-      twilioAuthCheck = {
-        status: checkRes.status,
-        ok: checkRes.ok,
-        message: checkBody.message,
-        friendlyName: checkBody.friendly_name,
-      };
-    } catch (err) {
-      twilioAuthCheck = { error: String(err) };
-    }
-
-    return sendJson(response, 200, {
-      accountSid: describe(accountSid),
-      authToken: describe(authToken),
-      fromNumber: describe(fromNumber),
-      notifyNumber: describe(notifyNumber),
-      twilioAuthCheck,
-    });
-  }
-
   if (request.method !== "POST") {
     return sendJson(response, 405, { message: "Method not allowed." });
   }
