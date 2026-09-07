@@ -564,6 +564,15 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
       if (response.ok) {
         setSubmitted(true);
         setSubmitting(false);
+        notifyQuoteRequest({
+          name: nextSelection.contact.name,
+          phone: nextSelection.contact.phone,
+          eventDate: nextSelection.contact.eventDate,
+          eventType: nextSelection.eventType,
+          guestCountEstimate: nextSelection.guestCount,
+          duration: nextSelection.duration,
+          estimatedRange: `$${quote.estimatedRange.min.toLocaleString()} - $${quote.estimatedRange.max.toLocaleString()}`,
+        });
       } else {
         const errors = Array.isArray(data?.errors) ? data.errors : [];
         setSubmitErrors(errors);
@@ -931,4 +940,24 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
       <MobileSummaryDrawer quote={quote} selection={selection} onReset={handleReset} onEdit={goToBuilderStart} />
     </div>
   );
+}
+
+// Best-effort SMS alert to the business phone when a quote request comes in.
+// Failures here never block or affect the guest's confirmation screen.
+function notifyQuoteRequest(details: {
+  name: string;
+  phone: string;
+  eventDate: string;
+  eventType: string | null;
+  guestCountEstimate: number | string | null;
+  duration: string | null;
+  estimatedRange: string;
+}) {
+  fetch("/api/notify-quote-request", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(details),
+  }).catch((error) => {
+    console.warn("[Quote SMS notification failed]", error);
+  });
 }
