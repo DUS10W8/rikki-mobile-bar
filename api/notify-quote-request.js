@@ -10,6 +10,28 @@ export default async function handler(request, response) {
     return response.status(204).setHeader("Access-Control-Allow-Origin", "*").end();
   }
 
+  // Temporary, safe diagnostic: reports credential shape only (length, whitespace,
+  // masked prefix/suffix) -- never the actual secret value. Remove after debugging.
+  if (request.method === "GET" && request.query?.diag === "rikki2026") {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
+    const authToken = process.env.TWILIO_AUTH_TOKEN || "";
+    const fromNumber = process.env.TWILIO_FROM_NUMBER || "";
+    const notifyNumber = process.env.QUOTE_NOTIFY_PHONE || "";
+    const describe = (value) => ({
+      length: value.length,
+      hasLeadingWhitespace: /^\s/.test(value),
+      hasTrailingWhitespace: /\s$/.test(value),
+      hasInternalWhitespace: /\s/.test(value.trim()),
+      preview: value.length > 4 ? `${value.slice(0, 2)}...${value.slice(-2)}` : "(too short)",
+    });
+    return sendJson(response, 200, {
+      accountSid: describe(accountSid),
+      authToken: describe(authToken),
+      fromNumber: describe(fromNumber),
+      notifyNumber: describe(notifyNumber),
+    });
+  }
+
   if (request.method !== "POST") {
     return sendJson(response, 405, { message: "Method not allowed." });
   }
