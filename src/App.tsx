@@ -37,31 +37,43 @@ const GOOGLE_REVIEW_URL = "https://g.page/r/CWNxLHvZMBo5EBM/review";
 
 const googleReviews = [
   {
+    name: "Emily Lippes",
+    meta: "2 weeks ago",
+    quote:
+      "Rikki, Dustin and the team helped cater a party at my house. 5 stars in every category. From cocktail creating to renting tables and staffing, they didn't miss a detail. They made sure we had everything we didn't even know we needed! What an adorable set-up and team! Already planning my party for next August!",
+  },
+  {
+    name: "Jose Pacheco",
+    meta: "3 weeks ago",
+    quote:
+      "Great experience with great customer service, highly recommend and will be using them again thanks to the staff - very professional set up and amazing attitudes.",
+  },
+  {
     name: "Melanie Burton",
-    meta: "Local Guide · a day ago",
+    meta: "Local Guide · 3 months ago",
     quote:
       "Absolutely amazing mobile bar service! The drinks were fantastic, service was fast with no waiting, and they brought everything - the liquor, the bar setup, and an incredible atmosphere. Super professional, friendly, and made the party feel elevated and stress-free.",
   },
   {
     name: "Noemi Pena",
-    meta: "2 days ago",
+    meta: "3 months ago",
     quote:
       "Absolutely amazing experience with this mobile bartender service! The staff was incredibly friendly, professional, and kept everything running smoothly all night. The service was super fast, even when things got busy, and every drink was made perfectly.",
   },
   {
     name: "Nikhil Malhan",
-    meta: "5 days ago",
+    meta: "3 months ago",
     quote:
       "I had them serve for a 350 person grand opening party for my dental office and they absolutely crushed it. They bring the entire setup, know how to make a proper cocktail, keep up with a bustling crowd and get it done with class.",
   },
   {
     name: "Casey Casillas",
-    meta: "a week ago",
+    meta: "3 months ago",
     quote: "Great experience, great drinks, great people.",
   },
   {
     name: "socks",
-    meta: "a week ago",
+    meta: "3 months ago",
     quote:
       "The cocktails were fresh and professionally made, the setup looked beautiful, and the bartenders were friendly and organized the entire evening. Everything felt seamless, polished, and stress free from start to finish.",
   },
