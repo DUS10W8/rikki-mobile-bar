@@ -19,8 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 import { Badge } from "./components/ui/badge";
 import { BookingFlow } from "./booking/BookingFlow";
 
-import Gallery from "./components/ui/Gallery";
-import { galleryItems } from "./data/gallery";
+import GalleryCarousel from "./components/ui/GalleryCarousel";
 
 // Sections you added (living in /components/ui/)
 import TechFeatures from "./components/ui/TechFeatures";
@@ -100,6 +99,20 @@ const instagramPosts = [
     poster: "",
     alt: "Rikki's Mobile Bar team serving behind the bar",
     label: "Rikki's promo",
+  },
+  {
+    href: "https://www.instagram.com/rikkismobile/",
+    video: "/social/guest-reviews.mp4",
+    poster: "/social/guest-reviews-poster.jpg",
+    alt: "Video showcasing a 5-star Google review for Rikki's Mobile Bar",
+    label: "Guest reviews",
+  },
+  {
+    href: "https://www.instagram.com/reel/DaBGN2mlOa5/",
+    video: "/social/bar-prep-reel.mp4",
+    poster: "/social/bar-prep-reel-poster.jpg",
+    alt: "Rikki's Mobile Bar team member preparing fresh citrus juice for cocktails",
+    label: "Behind the bar",
   },
 ] as const;
 
@@ -1042,9 +1055,9 @@ export default function App() {
         </section>
 
         {/* Gallery */}
-        <section id="gallery" className="border-t border-brand-chrome/70 bg-brand-primary/80 py-14 md:py-20">
+        <section id="gallery" className="border-t border-brand-chrome/70 bg-brand-primary/80 py-14 md:py-20 overflow-hidden">
           <div className="mx-auto max-w-6xl px-4">
-            <div className="mb-8 flex items-center justify-between gap-4">
+            <div className="mb-6 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight md:text-3xl">A closer look at the experience.</h2>
                 <p className="mt-1 text-sm text-brand-ink/80">
@@ -1055,37 +1068,9 @@ export default function App() {
                 More photos coming as we build
               </div>
             </div>
-
-            <div className="mb-5 grid overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-white/88 shadow-[0_24px_70px_rgba(20,20,20,0.12)] md:grid-cols-[1.3fr_0.7fr]">
-              <div className="aspect-[4/3] md:aspect-[16/10]">
-                <img
-                  src={`${BASE}gallery/editorial-team-service-flow-1200.jpg`}
-                  alt="Rikki's Mobile Bar team member preparing drinks behind the bar"
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              <div className="flex flex-col justify-center gap-3 p-5 md:p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-rust">
-                  Built for the details
-                </p>
-                <h3 className="text-2xl font-bold leading-tight md:text-3xl">
-                  Menus, garnish, drinkware, and service flow all work together.
-                </h3>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-brand-chrome bg-brand-primary/60 px-3 py-1 text-xs font-semibold text-brand-ink/75">
-                    Custom menus
-                  </span>
-                  <span className="rounded-full border border-brand-chrome bg-brand-primary/60 px-3 py-1 text-xs font-semibold text-brand-ink/75">
-                    Service-ready setup
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <Gallery items={galleryItems} />
           </div>
+
+          <GalleryCarousel />
         </section>
 
         {/* Book / Contact */}
