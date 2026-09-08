@@ -119,8 +119,8 @@ export const pricingConfig: PricingConfig = {
   ],
   guestPurchasePricing: {
     entryRange: {
-      min: 800,
-      max: 800,
+      min: 600,
+      max: 600,
     },
     includedGuests: 30,
     includedDuration: "2-3",
