@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { useDocumentHead, SITE_URL } from "../lib/seo";
 import { Instagram, Martini, Sparkles, Star, UserRoundPlus } from "lucide-react";
 
 const BASE = import.meta.env.BASE_URL;
@@ -134,22 +135,7 @@ function ConnectCard({ href, label, subtitle, icon, featured, external, recommen
 }
 
 export default function ConnectPage() {
-  useEffect(() => {
-    const prevTitle = document.title;
-    document.title = "Enjoying the experience? — Rikki’s Mobile Bar";
-    const metaDesc = document.querySelector('meta[name="description"]');
-    const prevDesc = metaDesc?.getAttribute("content") ?? null;
-    if (metaDesc) {
-      metaDesc.setAttribute(
-        "content",
-        "Follow Rikki’s Mobile Bar, leave a Google review, or book the vintage mobile bar for your next Tri-Cities event."
-      );
-    }
-    return () => {
-      document.title = prevTitle;
-      if (metaDesc && prevDesc !== null) metaDesc.setAttribute("content", prevDesc);
-    };
-  }, []);
+  useDocumentHead({ title: "Connect with Rikki's Mobile Bar | Reviews & Social", description: "Follow Rikki's Mobile Bar, leave a Google review, or book the vintage mobile bar for your next Tri-Cities event.", canonical: `${SITE_URL}/connect` });
 
   return (
     <div className="min-h-screen luxury-page-shell text-brand-ink">
@@ -249,3 +235,4 @@ export default function ConnectPage() {
     </div>
   );
 }
+

@@ -1,7 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /tip
-Disallow: /order
-Disallow: /bartender
 
 Sitemap: https://www.rikkismobile.com/sitemap.xml

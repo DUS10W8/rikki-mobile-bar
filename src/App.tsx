@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import AuthorityReferences from "./components/AuthorityReferences";
 import {
   Calendar,
   Mail,
@@ -320,7 +321,7 @@ export default function App() {
             <div className="hidden text-left sm:block">
               <div className="text-sm font-semibold tracking-tight">Rikki’s Mobile Bar</div>
               <div className="text-[11px] uppercase tracking-[0.16em] text-brand-ink/60">
-                ’78 Club Wagon • Tri-Cities
+                1985 Club Wagon • Tri-Cities
               </div>
             </div>
           </button>
@@ -844,6 +845,7 @@ export default function App() {
           </div>
         </section>
 
+        <AuthorityReferences />
         {/* Google reviews */}
         <section id="reviews" className="border-t border-brand-chrome/70 bg-white py-14 md:py-20">
           <div className="mx-auto max-w-6xl px-4">
