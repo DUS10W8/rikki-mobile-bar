@@ -393,7 +393,7 @@ export default function App() {
         )}
       </header>
 
-      <main>
+      <main id="main">
         {/* Hero / About */}
         <section
           id="about"
@@ -427,11 +427,13 @@ export default function App() {
               </div>
 
               <h1 className="text-balance text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight">
-                A vintage mobile bar experience built for unforgettable events.
+                Tri-Cities Mobile Bar &amp; Wedding Bartending, Vintage-Style.
               </h1>
 
               <p className="text-lg sm:text-xl leading-relaxed text-brand-ink/80">
-                Licensed to purchase and serve alcohol for qualifying events, with craft cocktails, curated food options, and event-ready tech from a restored 1985 Club Wagon.
+                A restored 1985 Club Wagon serving craft cocktails at weddings and private events across Richland,
+                Kennewick &amp; Pasco &mdash; licensed to purchase and serve alcohol, with curated food options and
+                event-ready tech.
               </p>
               <div className="mt-4 hidden flex-wrap gap-2 text-sm text-brand-ink/80 md:flex">
                 <Badge className="rounded-full bg-white text-xs sm:text-sm px-3 py-2 sm:px-4 sm:py-2.5 shadow-sm font-medium">
@@ -445,9 +447,16 @@ export default function App() {
                 </Badge>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-4 md:justify-start">
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3 md:justify-start">
                 <Button
                   className="chrome-button rounded-2xl border-brand-sea bg-brand-sea text-white"
+                  onClick={() => scrollToSection("book")}
+                >
+                  Get a Quote
+                </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-2xl border-brand-ink/25 bg-white/85"
                   onClick={() => scrollToSection("book")}
                 >
                   Check Availability
@@ -1141,13 +1150,34 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t border-brand-chrome bg-white">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:grid-cols-3 md:items-center">
-          <div className="space-y-1">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 pt-10 md:grid-cols-4">
+          <div className="md:col-span-2">
             <div className="text-sm font-semibold">Rikki’s Mobile Bar</div>
-            <p className="text-xs text-brand-ink/70">
-              1985 Club Wagon • Premium mobile bar • Tri-Cities
+            <p className="mt-2 max-w-xs text-xs leading-relaxed text-brand-ink/70">
+              Licensed vintage mobile bar service from a restored 1985 Club Wagon, serving weddings and private
+              events across the Tri-Cities, Walla Walla, and Yakima, Washington.
             </p>
           </div>
+          <div className="text-xs text-brand-ink/70">
+            <div className="mb-2 font-semibold text-brand-ink">Service pages</div>
+            <ul className="space-y-1.5">
+              <li><a href="/wedding-bartender-tri-cities-wa" className="hover:text-brand-ink hover:underline">Wedding Bartending</a></li>
+              <li><a href="/mobile-bar-tri-cities-wa" className="hover:text-brand-ink hover:underline">Tri-Cities Mobile Bar</a></li>
+              <li><a href="/mobile-bar-walla-walla-wa" className="hover:text-brand-ink hover:underline">Walla Walla Mobile Bar</a></li>
+              <li><a href="/licensed-mobile-bar-washington" className="hover:text-brand-ink hover:underline">Licensed Alcohol Service</a></li>
+            </ul>
+          </div>
+          <div className="text-xs text-brand-ink/70">
+            <div className="mb-2 font-semibold text-brand-ink">Planning guides</div>
+            <ul className="space-y-1.5">
+              <li><a href="/blog" className="hover:text-brand-ink hover:underline">All guides</a></li>
+              <li><a href="/blog/wedding-bartender-cost-washington" className="hover:text-brand-ink hover:underline">Bartender cost guide</a></li>
+              <li><a href="/blog/how-much-alcohol-for-100-wedding-guests" className="hover:text-brand-ink hover:underline">Alcohol calculator</a></li>
+              <li><a href="/blog/wedding-bar-checklist" className="hover:text-brand-ink hover:underline">Wedding bar checklist</a></li>
+            </ul>
+          </div>
+        </div>
+        <div className="mx-auto grid max-w-6xl gap-4 border-t border-brand-chrome/60 px-4 py-6 mt-6 md:grid-cols-2 md:items-center">
           <div className="text-xs text-brand-ink/70">
             © {new Date().getFullYear()} Rikki’s Mobile Bar. All rights reserved.
           </div>
@@ -1161,6 +1191,12 @@ export default function App() {
             <button type="button" onClick={() => scrollToSection("book")} className="hover:text-brand-ink">
               Availability
             </button>
+            <a href="/privacy" className="hover:text-brand-ink">
+              Privacy
+            </a>
+            <a href="/terms" className="hover:text-brand-ink">
+              Terms
+            </a>
             <a
               href="https://instagram.com/rikkismobile"
               target="_blank"
