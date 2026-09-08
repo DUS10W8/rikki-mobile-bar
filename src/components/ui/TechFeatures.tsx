@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./card";  // <-- sibli
 
 export default function TechFeatures() {
   return (
-    <section id="features" className="py-14">
+    <section className="py-14">
       <div className="mx-auto max-w-6xl px-4">
         <div className="text-center">
           <h2 className="text-3xl font-bold">Setup & Equipment</h2>

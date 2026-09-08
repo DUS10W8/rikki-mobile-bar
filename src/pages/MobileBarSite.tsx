@@ -16,6 +16,7 @@ import { BookingFlow } from "../booking/BookingFlow";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import TeamCarousel from "../components/ui/TeamCarousel";
 
 export default function MobileBarSite() {
   const [active, setActive] = useState<string>("about");
@@ -23,7 +24,7 @@ export default function MobileBarSite() {
 
   // Observe sections for active nav highlight
   useEffect(() => {
-    const ids = ["about", "van", "packages", "gallery", "faq", "contact"];
+    const ids = ["about", "team", "van", "packages", "gallery", "faq", "contact"];
     const els = ids
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => !!el);
@@ -69,6 +70,7 @@ export default function MobileBarSite() {
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
             {[
               ["about", "About"],
+              ["team", "Team"],
               ["van", "The Van"],
               ["packages", "Packages"],
               ["gallery", "Gallery"],
@@ -325,6 +327,26 @@ export default function MobileBarSite() {
             </Card>
           </div>
         </div>
+      </section>
+
+      {/* Meet the Team */}
+      <section
+        id="team"
+        className="scroll-mt-24 py-16 md:py-24 border-t border-brand-chrome/60 overflow-hidden"
+      >
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Meet the team</h2>
+            <span className="hidden sm:inline text-xs uppercase tracking-[0.16em] text-brand-ink/60">
+              Swipe, or send a high five
+            </span>
+          </div>
+          <p className="text-brand-ink/80 mb-2 max-w-2xl">
+            The people behind the bar—licensed, detail-obsessed, and genuinely happy you're here.
+          </p>
+        </div>
+
+        <TeamCarousel />
       </section>
 
       {/* Van layout / experience */}

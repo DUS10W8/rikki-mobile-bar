@@ -25,6 +25,7 @@ import { galleryItems } from "./data/gallery";
 // Sections you added (living in /components/ui/)
 import TechFeatures from "./components/ui/TechFeatures";
 import ComingSoon from "./components/ui/ComingSoon";
+import TeamCarousel from "./components/ui/TeamCarousel";
 
 /** Use Vite base for all public assets so GitHub Pages project URLs work. */
 const BASE = import.meta.env.BASE_URL;
@@ -93,8 +94,8 @@ const instagramPosts = [
 type SectionId =
   | "about"
   | "menu"
-  | "food"
   | "features"
+  | "team"
   | "packages"
   | "reviews"
   | "coming-soon"
@@ -132,21 +133,22 @@ export default function App() {
 
   // Sections on the page, in order
   const sections = useMemo<SectionId[]>(
-    () => ["about", "menu", "features", "packages", "reviews", "coming-soon", "gallery", "book"],
+    () => ["about", "menu", "features", "team", "packages", "reviews", "gallery", "book"],
     []
   );
 
-  // Header nav (order matters) - removed "food" to de-emphasize food service
+  // Header nav (order matters) - "coming-soon" intentionally left out of nav so it doesn't
+  // compete with the booking CTA; the section itself moved to the bottom of the page.
   const visibleNavIds = useMemo<SectionId[]>(
-    () => ["about", "menu", "features", "packages", "reviews", "coming-soon", "gallery", "book"],
+    () => ["about", "menu", "features", "team", "packages", "reviews", "gallery", "book"],
     []
   );
 
   const labelMap: Record<SectionId, string> = {
     about: "Home",
     menu: "Services",
-    food: "Food",
     features: "Van & Experience",
+    team: "Team",
     packages: "Pricing",
     reviews: "Reviews",
     "coming-soon": "Coming Soon",
@@ -495,7 +497,7 @@ export default function App() {
                 The bar is part of the moment.
               </h2>
               <p className="text-lg leading-relaxed text-brand-ink/80 md:text-xl">
-                Guests walk up to a vintage bar, order something beautiful, and know the alcohol sourcing and service are handled professionally.
+                Guests walk up, order something beautiful, and the night runs itself.
               </p>
               <Button
                 variant="outline"
@@ -517,7 +519,7 @@ export default function App() {
                 />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/45 to-transparent p-5">
                   <p className="max-w-xs text-xs font-semibold leading-relaxed text-white/95 md:text-sm">
-                    Warm service, real guests, and the van doing what it was built to do.
+                    The van doing exactly what it was built for.
                   </p>
                 </div>
               </div>
@@ -525,7 +527,7 @@ export default function App() {
               <div className="grid gap-2.5">
               {[
                 "Vintage 1985 Ford Club Wagon presence",
-                "Licensed to purchase and serve alcohol",
+                "Cold storage and full bar prep on board",
                 "Photo-worthy guest experience without slowing service",
               ].map((detail) => (
                 <div key={detail} className="flex items-start gap-3 rounded-[1.25rem] border border-brand-chrome bg-white/80 px-4 py-3 shadow-sm">
@@ -559,18 +561,18 @@ export default function App() {
               {[
                 {
                   step: "01",
-                  title: "Streamline alcohol logistics",
-                  body: "Rikki's is licensed to purchase and serve alcohol for qualifying events, so sourcing and service stay under one polished plan.",
+                  title: "One team, one plan",
+                  body: "No separate vendors to coordinate — sourcing, staffing, and service all run through us.",
                 },
                 {
                   step: "02",
                   title: "Customize the guest experience",
-                  body: "We plan drinks, garnishes, light food requirements, staffing, and optional audio or DJ support.",
+                  body: "We plan the drink menu, garnishes, required food, and any tech add-ons together.",
                 },
                 {
                   step: "03",
                   title: "We handle the service flow",
-                  body: "Setup, bar service, cleanup, and venue-friendly communication are handled with calm, polished hospitality.",
+                  body: "Setup, service, cleanup, venue communication — you get to be a guest at your own event.",
                 },
               ].map((item) => (
                 <Card key={item.step} className="rounded-2xl border-brand-chrome bg-brand-primary/55">
@@ -604,7 +606,7 @@ export default function App() {
                 {
                   title: "Mobile Bar Service",
                   bestFor: "Best for weddings, parties & private events",
-                  body: "Licensed alcohol purchasing and service from the vintage Club Wagon with setup, bar flow, and breakdown handled.",
+                  body: "Full bar service from the vintage Club Wagon — setup, flow, and breakdown handled start to finish.",
                 },
                 {
                   title: "Cocktails, Beer & Wine",
@@ -704,6 +706,26 @@ export default function App() {
           </div>
         </section>
 
+        {/* Meet the Team */}
+        <section id="team" className="border-t border-brand-chrome/70 bg-white py-16 md:py-20 overflow-hidden">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-xl space-y-2">
+                <p className="luxury-eyebrow">Meet the team</p>
+                <h2 className="text-3xl font-bold tracking-tight md:text-4xl">The people behind the bar.</h2>
+                <div className="luxury-divider mt-4 w-40" />
+              </div>
+              <p className="max-w-md text-base leading-relaxed text-brand-ink/72 md:text-lg">
+                Licensed, detail-obsessed, and genuinely happy you're here. Swipe through, or send someone a high five.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <TeamCarousel />
+          </div>
+        </section>
+
         {/* Packages */}
         <section id="packages" className="border-t border-brand-chrome/70 bg-[linear-gradient(180deg,#fffaf3_0%,#ffffff_100%)] py-14 md:py-20">
           <div className="mx-auto max-w-6xl px-4">
@@ -712,9 +734,6 @@ export default function App() {
                 <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Clear starting points, customized to your event.</h2>
                 <p className="text-sm leading-relaxed text-brand-ink/80 md:text-base">
                   Choose a service direction. We'll scale staffing, menu depth, and setup needs to your guest count.
-                </p>
-                <p className="mt-2 text-sm text-brand-ink/70">
-                  Every estimate includes the real logistics: alcohol sourcing, licensed service, planning, setup, cleanup, and the right bar flow for the guest count.
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-brand-chrome bg-white/85 p-5 text-sm text-brand-ink/80 shadow-[0_18px_50px_rgba(20,20,20,0.08)]">
@@ -770,17 +789,11 @@ export default function App() {
                     </div>
                     <p className="text-sm text-brand-ink/70 mt-1">{pkg.subtitle}</p>
                   </CardHeader>
-                  <CardContent className="flex flex-1 flex-col justify-between space-y-4 text-base text-brand-ink/80 md:text-lg">
+                  <CardContent className="flex flex-1 flex-col justify-between text-base text-brand-ink/80 md:text-lg">
                     <div>
                       <p className="font-medium">{pkg.blurb}</p>
                       {pkg.examples && <p className="mt-2 text-sm md:text-base text-brand-ink/70">{pkg.examples}</p>}
                     </div>
-                    <ul className="space-y-2 text-base font-medium">
-                      <li>• Alcohol for your selected drink program</li>
-                      <li>• Drinkware/cups</li>
-                      <li>• Professional bartending</li>
-                      <li>• Food service included</li>
-                    </ul>
                   </CardContent>
                   <div className="px-6 pb-5">
                     <Button
@@ -808,9 +821,6 @@ export default function App() {
                 <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
                   See what guests are saying about Rikki's.
                 </h2>
-                <p className="text-base leading-relaxed text-brand-ink/78 md:text-lg">
-                  Recent 5-star Google reviews from events, grand openings, and parties.
-                </p>
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row md:flex-col lg:flex-row">
@@ -844,9 +854,6 @@ export default function App() {
                     ))}
                   </div>
                   <h3 className="mt-5 text-2xl font-bold md:text-3xl">5.0 on Google</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-brand-ink/72 md:text-base">
-                    Five recent reviews, all 5 stars, mention fast service, polished setup, professional bartenders, and stress-free hosting.
-                  </p>
                 </div>
                 <div className="mt-6 rounded-[1.25rem] border border-brand-chrome/70 bg-white/72 p-4 text-sm text-brand-ink/72">
                   <span className="font-semibold text-brand-ink">Recently served by Rikki's?</span> A short Google review helps other hosts feel confident booking a local mobile bar.
@@ -1022,9 +1029,6 @@ export default function App() {
           </div>
         </section>
 
-        {/* Coming soon as its own section */}
-        <ComingSoon />
-
         {/* Gallery */}
         <section id="gallery" className="border-t border-brand-chrome/70 bg-brand-primary/80 py-14 md:py-20">
           <div className="mx-auto max-w-6xl px-4">
@@ -1057,9 +1061,6 @@ export default function App() {
                 <h3 className="text-2xl font-bold leading-tight md:text-3xl">
                   Menus, garnish, drinkware, and service flow all work together.
                 </h3>
-                <p className="text-base leading-relaxed text-brand-ink/75">
-                  The experience should look composed in photos and feel easy at the bar. That balance is the whole point.
-                </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span className="rounded-full border border-brand-chrome bg-brand-primary/60 px-3 py-1 text-xs font-semibold text-brand-ink/75">
                     Custom menus
@@ -1106,46 +1107,15 @@ export default function App() {
               </CardContent>
             </Card>
 
-            {/* Social Proof */}
-            <div className="mb-8 grid gap-3 text-sm md:grid-cols-2 lg:grid-cols-5">
-              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">Experience</div>
-                <div className="text-xs text-brand-ink/70">20+ years</div>
-              </div>
-              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">Licensed alcohol purchasing & service</div>
-                <div className="text-xs text-brand-ink/70">streamlined for qualifying events</div>
-              </div>
-              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">Tri-Cities based</div>
-                <div className="text-xs text-brand-ink/70">venue-friendly service</div>
-              </div>
-              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">Custom event setups</div>
-                <div className="text-xs text-brand-ink/70">built around the room</div>
-              </div>
-              <div className="rounded-[1.25rem] border border-brand-chrome/50 bg-white/78 p-4 text-center shadow-sm">
-                <div className="font-semibold text-brand-ink mb-1">Food options available</div>
-                <div className="text-xs text-brand-ink/70">planning support included</div>
-              </div>
-            </div>
-
             {/* Consolidated Reassurance */}
             <Card className="mb-8 rounded-[1.5rem] border border-brand-chrome bg-white/90 shadow-sm">
               <CardContent className="p-4 text-center">
                 <div className="font-semibold text-brand-ink mb-1">This takes about 2 minutes.</div>
                 <div className="text-sm text-brand-ink/70">
-                  Check availability, see a live estimate, and get next steps - no payment required.
+                  Check availability and see a live estimate — no payment required. We'll confirm availability and finalize your quote after a quick review.
                 </div>
               </CardContent>
             </Card>
-
-            {/* Authority Statement */}
-            <div className="mb-8 text-center">
-              <p className="text-sm text-brand-ink/70">
-                We'll review your details and confirm availability before anything is finalized.
-              </p>
-            </div>
 
             <BookingFlow formspreeId="xgvgzrnn" />
 
@@ -1167,6 +1137,9 @@ export default function App() {
             </dl>
           </div>
         </section>
+
+        {/* Coming soon - lightweight teaser, kept low-key so it doesn't compete with booking */}
+        <ComingSoon />
       </main>
 
       {/* Footer */}

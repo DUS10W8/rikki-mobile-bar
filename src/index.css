@@ -222,6 +222,33 @@ html { scroll-behavior: smooth; }
   }
 }
 
+/* --- Team carousel: dopamine bits --- */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+
+@keyframes like-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.55); }
+  60% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+.like-pop { animation: like-pop 420ms cubic-bezier(0.2, 0.85, 0.35, 1); }
+
+@keyframes particle-fly {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0); opacity: 0; }
+}
+.particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  pointer-events: none;
+  animation: particle-fly 620ms cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;
