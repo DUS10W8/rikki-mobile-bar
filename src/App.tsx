@@ -1102,7 +1102,7 @@ export default function App() {
               <CardContent className="p-6 md:p-8">
                 <div className="mx-auto max-w-3xl text-center space-y-3">
                   <div>
-                    <div className="text-3xl font-bold text-brand-sea md:text-4xl">Events start at $800</div>
+                    <div className="text-3xl font-bold text-brand-sea md:text-4xl">Events start at $600</div>
                     <div className="text-sm text-brand-ink/70 mt-1">
                       Includes planning, alcohol sourcing, licensed service, travel, setup, and breakdown.
                     </div>

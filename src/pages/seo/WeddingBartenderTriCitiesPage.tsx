@@ -34,7 +34,7 @@ const faqs = [
   },
   {
     q: "How much does a wedding bartender cost in the Tri-Cities?",
-    a: "Rikki's Mobile Bar events start at $800, with most weddings priced per guest ($16-$34/guest depending on the bar tier) plus event length and any tech add-ons. Read our full wedding bartender cost breakdown for Washington for a deeper walkthrough.",
+    a: "Rikki's Mobile Bar events start at $600, with most weddings priced per guest ($16-$34/guest depending on the bar tier) plus event length and any tech add-ons. Read our full wedding bartender cost breakdown for Washington for a deeper walkthrough.",
   },
 ];
 
@@ -154,7 +154,7 @@ export default function WeddingBartenderTriCitiesPage() {
         <div className="mx-auto max-w-4xl px-5">
           <h2 className="text-2xl font-bold tracking-tight text-brand-ink md:text-3xl">Pricing starting points</h2>
           <p className="mt-4 max-w-2xl text-sm leading-relaxed text-brand-ink/80 md:text-base">
-            Wedding bar service starts at $800 and scales with your guest count, drink program, and event length.
+            Wedding bar service starts at $600 and scales with your guest count, drink program, and event length.
             As a general guide, hosted bar programs run roughly $16-$20 per guest for beer & wine, $20-$26 per guest
             for a classic cocktail bar, and $26-$34 per guest for a premium signature/mocktail bar &mdash; before
             duration adjustments. Final pricing is confirmed once we know your date and guest count. For the full

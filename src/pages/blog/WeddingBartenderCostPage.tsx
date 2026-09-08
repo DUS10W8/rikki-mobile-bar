@@ -10,7 +10,7 @@ const DESCRIPTION =
 const faqs = [
   {
     q: "What's a typical starting price for a wedding bar in Washington?",
-    a: "Rikki's Mobile Bar events start at $800. Vendor quotes vary in what they include, so compare alcohol, staffing, service hours, travel, and setup together rather than comparing starting prices alone.",
+    a: "Rikki's Mobile Bar events start at $600. Vendor quotes vary in what they include, so compare alcohol, staffing, service hours, travel, and setup together rather than comparing starting prices alone.",
   },
   {
     q: "Does the cost include alcohol?",
@@ -82,7 +82,7 @@ export default function WeddingBartenderCostPage() {
 
           <h2 className="text-xl font-bold text-brand-ink">What Rikki's Mobile Bar charges</h2>
           <p>
-            Events start at $800, with most weddings landing in a per-guest range depending on the bar tier:
+            Events start at $600, with most weddings landing in a per-guest range depending on the bar tier:
             roughly $16-$20 per guest for a beer & wine bar, $20-$26 per guest for a classic cocktail bar, and
             $26-$34 per guest for a premium signature/mocktail bar. That range includes licensed alcohol
             purchasing, professional bartenders, the vintage bar setup, drinkware, garnishes, and setup/breakdown.

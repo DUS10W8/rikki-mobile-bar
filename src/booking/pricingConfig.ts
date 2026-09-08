@@ -94,8 +94,8 @@ export const pricingConfig: PricingConfig = {
     extended: 1.12,
   },
   baseProductionRange: {
-    min: 800,
-    max: 800,
+    min: 600,
+    max: 600,
   },
   barPaymentModels: [
     {
