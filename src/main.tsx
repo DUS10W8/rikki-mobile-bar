@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { Analytics } from "@vercel/analytics/react";
 import { routeModules } from "./routes";
+import { trackInquiryLinkClick } from "./lib/inquiryTracking";
 import "./index.css";
 
 const modules = import.meta.glob<{ default: React.ComponentType }>([
@@ -15,10 +16,12 @@ async function start() {
   const container = document.getElementById("root")!;
   function Page() {
     React.useEffect(() => {
+      document.addEventListener("click", trackInquiryLinkClick);
       if (window.location.hash) {
         const target = document.getElementById(window.location.hash.slice(1));
         target?.scrollIntoView();
       }
+      return () => document.removeEventListener("click", trackInquiryLinkClick);
     }, []);
     return <><Root /><Analytics /></>;
   }

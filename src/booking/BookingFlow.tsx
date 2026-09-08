@@ -20,6 +20,8 @@ import { MocktailMenuStep } from "./steps/MocktailMenuStep";
 import { BarPaymentModelStep } from "./steps/BarPaymentModelStep";
 import { QuoteSummary } from "./QuoteSummary";
 import { MobileSummaryDrawer } from "./MobileSummaryDrawer";
+import { createInquiryTracker } from "../lib/inquiryTracking";
+import { postInquiry } from "./postInquiry";
 
 interface BookingFlowProps {
   formspreeId: string;
@@ -108,6 +110,16 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   const [promoFeedback, setPromoFeedback] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<Step>("serviceType");
   const [selection, setSelection] = useState<BookingSelection>(getInitialSelection());
+  const inquiryTracker = useRef(createInquiryTracker());
+  const submissionInFlight = useRef(false);
+
+  useEffect(() => {
+    if (selection.serviceType) inquiryTracker.current.started();
+  }, [selection.serviceType]);
+
+  useEffect(() => {
+    if (currentStep === "contact") inquiryTracker.current.contactOpened();
+  }, [currentStep]);
   
   // Track previous serviceType to detect changes (safety net for programmatic changes)
   const prevServiceTypeRef = useRef<ServiceType | null>(selection.serviceType);
@@ -181,6 +193,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   // Reset function
   const handleReset = () => {
     if (window.confirm("Start over? This will clear all your selections.")) {
+      inquiryTracker.current.reset();
       setSelection(getInitialSelection());
       setCurrentStep("serviceType");
       setSubmitErrors([]);
@@ -419,7 +432,10 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   // Handle form submission
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isStepValid("contact")) return;
+    if (!isStepValid("contact") || submissionInFlight.current || submitted) return;
+
+    submissionInFlight.current = true;
+    inquiryTracker.current.attempted();
 
     setSubmitting(true);
     setSubmitErrors([]);
@@ -551,17 +567,10 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
 
     // Submit to Formspree
     try {
-      const response = await fetch(`https://formspree.io/f/${formspreeId}`, {
-        method: "POST",
-        body: formData,
-        headers: {
-          Accept: "application/json",
-        },
-      });
-
-      const data = await response.json();
+      const response = await postInquiry(formspreeId, formData);
 
       if (response.ok) {
+        inquiryTracker.current.accepted();
         setSubmitted(true);
         setSubmitting(false);
         notifyQuoteRequest({
@@ -574,14 +583,17 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
           estimatedRange: `$${quote.estimatedRange.min.toLocaleString()} - $${quote.estimatedRange.max.toLocaleString()}`,
         });
       } else {
-        const errors = Array.isArray(data?.errors) ? data.errors : [];
-        setSubmitErrors(errors);
+        inquiryTracker.current.failed();
+        setSubmitErrors(response.errors);
         setSubmitting(false);
       }
     } catch (error) {
+      inquiryTracker.current.failed();
       console.error("Form submission error:", error);
       setSubmitErrors([{ message: "An error occurred. Please try again." }]);
       setSubmitting(false);
+    } finally {
+      submissionInFlight.current = false;
     }
   };
 

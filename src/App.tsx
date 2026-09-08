@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AuthorityReferences from "./components/AuthorityReferences";
+import { trackInquiryEvent } from "./lib/inquiryTracking";
 import {
   Calendar,
   Mail,
@@ -255,6 +256,7 @@ export default function App() {
 
   /** Smooth scroll helper */
   const scrollToSection = (id: SectionId) => {
+    if (id === "book") trackInquiryEvent("quote_cta_click");
     setMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
