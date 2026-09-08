@@ -13,11 +13,19 @@ const modulePath = routeModules[routePath] ?? "./pages/NotFoundPage.tsx";
 async function start() {
   const { default: Root } = await modules[modulePath]();
   const container = document.getElementById("root")!;
-  const app = <React.StrictMode><Root /><Analytics /></React.StrictMode>;
-  if (container.dataset.prerendered === "true") ReactDOM.hydrateRoot(container, app, {
-    onRecoverableError: (error, info) => console.error("Page hydration:", error, info.componentStack),
-  });
-  else ReactDOM.createRoot(container).render(app);
+  function Page() {
+    React.useEffect(() => {
+      if (window.location.hash) {
+        const target = document.getElementById(window.location.hash.slice(1));
+        target?.scrollIntoView();
+      }
+    }, []);
+    return <><Root /><Analytics /></>;
+  }
+  const app = <React.StrictMode><Page /></React.StrictMode>;
+  // Keep the complete static page until its interactive module has downloaded.
+  // This SPA mounts the same component rather than hydrating independently built HTML.
+  ReactDOM.createRoot(container).render(app);
 }
 
 void start().catch(() => {

@@ -3,6 +3,7 @@ import { Instagram, Phone, Mail, ChevronRight } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { BUSINESS } from "../../lib/seo";
+import AuthorityReferences from "../AuthorityReferences";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -210,6 +211,7 @@ export default function MarketingPage({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-[#fff8ec] text-brand-ink">
       <MarketingHeader />
       <main id="main">{children}</main>
+      <AuthorityReferences />
       <MarketingFooter />
     </div>
   );

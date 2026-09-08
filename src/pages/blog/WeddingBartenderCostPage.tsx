@@ -2,7 +2,7 @@ import MarketingPage, { Breadcrumbs, CtaBanner, FaqSection, RelatedLinks } from 
 import { useDocumentHead, SITE_URL, BUSINESS } from "../../lib/seo";
 
 const SLUG = "wedding-bartender-cost-washington";
-const PAGE_URL = `${SITE_URL}/blog/${SLUG}/`;
+const PAGE_URL = `${SITE_URL}/blog/${SLUG}`;
 const TITLE = "How Much Does a Wedding Bartender Cost in Washington? | Rikki's Mobile Bar";
 const DESCRIPTION =
   "A realistic breakdown of wedding bartender and mobile bar pricing in Washington State, including what drives the cost per guest.";
@@ -10,7 +10,7 @@ const DESCRIPTION =
 const faqs = [
   {
     q: "What's a typical starting price for a wedding bar in Washington?",
-    a: "Many Washington mobile bar and bartending companies start around $700-$1,000 as a base, then price per guest. Rikki's Mobile Bar events start at $800.",
+    a: "Rikki's Mobile Bar events start at $800. Vendor quotes vary in what they include, so compare alcohol, staffing, service hours, travel, and setup together rather than comparing starting prices alone.",
   },
   {
     q: "Does the cost include alcohol?",
@@ -44,7 +44,6 @@ export default function WeddingBartenderCostPage() {
         description: DESCRIPTION,
         author: { "@type": "Organization", name: BUSINESS.name },
         publisher: { "@type": "Organization", name: BUSINESS.name },
-        datePublished: "2026-09-01",
         mainEntityOfPage: PAGE_URL,
       },
       {

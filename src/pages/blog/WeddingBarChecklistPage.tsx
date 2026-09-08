@@ -2,7 +2,7 @@ import MarketingPage, { Breadcrumbs, CtaBanner, FaqSection, RelatedLinks } from 
 import { useDocumentHead, SITE_URL, BUSINESS } from "../../lib/seo";
 
 const SLUG = "wedding-bar-checklist";
-const PAGE_URL = `${SITE_URL}/blog/${SLUG}/`;
+const PAGE_URL = `${SITE_URL}/blog/${SLUG}`;
 const TITLE = "Wedding Bar Checklist: Everything You Need | Rikki's Mobile Bar";
 const DESCRIPTION =
   "A step-by-step wedding bar planning checklist covering licensing, guest count, quantities, staffing, and venue rules for Washington weddings.";
@@ -48,7 +48,6 @@ export default function WeddingBarChecklistPage() {
         description: DESCRIPTION,
         author: { "@type": "Organization", name: BUSINESS.name },
         publisher: { "@type": "Organization", name: BUSINESS.name },
-        datePublished: "2026-09-01",
         mainEntityOfPage: PAGE_URL,
       },
       {

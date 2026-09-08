@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { createContext, useContext, useEffect } from "react";
 
 export type SeoMeta = {
   title: string;
@@ -14,6 +14,7 @@ export type SeoMeta = {
 };
 
 const DEFAULT_OG_IMAGE = "https://www.rikkismobile.com/epic-negative-r.png";
+export const SeoCollector = createContext<((meta: SeoMeta) => void) | null>(null);
 
 function setMeta(nameOrProp: "name" | "property", key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${nameOrProp}="${key}"]`);
@@ -33,6 +34,8 @@ function setMeta(nameOrProp: "name" | "property", key: string, content: string) 
  * covers local `npm run dev`, where the pre-render step doesn't run).
  */
 export function useDocumentHead(meta: SeoMeta) {
+  const collect = useContext(SeoCollector);
+  collect?.(meta);
   useEffect(() => {
     document.title = meta.title;
     setMeta("name", "description", meta.description);

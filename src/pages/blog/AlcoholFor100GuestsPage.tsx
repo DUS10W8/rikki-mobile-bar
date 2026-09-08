@@ -2,7 +2,7 @@ import MarketingPage, { Breadcrumbs, CtaBanner, FaqSection, RelatedLinks } from 
 import { useDocumentHead, SITE_URL, BUSINESS } from "../../lib/seo";
 
 const SLUG = "how-much-alcohol-for-100-wedding-guests";
-const PAGE_URL = `${SITE_URL}/blog/${SLUG}/`;
+const PAGE_URL = `${SITE_URL}/blog/${SLUG}`;
 const TITLE = "How Much Alcohol Do You Need for 100 Wedding Guests? | Rikki's Mobile Bar";
 const DESCRIPTION =
   "A practical formula for estimating beer, wine, and liquor quantities for a 100-guest wedding hosted bar, plus how it scales to 150 guests.";
@@ -10,11 +10,11 @@ const DESCRIPTION =
 const faqs = [
   {
     q: "Does this formula change for a beer & wine only bar?",
-    a: "Yes — drop the liquor line and shift some of that volume to beer and wine. A beer & wine only bar for 100 guests typically needs roughly 8-9 cases of beer and 30-35 bottles of wine over a 4-hour reception.",
+    a: "Keep the same illustrative 300-serving budget if your guest assumptions are unchanged, then allocate it to beer and wine. A 50/50 split means 150 beers (7 cases of 24, rounded up) and 150 wine servings (30 bottles at five glasses per bottle). Adapt the split to your guests.",
   },
   {
     q: "What if some guests don't drink?",
-    a: "This formula already assumes a realistic mix of drinkers and non-drinkers at a typical wedding. If you expect an unusually high or low percentage of non-drinking guests, adjust total volume up or down by roughly 10-15%.",
+    a: "Replace the example's 75 participating adults with your own expected count. Multiply that count by your agreed stock allowance, then allocate the total across your menu. Budget water and zero-proof drinks separately for everyone.",
   },
   {
     q: "Is it cheaper to buy alcohol myself or use a licensed bar?",
@@ -44,7 +44,6 @@ export default function AlcoholFor100GuestsPage() {
         description: DESCRIPTION,
         author: { "@type": "Organization", name: BUSINESS.name },
         publisher: { "@type": "Organization", name: BUSINESS.name },
-        datePublished: "2026-09-01",
         mainEntityOfPage: PAGE_URL,
       },
       {
@@ -68,24 +67,26 @@ export default function AlcoholFor100GuestsPage() {
 
         <div className="mt-8 space-y-5 text-base leading-relaxed text-brand-ink/85">
           <p>
-            A common industry rule of thumb is one drink per guest, per hour, for the first two hours, then roughly
-            one drink per guest per hour after that, with about 60% of guests choosing beer or wine and 40%
-            choosing liquor-based cocktails. For a 100-guest wedding with a typical 4-hour hosted bar, that works
-            out to approximately:
+            Start with the number of adults who expect to drink alcohol, rather than the total guest count.
+            As an illustrative stock-planning scenario, suppose 75 of your 100 guests drink alcohol and you
+            budget four servings per participating guest across the event: 75 × 4 = 300 servings.
+            This is a purchasing example, not a recommendation for how much anyone should drink.
+            With a menu split of 40% beer, 30% wine, and 30% cocktails, the calculation is:
           </p>
 
           <ul className="list-disc space-y-2 pl-5">
-            <li><span className="font-semibold">Beer:</span> roughly 10-12 cases (24-can/bottle cases)</li>
-            <li><span className="font-semibold">Wine:</span> roughly 35-40 bottles (mix of red and white)</li>
-            <li><span className="font-semibold">Liquor:</span> roughly 10-12 bottles (750ml) across your core cocktail spirits</li>
-            <li><span className="font-semibold">Mixers & garnish:</span> plan for 2-3 mixers per liquor type, plus citrus and garnish for signature cocktails</li>
+            <li><span className="font-semibold">Beer:</span> 120 servings = 5 cases of 24 cans or bottles.</li>
+            <li><span className="font-semibold">Wine:</span> 90 servings ÷ approximately 5 glasses per 750ml bottle = 18 bottles, using 5-ounce pours.</li>
+            <li><span className="font-semibold">Spirits:</span> 90 cocktails ÷ approximately 16 pours per 750ml bottle = 6 bottles rounded up, assuming 1.5 ounces of spirits per cocktail. Recipes using more spirits require more stock.</li>
+            <li><span className="font-semibold">Water, zero-proof drinks, mixers & garnish:</span> plan these separately for all guests and your chosen recipes.</li>
           </ul>
 
           <h2 className="text-xl font-bold text-brand-ink">Scaling to 150 guests</h2>
           <p>
-            For 150 guests under the same assumptions, scale each line up by roughly 1.5x: about 15-18 cases of
-            beer, 50-60 bottles of wine, and 15-18 bottles of liquor for a 4-hour hosted bar. Longer receptions
-            (5-6 hours) should add another 15-25% across the board.
+            For 150 guests with the same participation and menu assumptions, the stock budget is 450 servings:
+            180 beers (8 cases rounded up), 135 glasses of wine (27 bottles), and 135 cocktails (9 bottles of
+            spirits rounded up). Confirm the actual number of participating adults, recipes, and service hours
+            with your bartender before ordering; adjust each category to your guests' preferences.
           </p>
 
           <h2 className="text-xl font-bold text-brand-ink">Why this is only a starting point</h2>

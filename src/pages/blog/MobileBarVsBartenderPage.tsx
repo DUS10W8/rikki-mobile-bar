@@ -2,7 +2,7 @@ import MarketingPage, { Breadcrumbs, CtaBanner, FaqSection, RelatedLinks } from 
 import { useDocumentHead, SITE_URL, BUSINESS } from "../../lib/seo";
 
 const SLUG = "mobile-bar-vs-bartender";
-const PAGE_URL = `${SITE_URL}/blog/${SLUG}/`;
+const PAGE_URL = `${SITE_URL}/blog/${SLUG}`;
 const TITLE = "Mobile Bar vs. Traditional Bartender: What's the Difference? | Rikki's Mobile Bar";
 const DESCRIPTION =
   "Comparing a licensed mobile bar to hiring a traditional bartender-for-hire — what each includes, who buys the alcohol, and which fits your event.";
@@ -44,7 +44,6 @@ export default function MobileBarVsBartenderPage() {
         description: DESCRIPTION,
         author: { "@type": "Organization", name: BUSINESS.name },
         publisher: { "@type": "Organization", name: BUSINESS.name },
-        datePublished: "2026-09-01",
         mainEntityOfPage: PAGE_URL,
       },
       {

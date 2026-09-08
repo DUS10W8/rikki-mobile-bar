@@ -85,9 +85,9 @@ export default function LicensedMobileBarPage() {
         <div className="mx-auto max-w-3xl px-5">
           <h2 className="text-2xl font-bold tracking-tight text-brand-ink">What the license changes for you</h2>
           <p className="mt-4 text-sm leading-relaxed text-brand-ink/80 md:text-base">
-            Most independent bartenders in Washington can legally pour and serve alcohol, but they generally can't
-            purchase it for you &mdash; that's on the host. Rikki's Mobile Bar is different: because we hold a
-            Washington liquor license, alcohol purchasing is part of the service itself. In plain terms, that means:
+            With a BYOB service, the host typically purchases the beverages. For qualifying events, Rikki's
+            handles alcohol purchasing as part of the agreed bar package. We confirm the service arrangement
+            with you and your venue before booking. In plain terms, that means:
           </p>
           <ul className="mt-5 space-y-3 text-sm leading-relaxed text-brand-ink/80 md:text-base">
             <li className="flex gap-3"><span className="font-bold text-brand-sea">&bull;</span><span>You don't make a liquor store run, guess at quantities, or manage leftover bottles.</span></li>
