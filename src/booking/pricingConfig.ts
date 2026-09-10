@@ -94,8 +94,8 @@ export const pricingConfig: PricingConfig = {
     extended: 1.12,
   },
   baseProductionRange: {
-    min: 600,
-    max: 600,
+    min: 800,
+    max: 800,
   },
   barPaymentModels: [
     {
@@ -119,8 +119,8 @@ export const pricingConfig: PricingConfig = {
   ],
   guestPurchasePricing: {
     entryRange: {
-      min: 600,
-      max: 600,
+      min: 800,
+      max: 800,
     },
     includedGuests: 30,
     includedDuration: "2-3",

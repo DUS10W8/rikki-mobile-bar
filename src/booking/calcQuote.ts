@@ -60,7 +60,7 @@ export function calculateQuote(
     return multipliers.reduce((sum, value) => sum + value, 0) / multipliers.length;
   };
 
-  // Base production fee (always $600)
+  // Base production fee (always $800)
   const baseRange: Range = {
     min: config.baseProductionRange.min,
     max: config.baseProductionRange.max,
