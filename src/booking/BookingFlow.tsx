@@ -20,6 +20,7 @@ import { MocktailMenuStep } from "./steps/MocktailMenuStep";
 import { BarPaymentModelStep } from "./steps/BarPaymentModelStep";
 import { QuoteSummary } from "./QuoteSummary";
 import { MobileSummaryDrawer } from "./MobileSummaryDrawer";
+import { getAttribution, newSubmissionId } from "../lib/attribution";
 
 interface BookingFlowProps {
   formspreeId: string;
@@ -108,6 +109,8 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
   const [promoFeedback, setPromoFeedback] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<Step>("serviceType");
   const [selection, setSelection] = useState<BookingSelection>(getInitialSelection());
+  // One id per estimate, reused across retries, shared by Formspree and the command center.
+  const submissionIdRef = useRef<string>(newSubmissionId());
   
   // Track previous serviceType to detect changes (safety net for programmatic changes)
   const prevServiceTypeRef = useRef<ServiceType | null>(selection.serviceType);
@@ -426,6 +429,7 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
 
     // Prepare FormData for Formspree
     const formData = new FormData();
+    formData.append("submission_id", submissionIdRef.current);
 
     // Contact info
     formData.append("name", selection.contact.name);
@@ -548,6 +552,9 @@ export function BookingFlow({ formspreeId }: BookingFlowProps) {
       drinkTicketsPerGuest: nextSelection.drinkTicketsPerGuest,
       promoCode: nextSelection.promoCode,
     }));
+
+    // Record in the command center first (fire-and-forget, survives page close).
+    recordQuote(submissionIdRef.current, formData);
 
     // Submit to Formspree
     try {
@@ -959,5 +966,22 @@ function notifyQuoteRequest(details: {
     body: JSON.stringify(details),
   }).catch((error) => {
     console.warn("[Quote SMS notification failed]", error);
+  });
+}
+
+// Best-effort write of the full quote to the command-center database.
+// Never blocks or changes what the guest sees.
+function recordQuote(submissionId: string, formData: FormData) {
+  const payload: Record<string, string> = {};
+  formData.forEach((value, key) => {
+    if (typeof value === "string") payload[key] = value;
+  });
+  fetch("/api/quote-intake", {
+    method: "POST",
+    keepalive: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ submissionId, payload, attribution: getAttribution() }),
+  }).catch((error) => {
+    console.warn("[Quote intake failed]", error);
   });
 }
