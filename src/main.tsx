@@ -3,6 +3,9 @@ import ReactDOM from "react-dom/client";
 import { Analytics } from "@vercel/analytics/react";
 import { routeModules } from "./routes";
 import "./index.css";
+import { captureAttribution } from "./lib/attribution";
+
+captureAttribution();
 
 const modules = import.meta.glob<{ default: React.ComponentType }>([
   "./App.tsx", "./pages/**/*.tsx", "!./pages/MobileBarSite.tsx", "./bartender/BartenderPage.tsx", "./order/OrderPage.tsx",
