@@ -1,3 +1,5 @@
+import { HANDOFF_LABELS, shortOrderId } from "../order/orderHandoff";
+import type { OrderHandoff } from "../order/orderHandoff";
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
@@ -24,6 +26,7 @@ type BartenderOrder = {
   drink: string;
   status: OrderStatus;
   bar_station?: BarStation | null;
+  handoff?: OrderHandoff | null;
   table_number?: number | null;
   created_at?: string;
   updated_at?: string;
@@ -231,7 +234,7 @@ export default function BartenderPage() {
           <section className="rounded-2xl border border-brand-chrome bg-[#fffaf2]/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.3)]">
             <p className="text-sm font-black uppercase tracking-wide text-brand-sea">Rikki's Mobile Bar</p>
             <h1 className="mt-1 font-heading text-3xl font-black text-brand-ink">Choose station</h1>
-            <p className="mt-2 text-sm font-semibold text-brand-ink/65">Orders you start will be assigned to this bar for preparation and table delivery.</p>
+            <p className="mt-2 text-sm font-semibold text-brand-ink/65">Orders you start will be assigned to this bar for preparation and guest handoff.</p>
             <div className="mt-6 grid gap-3">
               <button className="min-h-16 rounded-2xl bg-brand-ink px-5 text-xl font-black text-white" type="button" onClick={() => chooseStation("white_bar")}>
                 White Bar
@@ -327,7 +330,7 @@ export default function BartenderPage() {
             </div>
           </DashboardColumn>
 
-          <DashboardColumn id="ready-orders" title="Ready for Delivery" count={readyOrders.length} tone="ready">
+          <DashboardColumn id="ready-orders" title="Ready / On the Way" count={readyOrders.length} tone="ready">
             <div className="grid gap-3">
               {readyOrders.map((order) => (
                 <KitchenOrderCard
@@ -340,13 +343,13 @@ export default function BartenderPage() {
                   onStatusChange={(status) => updateStatus(order, status)}
                 />
               ))}
-              {!loading && readyOrders.length === 0 && <EmptyState>No drinks ready for delivery.</EmptyState>}
+              {!loading && readyOrders.length === 0 && <EmptyState>No drinks ready for handoff.</EmptyState>}
             </div>
           </DashboardColumn>
 
           <DashboardColumn
             id="completed-orders"
-            title="Delivered"
+            title="Completed"
             count={completedOrders.length}
             tone="completed"
             className={showCompletedMobile ? "" : "hidden md:block"}
@@ -490,7 +493,7 @@ function KitchenOrderCard({
   onStatusChange: (status: NormalizedOrderStatus) => void;
 }) {
   const style = getStatusCardStyle(order.status);
-  const actions = getOrderActions(order.status);
+  const actions = getOrderActions(order);
   const normalizedStatus = normalizeOrderStatus(order.status);
   const isCompactCard = normalizedStatus === "ready" || normalizedStatus === "completed";
 
@@ -503,9 +506,9 @@ function KitchenOrderCard({
             <h2 className="min-w-0 flex-1 truncate font-heading text-3xl font-black leading-tight text-brand-ink" title={order.name}>{getDisplayName(order.name)}</h2>
             <span className="shrink-0 pt-1 text-xs font-black text-brand-ink/45">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
           </div>
-          {order.table_number && (
+          {(order.handoff || order.table_number) && (
             <div className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-brand-rust px-2.5 py-1 text-sm font-black uppercase tracking-wide text-white shadow-sm">
-              Table {order.table_number}
+              {order.handoff ? HANDOFF_LABELS[order.handoff] : "Table " + order.table_number}
             </div>
           )}
           <div className="flex items-start justify-between gap-3">
@@ -587,21 +590,22 @@ function ActionButton({
   );
 }
 
-function getOrderActions(status: OrderStatus): Array<{ label: string; status: NormalizedOrderStatus; tone: "default" | "ready" | "complete" }> {
-  const normalizedStatus = normalizeOrderStatus(status);
+function getOrderActions(order: BartenderOrder): Array<{ label: string; status: NormalizedOrderStatus; tone: "default" | "ready" | "complete" }> {
+  const normalizedStatus = normalizeOrderStatus(order.status);
+  const readyLabel = order.handoff === "upstairs" ? "Send upstairs" : order.handoff === "outdoor_pickup" ? "Ready for pickup" : "Ready";
   if (normalizedStatus === "new") {
     return [
       { label: "Start", status: "in_progress", tone: "default" },
-      { label: "Ready", status: "ready", tone: "ready" },
+      { label: readyLabel, status: "ready", tone: "ready" },
     ];
   }
 
   if (normalizedStatus === "in_progress") {
-    return [{ label: "Ready", status: "ready", tone: "ready" }];
+    return [{ label: readyLabel, status: "ready", tone: "ready" }];
   }
 
   if (normalizedStatus === "ready") {
-    return [{ label: "Mark delivered", status: "completed", tone: "complete" }];
+    return [{ label: order.handoff === "outdoor_pickup" ? "Mark picked up" : "Mark delivered", status: "completed", tone: "complete" }];
   }
 
   return [];
@@ -787,10 +791,6 @@ async function sendReadySms(order: BartenderOrder) {
     console.error("[Ready SMS failed]", error);
     return { ok: false, message: "Ready text could not be sent." };
   }
-}
-
-function shortOrderId(id: string) {
-  return String(id).replace(/-/g, "").slice(0, 6).toUpperCase();
 }
 
 function formatOrderTime(value: string) {

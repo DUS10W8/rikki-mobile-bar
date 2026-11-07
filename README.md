@@ -68,9 +68,9 @@ export default tseslint.config([
 ])
 ```
 
-## Paid table orders
+## Paid event orders
 
-Apply the Supabase paid drink orders migration after the table-number migration.
+Apply the Supabase paid drink orders migration after the table-number migration, then apply the order handoff migration.
 Coordinate the database migration and site deployment outside service hours. The new
 dashboard only lists Square-verified tickets, so finish open tickets before switching.
 
@@ -87,8 +87,7 @@ Subscribe Square to `payment.created` and `payment.updated` at
 look up payments through Square's authenticated API. It releases a ticket only
 after Square confirms a completed payment matching the order, location and amount.
 
-In Sandbox, open a table QR URL on a phone and keep the bartender queue open on
+In Sandbox, open the printed event QR URL on a phone and keep the bartender queue open on
 the iPad. Confirm abandoned and declined checkouts leave the queue empty. Pay
-for a drink and verify one ticket appears with the correct table, even if the guest
-closes the payment tab. Then mark it ready and delivered and verify the customer
-tracker reflects both states. Confirm the event prices before enabling live payments.
+for a drink and verify one ticket appears with the selected handoff option, even if the guest
+closes the payment tab. Test both handoff paths. For outdoor pickup, mark the drink ready and then picked up. For upstairs handoff, mark it sent when the runner leaves and then delivered. Verify that each step appears in the guest tracker. Set up a marked meeting spot upstairs before service. Confirm the event prices before enabling live payments.

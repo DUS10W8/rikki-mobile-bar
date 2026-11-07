@@ -1,6 +1,8 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Check, CheckCircle2, ChevronDown, GlassWater, Loader2, Martini } from "lucide-react";
 
+import { HANDOFF_LABELS, shortOrderId } from "./orderHandoff";
+import type { OrderHandoff } from "./orderHandoff";
 import { EVENT_DRINK_MENU } from "./eventMenu";
 import { orderSupabase, orderSupabaseConfig } from "./orderSupabaseClient";
 import "./OrderPage.css";
@@ -23,6 +25,7 @@ type Order = {
   drink: string;
   status: OrderStatus;
   bar_station?: BarStation | null;
+  handoff?: OrderHandoff | null;
   table_number?: number | null;
   created_at?: string;
   updated_at?: string;
@@ -34,7 +37,7 @@ type OrderConfirmation = Order & {
   estimatedWaitMinutes: number | null;
 };
 
-type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_station" | "table_number" | "created_at"> & {
+type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_station" | "table_number" | "handoff" | "created_at"> & {
   orderCode: string;
 };
 
@@ -45,7 +48,7 @@ export default function OrderPage() {
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [tableNumber, setTableNumber] = useState<number | null>(() => getTableNumberFromUrl());
+  const [handoff, setHandoff] = useState<OrderHandoff>("outdoor_pickup");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
@@ -124,7 +127,6 @@ export default function OrderPage() {
         setConfirmation(buildStoredConfirmation(order, null));
         const url = new URL(window.location.href);
         const orderUrl = new URL(url.pathname, url.origin);
-        if (order.table_number) orderUrl.searchParams.set("table", String(order.table_number));
         window.history.replaceState(null, "", orderUrl);
         setCheckout(null);
       } catch {
@@ -197,7 +199,7 @@ export default function OrderPage() {
   }, []);
 
   const canSubmit = Boolean(
-    selectedDrink && tableNumber && name.trim().length >= 2 && !submitting,
+    selectedDrink && name.trim().length >= 2 && !submitting,
   );
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
@@ -209,7 +211,7 @@ export default function OrderPage() {
       drinkId: String(selectedDrink.id),
       name: name.trim(),
       phone: isValidPhone(phone) ? normalizePhone(phone) : "",
-      table: tableNumber,
+      handoff,
       amountCents: selectedDrink.priceCents,
     });
     if (checkoutRequest.current?.details !== details) {
@@ -275,13 +277,16 @@ export default function OrderPage() {
               <div className="mt-5 rounded-2xl bg-brand-ink px-4 py-5 text-white">
                 <p className="text-sm uppercase tracking-wide text-white/70">Order</p>
                 <p className="mt-1 text-4xl font-black">#{shortOrderId(confirmation.id)}</p>
-                {confirmation.table_number && (
+                {(confirmation.handoff || confirmation.table_number) && (
                   <p className="mt-2 text-sm font-bold uppercase tracking-wide text-white/80">
-                    We'll bring it to Table {confirmation.table_number}
+                    {confirmation.handoff ? HANDOFF_LABELS[confirmation.handoff] : "Table " + confirmation.table_number}
                   </p>
                 )}
               </div>
               <p className="mt-4 text-base font-bold text-brand-ink">{getConfirmationStatusMessage(confirmation)}</p>
+              {confirmation.handoff && normalizeStatus(confirmation.status) === "new" && (
+                <p className="mt-2 text-sm text-brand-ink/70">Keep this page open for handoff updates.</p>
+              )}
               <LiveOrderTracker order={confirmation} liveUpdateError={liveUpdateError} />
               <button
                 className={`mt-4 w-full rounded-2xl border px-4 py-3 text-sm font-black ${
@@ -345,12 +350,7 @@ export default function OrderPage() {
               <p className="mt-1 text-sm font-bold text-brand-ink/65">Six Years of Beauty</p>
             </div>
           </div>
-          <p className="mt-3 text-sm text-brand-ink/70">Choose a drink, pay securely with Square, and we’ll bring it to your table.</p>
-          {tableNumber && (
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-brand-sea/30 bg-brand-sea/10 px-3 py-1.5 text-sm font-black uppercase tracking-wide text-brand-sea">
-              Table {tableNumber}
-            </div>
-          )}
+          <p className="mt-3 text-sm text-brand-ink/70">Choose a drink and a handoff spot, then pay securely with Square.</p>
           </div>
         </header>
 
@@ -416,15 +416,17 @@ export default function OrderPage() {
 
           <section className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_14px_36px_rgba(46,46,46,0.08)]">
             <div className="grid gap-3">
-              <label className="grid gap-1">
-                <span className="text-sm font-bold text-brand-ink/75">Delivery table</span>
-                <select className="order-input" value={tableNumber ?? ""} onChange={(event) => setTableNumber(Number(event.target.value) || null)} required>
-                  <option value="">Choose your table</option>
-                  {Array.from({ length: 12 }, (_, index) => index + 1).map((table) => (
-                    <option key={table} value={table}>Table {table}</option>
-                  ))}
-                </select>
-              </label>
+              <fieldset className="grid gap-2">
+                <legend className="mb-2 text-sm font-bold text-brand-ink/75">Where should we meet you?</legend>
+                {(["outdoor_pickup", "upstairs"] as const).map((option) => (
+                  <label key={option} className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-brand-chrome px-3 py-2 has-[:checked]:border-brand-sea has-[:checked]:bg-brand-sea/10">
+                    <input type="radio" name="handoff" checked={handoff === option} onChange={() => setHandoff(option)} />
+                    <span><strong className="block">{HANDOFF_LABELS[option]}</strong>
+                      <span className="text-sm text-brand-ink/70">{option === "upstairs" ? "Meet our runner at the marked upstairs handoff spot." : "Come to the outdoor bar when your drink is ready."}</span>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
               <label className="grid gap-1">
                 <span className="text-sm font-bold text-brand-ink/75">Name</span>
                 <input className="order-input" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder="Alex" autoComplete="name" />
@@ -445,7 +447,7 @@ export default function OrderPage() {
 
           <div className="order-checkout-bar fixed inset-x-0 bottom-0 z-10 border-t border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_-18px_45px_rgba(46,46,46,0.10)] backdrop-blur">
             <div className="mx-auto max-w-md">
-              {selectedDrink && <p className="mb-2 truncate text-sm font-bold text-brand-ink/75">{selectedDrink.name}{tableNumber ? " · Table " + tableNumber : " · Choose a delivery table"}</p>}
+              {selectedDrink && <p className="mb-2 truncate text-sm font-bold text-brand-ink/75">{selectedDrink.name}{" · " + HANDOFF_LABELS[handoff]}</p>}
               <button disabled={!canSubmit} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink px-5 py-4 text-lg font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)] disabled:cursor-not-allowed disabled:bg-brand-chrome disabled:text-brand-ink/50 disabled:shadow-none">
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Martini className="h-5 w-5" />}
                 {submitting ? "Opening Square checkout…" : selectedDrink ? `Pay ${formatDrinkPrice(selectedDrink.priceCents)}` : "Choose a drink"}
@@ -509,7 +511,7 @@ async function getOrderById(id: string) {
   try {
     const { data, error } = await orderSupabase
       .from("orders")
-      .select("id,name,drink,status,bar_station,table_number,created_at,updated_at,square_order_id")
+      .select("id,name,drink,status,bar_station,table_number,handoff,created_at,updated_at,square_order_id")
       .eq("id", id)
       .single<Order>();
 
@@ -555,22 +557,6 @@ async function countOrderQueuePosition(order: Order) {
   }
 }
 
-function getTableNumberFromUrl() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const raw = params.get("table");
-    if (!raw) return null;
-
-    const parsed = Number.parseInt(raw, 10);
-    if (!Number.isFinite(parsed) || parsed < 1 || parsed > 12) return null;
-
-    return parsed;
-  } catch (error) {
-    console.warn("[Table number parse failed]", error);
-    return null;
-  }
-}
-
 function isValidPhone(value: string) {
   const digits = value.replace(/\D/g, "");
   return digits.length === 10 || (digits.length === 11 && digits.startsWith("1"));
@@ -587,10 +573,6 @@ function formatPhone(value: string) {
   if (digits.length < 4) return digits;
   if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-
-function shortOrderId(id: string) {
-  return String(id).replace(/-/g, "").slice(0, 6).toUpperCase();
 }
 
 function buildStoredConfirmation(order: Order, estimatedWaitMinutes: number | null): OrderConfirmation {
@@ -611,6 +593,7 @@ function persistActiveOrder(order: Order) {
       status: order.status,
       bar_station: order.bar_station,
       table_number: order.table_number,
+      handoff: order.handoff,
     };
     localStorage.setItem(ACTIVE_ORDER_STORAGE_KEY, JSON.stringify(activeOrder));
   } catch (error) {
@@ -651,6 +634,7 @@ function getConfirmationStatusMessage(order: OrderConfirmation) {
 
   if (normalizedStatus === "in_progress" && stationName) return `Your drink is being made at the ${stationName}.`;
   if (normalizedStatus === "in_progress") return "Your drink is being made now.";
+  if (normalizedStatus === "ready" && order.handoff) return handoffReadyMessage(order.handoff);
   if (normalizedStatus === "ready" && order.table_number) return `Your drink is ready. We’ll bring it to Table ${order.table_number}.`;
   if (normalizedStatus === "ready" && stationName) return `Your drink is ready at the ${stationName}!`;
   if (normalizedStatus === "ready") return "Your drink is ready for pickup.";
@@ -673,7 +657,7 @@ function LiveOrderTracker({ order, liveUpdateError }: { order: OrderConfirmation
           { id: "received", label: "Order received", active: true },
           { id: "queue", label: "In the queue", active: ["new", "in_progress", "ready", "completed"].includes(normalizedStatus) },
           { id: "making", label: "Being made", active: ["in_progress", "ready", "completed"].includes(normalizedStatus) },
-          { id: "ready", label: normalizedStatus === "completed" ? (order.table_number ? "Delivered" : "Picked up") : (order.table_number ? "Ready for delivery" : "Ready for pickup"), active: ["ready", "completed"].includes(normalizedStatus) },
+          { id: "ready", label: normalizedStatus === "completed" ? ((order.handoff === "upstairs" || order.table_number) ? "Delivered" : "Picked up") : (order.handoff === "upstairs" ? "On the way upstairs" : order.table_number ? "Ready for delivery" : "Ready for pickup"), active: ["ready", "completed"].includes(normalizedStatus) },
         ].map((step) => (
           <div key={step.id} className={`flex items-center gap-2 text-sm font-bold ${step.active ? "text-brand-ink" : "text-brand-ink/35"}`}>
             <span className={`h-3 w-3 rounded-full ${step.active ? "bg-brand-sea" : "bg-brand-chrome"}`} />
@@ -681,7 +665,7 @@ function LiveOrderTracker({ order, liveUpdateError }: { order: OrderConfirmation
           </div>
         ))}
       </div>
-      <p className="mt-4 text-base font-black text-brand-ink">{getLiveStatusMessage(normalizedStatus, stationName, order.table_number)}</p>
+      <p className="mt-4 text-base font-black text-brand-ink">{getLiveStatusMessage(normalizedStatus, stationName, order.table_number, order.handoff)}</p>
       {liveUpdateError && (
         <p className="mt-3 rounded-xl border border-brand-rust/30 bg-[#fff4eb] px-3 py-2 text-sm font-bold text-brand-rust">
           Live updates are having trouble. Please check with a staff member.
@@ -701,13 +685,20 @@ function getStationLabel(station?: BarStation | null) {
   return "";
 }
 
-function getLiveStatusMessage(status: string, stationName: string, table?: number | null) {
+function getLiveStatusMessage(status: string, stationName: string, table?: number | null, handoff?: OrderHandoff | null) {
   if (status === "in_progress" && stationName) return `Your drink is being made at the ${stationName}.`;
+  if (status === "ready" && handoff) return handoffReadyMessage(handoff);
   if (status === "ready" && table) return `We’ll bring your drink to Table ${table} shortly.`;
   if (status === "ready" && stationName) return `Your drink is ready at the ${stationName}!`;
   if (status === "ready") return "Your drink is ready! Please head to the pickup area.";
-  if (status === "completed") return table ? "Your drink has been delivered. Cheers!" : "Your drink has been picked up. Cheers!";
+  if (status === "completed") return (handoff === "upstairs" || table) ? "Your drink has been delivered. Cheers!" : "Your drink has been picked up. Cheers!";
   return "Your drink is in the queue.";
+}
+
+function handoffReadyMessage(handoff: OrderHandoff) {
+  return handoff === "upstairs"
+    ? "Your drink is on the way. Meet us at the marked upstairs handoff spot and show your order number."
+    : "Your drink is ready. Show your order number at the outdoor bar.";
 }
 
 function playCustomerChime() {

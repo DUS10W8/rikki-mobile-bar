@@ -32,7 +32,7 @@ globalThis.fetch = async (input, options) => {
       return json({ order: { tenders: [{ payment_id: "payment-1" }] } });
     case "/rest/v1/rpc/release_paid_drink":
       releases += 1;
-      order ??= { id: "ticket-1", table_number: checkout.table_number };
+      order ??= { id: "ticket-1", handoff: checkout.handoff };
       return json(null);
     case "/rest/v1/orders":
       return json(order ? [order] : []);
@@ -47,8 +47,11 @@ async function call(method, body) {
   return res;
 }
 
-const details = { id, drinkId: "atlas-espresso-martini", name: "Alex", phone: "", table: 7, amountCents: 1300 };
+const details = { id, drinkId: "atlas-espresso-martini", name: "Alex", phone: "", handoff: "upstairs", amountCents: 1300 };
 assert.equal((await call("POST", { ...details, amountCents: 1 })).code, 409);
+assert.equal((await call("POST", { ...details, handoff: "table" })).code, 400);
+assert.equal((await call("POST", { ...details, handoff: "outdoor_pickup" })).code, 200);
+assert.equal(checkout.handoff, "outdoor_pickup");
 assert.equal((await call("POST", { ...details, drinkId: "event-modelo" })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "atlas-na-cranberry-spritz" })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "atlas-cranberry-spritz", amountCents: 1200 })).code, 409);
@@ -84,7 +87,7 @@ for (const [drinkId, amountCents, name] of [
 }
 assert.equal((await call("POST", details)).code, 200);
 assert.equal(squareOrder.quick_pay.price_money.amount, 1300);
-assert.equal(checkout.table_number, 7);
+assert.equal(checkout.handoff, "upstairs");
 assert.equal((await call("GET")).code, 202);
 const notification = { type: "payment.updated", data: { object: { payment: { id: "payment-1", order_id: "order-1", status: "COMPLETED" } } } };
 assert.equal((await call("POST", notification)).code, 204);
@@ -96,7 +99,7 @@ assert.equal(releases, 0);
 payment.amount_money.amount = 1300;
 assert.equal((await call("POST", notification)).code, 204);
 assert.equal(releases, 1);
-assert.deepEqual((await call("GET")).data.order, { id: "ticket-1", table_number: 7 });
+assert.deepEqual((await call("GET")).data.order, { id: "ticket-1", handoff: "upstairs" });
 await call("POST", notification);
 assert.equal(releases, 2);
 assert.match(await (await import("node:fs/promises")).readFile("supabase/migrations/20261107000000_paid_drink_orders.sql", "utf8"), /on conflict \(square_order_id\) do nothing/i);

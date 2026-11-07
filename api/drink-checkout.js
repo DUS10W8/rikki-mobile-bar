@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 const { drinks } = createRequire(import.meta.url)("../src/order/eventMenu.json");
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
-const orderFields = "id,name,drink,table_number,status,bar_station,created_at,updated_at,square_order_id";
+const orderFields = "id,name,drink,table_number,handoff,status,bar_station,created_at,updated_at,square_order_id";
 
 async function square(path, body) {
   const host = process.env.SQUARE_ENVIRONMENT === "sandbox"
@@ -35,12 +35,12 @@ async function releaseIfPaid(db, checkout, payment) {
 }
 
 async function startCheckout(db, req, res) {
-  const { id, drinkId, name, phone, table, amountCents } = req.body ?? {};
+  const { id, drinkId, name, phone, handoff, amountCents } = req.body ?? {};
   if (typeof id !== "string" || !uuid.test(id) || typeof drinkId !== "string" ||
       typeof name !== "string" || name.trim().length < 2 || name.length > 80 ||
       typeof phone !== "string" || phone.length > 30 ||
-      !Number.isInteger(table) || table < 1 || table > 12) {
-    return res.status(400).json({ error: "Choose a drink and enter your name and table number." });
+      !['outdoor_pickup', 'upstairs'].includes(handoff)) {
+    return res.status(400).json({ error: "Choose a drink and enter your name and handoff option." });
   }
 
   const drink = drinks.find((item) => item.id === drinkId);
@@ -50,7 +50,6 @@ async function startCheckout(db, req, res) {
   const amount = drink.priceCents;
   if (amount !== amountCents) return res.status(409).json({ error: "The price changed. Refresh the menu and choose again." });
   const returnUrl = new URL("/order", process.env.ORDER_SITE_URL);
-  returnUrl.searchParams.set("table", String(table));
   returnUrl.searchParams.set("checkout", id);
 
   const { payment_link: link } = await square("online-checkout/payment-links", {
@@ -66,7 +65,7 @@ async function startCheckout(db, req, res) {
 
   const { error } = await db.from("drink_checkouts").upsert({
     id, square_order_id: link.order_id, name: name.trim(), phone,
-    drink: drinkName, table_number: table, amount_cents: amount,
+    drink: drinkName, handoff, amount_cents: amount,
   }, { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;
   return res.status(200).json({ url: link.url });
