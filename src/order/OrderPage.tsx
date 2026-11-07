@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Check, CheckCircle2, GlassWater, Loader2, Martini } from "lucide-react";
 
-import { EVENT_DRINK_MENU, MOOD_BASES } from "./eventMenu";
+import { EVENT_DRINK_MENU } from "./eventMenu";
 import { orderSupabase, orderSupabaseConfig } from "./orderSupabaseClient";
 import "./OrderPage.css";
 
@@ -42,7 +42,6 @@ type QueuePositionOrder = Pick<Order, "id" | "created_at" | "status">;
 
 export default function OrderPage() {
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
-  const [moodId, setMoodId] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [tableNumber, setTableNumber] = useState<number | null>(() => getTableNumberFromUrl());
@@ -197,8 +196,7 @@ export default function OrderPage() {
   }, []);
 
   const canSubmit = Boolean(
-    selectedDrink && tableNumber && name.trim().length >= 2 && !submitting &&
-      (!selectedDrink.requiresMood || moodId),
+    selectedDrink && tableNumber && name.trim().length >= 2 && !submitting,
   );
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
@@ -210,7 +208,6 @@ export default function OrderPage() {
       drinkId: String(selectedDrink.id),
       name: name.trim(),
       phone: isValidPhone(phone) ? normalizePhone(phone) : "",
-      moodId,
       table: tableNumber,
       amountCents: selectedDrink.priceCents,
     });
@@ -363,7 +360,6 @@ export default function OrderPage() {
           {Object.entries(groupedDrinks).map(([category, items]) => (
             <section key={category}>
               <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-brand-ink/55">{category}</h2>
-              {items.some((drink) => drink.requiresMood) && <p className="mb-3 text-sm text-brand-ink/70">Choose a tonic and a mood base.</p>}
               <div className="grid gap-3">
                 {items.map((drink) => (
                   <button
@@ -375,7 +371,6 @@ export default function OrderPage() {
                     aria-pressed={selectedDrink?.id === drink.id}
                     onClick={() => {
                       setSelectedDrink(drink);
-                      if (drink.id !== selectedDrink?.id) setMoodId("");
                     }}
                   >
                     <span className="min-w-0 pr-3">
@@ -391,20 +386,6 @@ export default function OrderPage() {
               </div>
             </section>
           ))}
-
-          {selectedDrink?.requiresMood && (
-            <fieldset className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4">
-              <legend className="px-2 text-sm font-black">Choose a mood base</legend>
-              <div className="grid grid-cols-2 gap-2">
-                {MOOD_BASES.map((mood) => (
-                  <label key={mood.id} className="flex cursor-pointer items-center gap-2 rounded-xl border border-brand-chrome px-3 py-3 has-[:checked]:border-brand-sea has-[:checked]:bg-brand-sea/10">
-                    <input type="radio" name="mood" value={mood.id} checked={moodId === mood.id} onChange={() => setMoodId(mood.id)} required />
-                    <span><strong className="block">{mood.name}</strong><span className="text-sm text-brand-ink/70">{mood.description}</span></span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          )}
 
           <section className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_14px_36px_rgba(46,46,46,0.08)]">
             <div className="grid gap-3">

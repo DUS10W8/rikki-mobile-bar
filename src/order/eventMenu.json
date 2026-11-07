@@ -1,17 +1,165 @@
 {
   "drinks": [
-    { "id": "atlas-espresso-martini", "name": "Espresso Martini", "category": "Cocktails & Cocoa", "description": "Vodka · Espresso · Coffee liqueur", "priceCents": 1300, "requiresMood": false },
-    { "id": "atlas-cocoa-classic", "name": "Cocoa & Confidence — Classic", "category": "Cocktails & Cocoa", "description": "Rich hot chocolate · Whipped cream · Chocolate shavings", "priceCents": 500, "requiresMood": false },
-    { "id": "atlas-cocoa-spiked", "name": "Cocoa & Confidence — Spiked", "category": "Cocktails & Cocoa", "description": "Rich hot chocolate · Whipped cream · Chocolate shavings", "priceCents": 1000, "requiresMood": false },
-    { "id": "atlas-mint-to-be-beautiful", "name": "Mint to Be Beautiful", "category": "Cocktails & Cocoa", "description": "Rum · Fresh mint · Lime · Soda · Simple syrup", "priceCents": 1200, "requiresMood": false },
-    { "id": "atlas-cranberry-spritz", "name": "Cranberry Spritz", "category": "Cocktails & Cocoa", "description": "Vodka · Cranberry · Lemon · Sparkling water", "priceCents": 1200, "requiresMood": false },
-    { "id": "atlas-mockjito", "name": "Mockjito (N/A)", "category": "N/A Social Tonics", "description": "Fresh mint · Lime · Soda", "priceCents": 1000, "requiresMood": true },
-    { "id": "atlas-na-cranberry-spritz", "name": "Cranberry Spritz (N/A)", "category": "N/A Social Tonics", "description": "Cranberry · Lemon · Sparkling water", "priceCents": 1000, "requiresMood": true }
-  ],
-  "moods": [
-    { "id": "calm", "name": "Calm", "description": "Relax + unwind" },
-    { "id": "hydration", "name": "Hydration", "description": "Refresh + replenish" },
-    { "id": "energy", "name": "Energy", "description": "Boost + go" },
-    { "id": "social", "name": "Social", "description": "Bright + upbeat" }
+    {
+      "id": "atlas-espresso-martini",
+      "name": "Espresso Martini",
+      "category": "Signature Cocktails",
+      "description": "Vodka · Espresso · Coffee liqueur",
+      "priceCents": 1300
+    },
+    {
+      "id": "atlas-mint-to-be-beautiful",
+      "name": "Mint to Be Beautiful Mojito",
+      "category": "Signature Cocktails",
+      "description": "Rum · Fresh mint · Lime · Soda · Simple syrup",
+      "priceCents": 1200
+    },
+    {
+      "id": "atlas-cranberry-spritz",
+      "name": "Cranberry Spritz",
+      "category": "Signature Cocktails",
+      "description": "Vodka · Cranberry · Lemon · Sparkling water",
+      "priceCents": 1100
+    },
+    {
+      "id": "atlas-aperol-spritz",
+      "name": "Aperol Spritz",
+      "category": "Signature Cocktails",
+      "description": "",
+      "priceCents": 1200
+    },
+    {
+      "id": "atlas-classic-martini",
+      "name": "Classic Martini",
+      "category": "Classic Cocktails",
+      "description": "",
+      "priceCents": 1300
+    },
+    {
+      "id": "atlas-vodka-soda",
+      "name": "Vodka Soda",
+      "category": "Classic Cocktails",
+      "description": "",
+      "priceCents": 900
+    },
+    {
+      "id": "atlas-vodka-cranberry",
+      "name": "Vodka Cranberry",
+      "category": "Classic Cocktails",
+      "description": "",
+      "priceCents": 900
+    },
+    {
+      "id": "atlas-rum-coke",
+      "name": "Rum & Coke",
+      "category": "Classic Cocktails",
+      "description": "",
+      "priceCents": 900
+    },
+    {
+      "id": "atlas-gin-tonic",
+      "name": "Gin & Tonic",
+      "category": "Classic Cocktails",
+      "description": "",
+      "priceCents": 900
+    },
+    {
+      "id": "atlas-whiskey-coke",
+      "name": "Whiskey & Coke",
+      "category": "Classic Cocktails",
+      "description": "",
+      "priceCents": 1000
+    },
+    {
+      "id": "atlas-basic-mixed-drink",
+      "name": "Basic Mixed Drink",
+      "category": "Classic Cocktails",
+      "description": "",
+      "priceCents": 1000
+    },
+    {
+      "id": "atlas-premium-mixed-drink",
+      "name": "Premium Mixed Drink",
+      "category": "Classic Cocktails",
+      "description": "",
+      "priceCents": 1300
+    },
+    {
+      "id": "atlas-sparkling-wine",
+      "name": "Champagne / Sparkling Wine",
+      "category": "Wine & Liqueurs",
+      "description": "",
+      "priceCents": 1000
+    },
+    {
+      "id": "atlas-premium-red-wine",
+      "name": "Premium Red Wine",
+      "category": "Wine & Liqueurs",
+      "description": "",
+      "priceCents": 1200
+    },
+    {
+      "id": "atlas-baileys",
+      "name": "Baileys 2 oz",
+      "category": "Wine & Liqueurs",
+      "description": "",
+      "priceCents": 900
+    },
+    {
+      "id": "atlas-social-tonic-energy",
+      "name": "Social Tonic Energy",
+      "category": "Nonalcoholic",
+      "description": "",
+      "priceCents": 1000
+    },
+    {
+      "id": "atlas-social-tonic-calm",
+      "name": "Social Tonic Calm",
+      "category": "Nonalcoholic",
+      "description": "",
+      "priceCents": 1000
+    },
+    {
+      "id": "atlas-social-tonic-hydrate",
+      "name": "Social Tonic Hydrate",
+      "category": "Nonalcoholic",
+      "description": "",
+      "priceCents": 1000
+    },
+    {
+      "id": "atlas-social-tonic-social",
+      "name": "Social Tonic Social",
+      "category": "Nonalcoholic",
+      "description": "",
+      "priceCents": 1000
+    },
+    {
+      "id": "atlas-mockjito",
+      "name": "Mockjito",
+      "category": "Nonalcoholic",
+      "description": "Fresh mint · Lime · Soda",
+      "priceCents": 800
+    },
+    {
+      "id": "atlas-classic-hot-cocoa",
+      "name": "Classic Hot Cocoa",
+      "category": "Hot Cocoa",
+      "description": "",
+      "priceCents": 500
+    },
+    {
+      "id": "atlas-loaded-cocoa",
+      "name": "Loaded Cocoa",
+      "category": "Hot Cocoa",
+      "description": "",
+      "priceCents": 800
+    },
+    {
+      "id": "atlas-baileys-hot-cocoa",
+      "name": "Baileys Hot Cocoa",
+      "category": "Hot Cocoa",
+      "description": "",
+      "priceCents": 1200
+    }
   ]
 }

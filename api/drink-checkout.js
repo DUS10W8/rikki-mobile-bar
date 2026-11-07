@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { createClient } from "@supabase/supabase-js";
 
-const { drinks, moods } = createRequire(import.meta.url)("../src/order/eventMenu.json");
+const { drinks } = createRequire(import.meta.url)("../src/order/eventMenu.json");
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
 const orderFields = "id,name,drink,table_number,status,bar_station,created_at,updated_at,square_order_id";
@@ -35,7 +35,7 @@ async function releaseIfPaid(db, checkout, payment) {
 }
 
 async function startCheckout(db, req, res) {
-  const { id, drinkId, name, phone, moodId, table, amountCents } = req.body ?? {};
+  const { id, drinkId, name, phone, table, amountCents } = req.body ?? {};
   if (typeof id !== "string" || !uuid.test(id) || typeof drinkId !== "string" ||
       typeof name !== "string" || name.trim().length < 2 || name.length > 80 ||
       typeof phone !== "string" || phone.length > 30 ||
@@ -46,11 +46,7 @@ async function startCheckout(db, req, res) {
   const drink = drinks.find((item) => item.id === drinkId);
   if (!drink) return res.status(409).json({ error: "That drink is unavailable. Refresh the menu and choose again." });
 
-  const mood = moods.find((item) => item.id === moodId);
-  if (drink.requiresMood ? !mood : Boolean(moodId)) {
-    return res.status(400).json({ error: "Choose a mood base for your non-alcoholic tonic." });
-  }
-  const drinkName = mood ? drink.name + " — " + mood.name : drink.name;
+  const drinkName = drink.name;
   const amount = drink.priceCents;
   if (amount !== amountCents) return res.status(409).json({ error: "The price changed. Refresh the menu and choose again." });
   const returnUrl = new URL("/order", process.env.ORDER_SITE_URL);

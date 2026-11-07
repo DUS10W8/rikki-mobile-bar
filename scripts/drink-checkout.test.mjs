@@ -50,20 +50,37 @@ async function call(method, body) {
 const details = { id, drinkId: "atlas-espresso-martini", name: "Alex", phone: "", table: 7, amountCents: 1300 };
 assert.equal((await call("POST", { ...details, amountCents: 1 })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "event-modelo" })).code, 409);
-assert.equal((await call("POST", { ...details, drinkId: "atlas-mockjito", amountCents: 1000 })).code, 400);
-assert.equal((await call("POST", { ...details, moodId: "calm" })).code, 400);
-for (const [drinkId, amountCents, moodId] of [
-  ["atlas-cocoa-classic", 500],
-  ["atlas-cocoa-spiked", 1000],
-  ["atlas-mint-to-be-beautiful", 1200],
-  ["atlas-cranberry-spritz", 1200],
-  ["atlas-mockjito", 1000, "hydration"],
-  ["atlas-na-cranberry-spritz", 1000, "energy"],
+assert.equal((await call("POST", { ...details, drinkId: "atlas-na-cranberry-spritz" })).code, 409);
+assert.equal((await call("POST", { ...details, drinkId: "atlas-cranberry-spritz", amountCents: 1200 })).code, 409);
+for (const [drinkId, amountCents, name] of [
+  ["atlas-espresso-martini", 1300, "Espresso Martini"],
+  ["atlas-mint-to-be-beautiful", 1200, "Mint to Be Beautiful Mojito"],
+  ["atlas-cranberry-spritz", 1100, "Cranberry Spritz"],
+  ["atlas-aperol-spritz", 1200, "Aperol Spritz"],
+  ["atlas-classic-martini", 1300, "Classic Martini"],
+  ["atlas-vodka-soda", 900, "Vodka Soda"],
+  ["atlas-vodka-cranberry", 900, "Vodka Cranberry"],
+  ["atlas-rum-coke", 900, "Rum & Coke"],
+  ["atlas-gin-tonic", 900, "Gin & Tonic"],
+  ["atlas-whiskey-coke", 1000, "Whiskey & Coke"],
+  ["atlas-basic-mixed-drink", 1000, "Basic Mixed Drink"],
+  ["atlas-premium-mixed-drink", 1300, "Premium Mixed Drink"],
+  ["atlas-sparkling-wine", 1000, "Champagne / Sparkling Wine"],
+  ["atlas-premium-red-wine", 1200, "Premium Red Wine"],
+  ["atlas-baileys", 900, "Baileys 2 oz"],
+  ["atlas-social-tonic-energy", 1000, "Social Tonic Energy"],
+  ["atlas-social-tonic-calm", 1000, "Social Tonic Calm"],
+  ["atlas-social-tonic-hydrate", 1000, "Social Tonic Hydrate"],
+  ["atlas-social-tonic-social", 1000, "Social Tonic Social"],
+  ["atlas-mockjito", 800, "Mockjito"],
+  ["atlas-classic-hot-cocoa", 500, "Classic Hot Cocoa"],
+  ["atlas-loaded-cocoa", 800, "Loaded Cocoa"],
+  ["atlas-baileys-hot-cocoa", 1200, "Baileys Hot Cocoa"],
 ]) {
-  assert.equal((await call("POST", { ...details, drinkId, amountCents, moodId })).code, 200);
+  assert.equal((await call("POST", { ...details, drinkId, amountCents })).code, 200);
   assert.equal(squareOrder.quick_pay.price_money.amount, amountCents);
-  assert.equal(checkout.drink, squareOrder.quick_pay.name);
-  if (moodId) assert.ok(checkout.drink.toLowerCase().endsWith(moodId));
+  assert.equal(squareOrder.quick_pay.name, name);
+  assert.equal(checkout.drink, name);
 }
 assert.equal((await call("POST", details)).code, 200);
 assert.equal(squareOrder.quick_pay.price_money.amount, 1300);
