@@ -231,7 +231,7 @@ export default function BartenderPage() {
           <section className="rounded-2xl border border-brand-chrome bg-[#fffaf2]/95 p-6 shadow-[0_24px_70px_rgba(0,0,0,0.3)]">
             <p className="text-sm font-black uppercase tracking-wide text-brand-sea">Rikki's Mobile Bar</p>
             <h1 className="mt-1 font-heading text-3xl font-black text-brand-ink">Choose station</h1>
-            <p className="mt-2 text-sm font-semibold text-brand-ink/65">Orders you start will be assigned to this bar for customer pickup.</p>
+            <p className="mt-2 text-sm font-semibold text-brand-ink/65">Orders you start will be assigned to this bar for preparation and table delivery.</p>
             <div className="mt-6 grid gap-3">
               <button className="min-h-16 rounded-2xl bg-brand-ink px-5 text-xl font-black text-white" type="button" onClick={() => chooseStation("white_bar")}>
                 White Bar
@@ -327,7 +327,7 @@ export default function BartenderPage() {
             </div>
           </DashboardColumn>
 
-          <DashboardColumn id="ready-orders" title="Ready for Pickup" count={readyOrders.length} tone="ready">
+          <DashboardColumn id="ready-orders" title="Ready for Delivery" count={readyOrders.length} tone="ready">
             <div className="grid gap-3">
               {readyOrders.map((order) => (
                 <KitchenOrderCard
@@ -340,13 +340,13 @@ export default function BartenderPage() {
                   onStatusChange={(status) => updateStatus(order, status)}
                 />
               ))}
-              {!loading && readyOrders.length === 0 && <EmptyState>No drinks ready for pickup.</EmptyState>}
+              {!loading && readyOrders.length === 0 && <EmptyState>No drinks ready for delivery.</EmptyState>}
             </div>
           </DashboardColumn>
 
           <DashboardColumn
             id="completed-orders"
-            title="Completed"
+            title="Delivered"
             count={completedOrders.length}
             tone="completed"
             className={showCompletedMobile ? "" : "hidden md:block"}
@@ -601,7 +601,7 @@ function getOrderActions(status: OrderStatus): Array<{ label: string; status: No
   }
 
   if (normalizedStatus === "ready") {
-    return [{ label: "Complete", status: "completed", tone: "complete" }];
+    return [{ label: "Mark delivered", status: "completed", tone: "complete" }];
   }
 
   return [];
@@ -710,6 +710,7 @@ async function loadOrders({
   const { data, error } = await orderSupabase
     .from("orders")
     .select("*")
+    .not("square_order_id", "is", null)
     .order("created_at", { ascending: false })
     .limit(75);
 

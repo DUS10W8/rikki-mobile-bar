@@ -106,3 +106,7 @@
     0 10px 20px rgba(20, 20, 20, 0.2);
   transform: translateY(1px);
 }
+
+.order-checkout-bar {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}

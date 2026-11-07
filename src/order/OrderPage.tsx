@@ -1,8 +1,7 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { Check, CheckCircle2, GlassWater, Loader2, Martini, RefreshCw } from "lucide-react";
+import { Check, CheckCircle2, GlassWater, Loader2, Martini } from "lucide-react";
 
-import { ENABLE_DRINK_LIMITS } from "./eventConfig";
-import { EVENT_DRINK_MENU } from "./eventMenu";
+import { EVENT_DRINK_MENU, MOOD_BASES } from "./eventMenu";
 import { orderSupabase, orderSupabaseConfig } from "./orderSupabaseClient";
 import "./OrderPage.css";
 
@@ -11,32 +10,16 @@ const BASE = import.meta.env.BASE_URL;
 const TIP_URL = "https://www.rikkismobile.com/tip";
 const CONNECT_URL = "https://www.rikkismobile.com/connect";
 const ORDER_POLL_INTERVAL_MS = 4000;
-const MAX_DRINK_TICKETS = 2;
 const ACTIVE_ORDER_STORAGE_KEY = "rikki-active-order";
-const TICKET_COUNT_STATUSES = ["new", "in_progress", "ready", "completed", "New", "In Progress", "Ready", "Completed"];
 const ACTIVE_QUEUE_STATUSES = ["new", "in_progress", "New", "In Progress"];
-const PAYMENT_LINKS = {
-  beer: "https://square.link/u/i3mPQjF9",
-  wine: "https://square.link/u/aqBA7xBE",
-  cocktail: "https://square.link/u/X39N1mMJ",
-};
-
-type Drink = {
-  id: string;
-  name: string;
-  description?: string | null;
-  category: string | null;
-  active: boolean;
-  is_available?: boolean;
-  display_order?: number | null;
-};
+type Drink = (typeof EVENT_DRINK_MENU)[number];
 
 type OrderStatus = "new" | "in_progress" | "ready" | "completed" | "New" | "In Progress" | "Ready" | "Completed";
 
 type Order = {
   id: string;
   name: string;
-  phone: string;
+  square_order_id?: string | null;
   drink: string;
   status: OrderStatus;
   bar_station?: BarStation | null;
@@ -48,11 +31,7 @@ type Order = {
 type BarStation = "white_bar" | "brown_bar";
 
 type OrderConfirmation = Order & {
-  ticketUsed: number;
-  ticketLabel: string;
-  confirmationMessage: string;
   estimatedWaitMinutes: number | null;
-  payment: DrinkPayment | null;
 };
 
 type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_station" | "table_number" | "created_at"> & {
@@ -61,59 +40,28 @@ type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_s
 
 type QueuePositionOrder = Pick<Order, "id" | "created_at" | "status">;
 
-type DrinkPayment = {
-  kind: "beer" | "wine" | "cocktail";
-  price: 3 | 4 | 5;
-  link: string;
-};
-
-type LoadDrinksOptions = {
-  setDrinks: (drinks: Drink[]) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string) => void;
-  setUnavailable: (unavailable: boolean) => void;
-};
-
 export default function OrderPage() {
-  const [drinks, setDrinks] = useState<Drink[]>([]);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
-  const [customDrinkText, setCustomDrinkText] = useState("");
+  const [moodId, setMoodId] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [tableNumber] = useState<number | null>(() => getTableNumberFromUrl());
-  const [loading, setLoading] = useState(true);
+  const [tableNumber, setTableNumber] = useState<number | null>(() => getTableNumberFromUrl());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [menuUnavailable, setMenuUnavailable] = useState(false);
   const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
-  const [guestOrderCount, setGuestOrderCount] = useState<number | null>(null);
-  const [checkingTicketCount, setCheckingTicketCount] = useState(false);
   const [liveUpdateError, setLiveUpdateError] = useState(false);
   const [restoreError, setRestoreError] = useState(false);
   const [soundAlertEnabled, setSoundAlertEnabled] = useState(false);
+  const [checkout, setCheckout] = useState(() => new URLSearchParams(window.location.search).get("checkout"));
+  const [checkoutAttempt, setCheckoutAttempt] = useState(0);
+  const [checkoutMessage, setCheckoutMessage] = useState("");
+  const checkoutRequest = useRef<{ id: string; details: string } | null>(null);
   const previousStatusRef = useRef<Order["status"] | null>(null);
   const trackingOrderId = confirmation?.id;
   const trackingOrderStatus = confirmation?.status;
 
   useEffect(() => {
-    const loadOptions = { setDrinks, setLoading, setError, setUnavailable: setMenuUnavailable };
-    loadDrinks(loadOptions);
-
-    if (!orderSupabase) return undefined;
-
-    const channel = orderSupabase
-      .channel("public-drinks")
-      .on("postgres_changes", { event: "*", schema: "public", table: "drinks" }, () => {
-        loadDrinks(loadOptions);
-      })
-      .subscribe();
-
-    return () => {
-      orderSupabase.removeChannel(channel);
-    };
-  }, []);
-
-  useEffect(() => {
+    if (checkout) return;
     const savedOrder = readStoredActiveOrder();
     if (!savedOrder?.id) return;
 
@@ -153,34 +101,43 @@ export default function OrderPage() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [checkout]);
 
   useEffect(() => {
-    if (!ENABLE_DRINK_LIMITS) {
-      setGuestOrderCount(null);
-      setCheckingTicketCount(false);
-      return undefined;
-    }
+    if (!checkout) return;
+    const controller = new AbortController();
+    let retry: number | undefined;
+    let checks = 0;
 
-    if (!isValidPhone(phone)) {
-      setGuestOrderCount(null);
-      setCheckingTicketCount(false);
-      return undefined;
-    }
-
-    let ignore = false;
-    setCheckingTicketCount(true);
-
-    countGuestOrders(normalizePhone(phone)).then(({ count }) => {
-      if (ignore) return;
-      setGuestOrderCount(count);
-      setCheckingTicketCount(false);
-    });
-
-    return () => {
-      ignore = true;
+    const checkPayment = async () => {
+      try {
+        const response = await fetch(`/api/drink-checkout?checkout=${encodeURIComponent(checkout)}`, { signal: controller.signal });
+        if (!response.ok) throw new Error("Checkout status unavailable");
+        const { order } = await response.json() as { order: Order | null };
+        if (controller.signal.aborted) return;
+        if (!order) {
+          if (++checks < 6) retry = window.setTimeout(checkPayment, ORDER_POLL_INTERVAL_MS);
+          else setCheckoutMessage("Payment is taking longer to confirm. Check again here before paying for another drink.");
+          return;
+        }
+        persistActiveOrder(order);
+        setConfirmation(buildStoredConfirmation(order, null));
+        const url = new URL(window.location.href);
+        const orderUrl = new URL(url.pathname, url.origin);
+        if (order.table_number) orderUrl.searchParams.set("table", String(order.table_number));
+        window.history.replaceState(null, "", orderUrl);
+        setCheckout(null);
+      } catch {
+        if (!controller.signal.aborted) setCheckoutMessage("We couldn't confirm your payment yet. Check again before paying for another drink.");
+      }
     };
-  }, [phone]);
+
+    void checkPayment();
+    return () => {
+      controller.abort();
+      window.clearTimeout(retry);
+    };
+  }, [checkout, checkoutAttempt]);
 
   useEffect(() => {
     if (!trackingOrderId || !trackingOrderStatus) {
@@ -231,101 +188,80 @@ export default function OrderPage() {
   }, [trackingOrderId, trackingOrderStatus, soundAlertEnabled]);
 
   const groupedDrinks = useMemo(() => {
-    return drinks.reduce<Record<string, Drink[]>>((groups, drink) => {
+    return EVENT_DRINK_MENU.reduce<Record<string, Drink[]>>((groups, drink) => {
       const key = drink.category || "House";
       groups[key] = groups[key] || [];
       groups[key].push(drink);
       return groups;
     }, {});
-  }, [drinks]);
+  }, []);
 
-  const phoneIsValid = isValidPhone(phone);
   const canSubmit = Boolean(
-    selectedDrink &&
-      name.trim().length >= 2 &&
-      !submitting &&
-      (!isCustomDrink(selectedDrink) || customDrinkText.trim().length > 0),
+    selectedDrink && tableNumber && name.trim().length >= 2 && !submitting &&
+      (!selectedDrink.requiresMood || moodId),
   );
-  const selectedDrinkPayment = ENABLE_DRINK_LIMITS && selectedDrink ? getDrinkPayment(selectedDrink) : null;
-  const nextDrinkLabel = ENABLE_DRINK_LIMITS ? getNextDrinkLabel(guestOrderCount, selectedDrinkPayment) : "";
-  const isPaidNextDrink = Boolean(ENABLE_DRINK_LIMITS && guestOrderCount !== null && guestOrderCount >= MAX_DRINK_TICKETS && selectedDrinkPayment);
-  const submitButtonLabel = isPaidNextDrink && selectedDrinkPayment ? `Order Drink ($${selectedDrinkPayment.price})` : "Order Drink";
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!canSubmit || !selectedDrink) return;
     setError("");
-
-    if (!selectedDrink || name.trim().length < 2) {
-      setError("Choose a drink and enter your name.");
-      return;
-    }
-
-    if (isCustomDrink(selectedDrink) && !customDrinkText.trim()) {
-      setError("Let us know what you'd like.");
-      return;
-    }
-
-    const drinkName = isCustomDrink(selectedDrink)
-      ? `${selectedDrink.category}: ${customDrinkText.trim()}`
-      : selectedDrink.name;
-
     setSubmitting(true);
-    const normalizedPhone = phoneIsValid ? normalizePhone(phone) : phone.trim();
-    const { count: existingTicketCount, error: ticketError } = ENABLE_DRINK_LIMITS && normalizedPhone
-      ? await countGuestOrders(normalizedPhone)
-      : { count: 0, error: null };
-
-    if (ticketError || existingTicketCount === null) {
-      setSubmitting(false);
-      setError(`Order could not be submitted. ${ticketError?.message || "Could not verify drink tickets."}`);
-      return;
-    }
-
-    const { data, error: orderError } = await createOrder({
+    const details = JSON.stringify({
+      drinkId: String(selectedDrink.id),
       name: name.trim(),
-      phone: normalizedPhone,
-      drink: drinkName,
-      status: "New",
-      table_number: tableNumber,
+      phone: isValidPhone(phone) ? normalizePhone(phone) : "",
+      moodId,
+      table: tableNumber,
+      amountCents: selectedDrink.priceCents,
     });
-
-    if (orderError || !data) {
-      setSubmitting(false);
-      setError(`Order could not be submitted. ${orderError?.message || "Please try again."}`);
-      return;
+    if (checkoutRequest.current?.details !== details) {
+      checkoutRequest.current = { id: crypto.randomUUID(), details };
     }
 
-    const { position: queuePosition } = await countOrderQueuePosition(data);
-    setSubmitting(false);
-
-    setGuestOrderCount(existingTicketCount + 1);
-    const nextConfirmation = {
-      ...data,
-      ticketUsed: existingTicketCount + 1,
-      ticketLabel: getSubmittedDrinkLabel(existingTicketCount, selectedDrink),
-      confirmationMessage: getConfirmationMessage(existingTicketCount),
-      estimatedWaitMinutes: queuePosition,
-      payment: ENABLE_DRINK_LIMITS && existingTicketCount >= MAX_DRINK_TICKETS ? getDrinkPayment(selectedDrink) : null,
-    };
-    setConfirmation(nextConfirmation);
-    persistActiveOrder(nextConfirmation);
-    setSelectedDrink(null);
-    setCustomDrinkText("");
-    setName("");
-    setPhone("");
+    try {
+      const response = await fetch("/api/drink-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...JSON.parse(details), id: checkoutRequest.current.id }),
+      });
+      const { url, error } = await response.json();
+      if (!response.ok || !url) throw new Error(error || "Checkout is temporarily unavailable.");
+      window.location.assign(url);
+    } catch (error) {
+      setSubmitting(false);
+      setError(error instanceof Error ? error.message : "Checkout is temporarily unavailable.");
+    }
   };
 
   const placeAnotherOrder = () => {
     clearStoredActiveOrder();
+    checkoutRequest.current = null;
     setConfirmation(null);
     setRestoreError(false);
     setLiveUpdateError(false);
     previousStatusRef.current = null;
   };
 
-  const reloadDrinks = () => {
-    loadDrinks({ setDrinks, setLoading, setError, setUnavailable: setMenuUnavailable });
-  };
+  if (checkout) {
+    return (
+      <OrderShell>
+        <main className="mx-auto max-w-md px-5 py-12">
+          <section className="rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2] p-6">
+            <h1 className="mb-4 text-2xl font-black">Confirming your payment</h1>
+            <div aria-live="polite">
+              {checkoutMessage ? <p>{checkoutMessage}</p> : <Loading label="Waiting for Square to confirm your payment" />}
+            </div>
+            {checkoutMessage && (
+              <button className="mt-4 rounded-2xl bg-brand-ink px-5 py-3 font-bold text-white" onClick={() => {
+                setCheckoutMessage("");
+                setCheckoutAttempt((attempt) => attempt + 1);
+              }}>Check payment again</button>
+            )}
+          </section>
+        </main>
+      </OrderShell>
+    );
+  }
 
   if (confirmation) {
     return (
@@ -334,9 +270,9 @@ export default function OrderPage() {
           <div className="flex flex-1 flex-col justify-center">
             <div className="rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/90 p-6 text-center shadow-[0_28px_80px_rgba(46,46,46,0.14)] backdrop-blur">
               <CheckCircle2 className="mx-auto h-14 w-14 text-brand-sea" />
-              <h1 className="mt-4 text-3xl font-bold text-brand-ink">Your order is in!</h1>
+              <h1 className="mt-4 text-3xl font-bold text-brand-ink">{confirmation.square_order_id ? "Payment confirmed" : "Your order is in"}</h1>
               <p className="mt-3 text-brand-ink/70">
-                {confirmation.name}, your {confirmation.drink} is in the queue.
+                {confirmation.name}, your {confirmation.drink} has been sent to the bar.
               </p>
               <div className="mt-5 rounded-2xl bg-brand-ink px-4 py-5 text-white">
                 <p className="text-sm uppercase tracking-wide text-white/70">Order</p>
@@ -348,7 +284,6 @@ export default function OrderPage() {
                 )}
               </div>
               <p className="mt-4 text-base font-bold text-brand-ink">{getConfirmationStatusMessage(confirmation)}</p>
-              <p className="mt-2 text-sm text-brand-ink/65">Please listen for your name at the pickup area.</p>
               <LiveOrderTracker order={confirmation} liveUpdateError={liveUpdateError} />
               <button
                 className={`mt-4 w-full rounded-2xl border px-4 py-3 text-sm font-black ${
@@ -365,8 +300,6 @@ export default function OrderPage() {
                 {soundAlertEnabled ? "Sound alert enabled" : "Enable sound alert"}
               </button>
               <p className="mt-4 text-sm font-bold text-brand-sea">Want another drink later? Save this page.</p>
-              {ENABLE_DRINK_LIMITS && <p className="mt-4 text-sm text-brand-ink/60">{confirmation.confirmationMessage}</p>}
-              {ENABLE_DRINK_LIMITS && <p className="mt-2 text-sm font-bold text-brand-sea">{confirmation.ticketLabel}</p>}
               <div className="mt-6 grid gap-3">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-ink/45">Loved the service?</p>
                 <a
@@ -382,16 +315,6 @@ export default function OrderPage() {
                   Connect With Rikki's
                 </a>
               </div>
-              {confirmation.payment && (
-                <a
-                  className="mt-5 flex min-h-12 items-center justify-center rounded-2xl bg-brand-ink px-5 py-3 font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)]"
-                  href={confirmation.payment.link}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Complete Payment
-                </a>
-              )}
               <button className="mt-6 w-full rounded-2xl bg-brand-sea px-5 py-4 font-bold text-white shadow-[0_14px_32px_rgba(46,155,138,0.25)]" onClick={placeAnotherOrder}>
                 Place another order
               </button>
@@ -404,7 +327,7 @@ export default function OrderPage() {
 
   return (
     <OrderShell>
-      <main className="mx-auto max-w-md px-4 pb-32 pt-5">
+      <main className="mx-auto max-w-md px-4 pb-44 pt-5">
         <header className="mb-6 overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/88 shadow-[0_24px_70px_rgba(46,46,46,0.12)] backdrop-blur">
           <div className="bg-[#fffaf2] px-4 pb-3 pt-4">
             <img
@@ -420,9 +343,11 @@ export default function OrderPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-sea">{BAR_NAME}</p>
-              <h1 className="text-3xl font-black text-brand-ink">Drink menu</h1>
+              <h1 className="text-3xl font-black text-brand-ink">Atlas Beauty Drink Menu</h1>
+              <p className="mt-1 text-sm font-bold text-brand-ink/65">Six Years of Beauty</p>
             </div>
           </div>
+          <p className="mt-3 text-sm text-brand-ink/70">Choose a drink, pay securely with Square, and we’ll bring it to your table.</p>
           {tableNumber && (
             <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-brand-sea/30 bg-brand-sea/10 px-3 py-1.5 text-sm font-black uppercase tracking-wide text-brand-sea">
               Table {tableNumber}
@@ -433,13 +358,12 @@ export default function OrderPage() {
 
         {error && <Alert>{error}</Alert>}
         {restoreError && <RestoreOrderAlert onClear={placeAnotherOrder} />}
-        {loading && <Loading label="Loading menu" />}
-        {menuUnavailable && !loading && <MenuUnavailable onRefresh={reloadDrinks} />}
 
         <form onSubmit={submitOrder} className="space-y-5">
           {Object.entries(groupedDrinks).map(([category, items]) => (
             <section key={category}>
               <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-brand-ink/55">{category}</h2>
+              {items.some((drink) => drink.requiresMood) && <p className="mb-3 text-sm text-brand-ink/70">Choose a tonic and a mood base.</p>}
               <div className="grid gap-3">
                 {items.map((drink) => (
                   <button
@@ -448,44 +372,54 @@ export default function OrderPage() {
                     className={`flex min-h-20 items-center justify-between rounded-2xl border bg-[#fffaf2]/92 px-4 py-3 text-left shadow-[0_10px_28px_rgba(46,46,46,0.07)] transition ${
                       selectedDrink?.id === drink.id ? "border-brand-sea ring-2 ring-brand-sea/20" : "border-brand-chrome/80"
                     }`}
+                    aria-pressed={selectedDrink?.id === drink.id}
                     onClick={() => {
                       setSelectedDrink(drink);
-                      if (drink.id !== selectedDrink?.id) setCustomDrinkText("");
+                      if (drink.id !== selectedDrink?.id) setMoodId("");
                     }}
                   >
                     <span className="min-w-0 pr-3">
                       <span className="block text-lg font-bold text-brand-ink">{drink.name}</span>
                       {drink.description && <span className="line-clamp-2 text-sm text-brand-ink/55">{drink.description}</span>}
                     </span>
-                    {selectedDrink?.id === drink.id ? <Check className="h-6 w-6 shrink-0 text-brand-sea" /> : <GlassWater className="h-5 w-5 shrink-0 text-brand-rust/60" />}
+                    <span className="flex shrink-0 items-center gap-3 font-black">
+                      {formatDrinkPrice(drink.priceCents)}
+                      {selectedDrink?.id === drink.id ? <Check className="h-6 w-6 shrink-0 text-brand-sea" /> : <GlassWater className="h-5 w-5 shrink-0 text-brand-rust/60" />}
+                    </span>
                   </button>
                 ))}
               </div>
             </section>
           ))}
 
-          {selectedDrink && isCustomDrink(selectedDrink) && (
-            <section className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_14px_36px_rgba(46,46,46,0.08)]">
-              <label className="grid gap-1">
-                <span className="text-sm font-bold text-brand-ink/75">
-                  {selectedDrink.category === "N/A" ? "What N/A drink would you like?" : "What classic cocktail would you like?"}
-                </span>
-                <input
-                  className="order-input"
-                  value={customDrinkText}
-                  onChange={(event) => setCustomDrinkText(event.target.value)}
-                  placeholder={selectedDrink.category === "N/A" ? "e.g. Shirley Temple" : "e.g. Old Fashioned"}
-                  autoFocus
-                />
-              </label>
-            </section>
+          {selectedDrink?.requiresMood && (
+            <fieldset className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4">
+              <legend className="px-2 text-sm font-black">Choose a mood base</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {MOOD_BASES.map((mood) => (
+                  <label key={mood.id} className="flex cursor-pointer items-center gap-2 rounded-xl border border-brand-chrome px-3 py-3 has-[:checked]:border-brand-sea has-[:checked]:bg-brand-sea/10">
+                    <input type="radio" name="mood" value={mood.id} checked={moodId === mood.id} onChange={() => setMoodId(mood.id)} required />
+                    <span><strong className="block">{mood.name}</strong><span className="text-sm text-brand-ink/70">{mood.description}</span></span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           )}
 
           <section className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_14px_36px_rgba(46,46,46,0.08)]">
             <div className="grid gap-3">
               <label className="grid gap-1">
+                <span className="text-sm font-bold text-brand-ink/75">Delivery table</span>
+                <select className="order-input" value={tableNumber ?? ""} onChange={(event) => setTableNumber(Number(event.target.value) || null)} required>
+                  <option value="">Choose your table</option>
+                  {Array.from({ length: 12 }, (_, index) => index + 1).map((table) => (
+                    <option key={table} value={table}>Table {table}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1">
                 <span className="text-sm font-bold text-brand-ink/75">Name</span>
-                <input className="order-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="Alex" autoComplete="name" />
+                <input className="order-input" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder="Alex" autoComplete="name" />
               </label>
               <label className="grid gap-1">
                 <span className="text-sm font-bold text-brand-ink/75">Phone <span className="font-medium text-brand-ink/45">(optional)</span></span>
@@ -498,19 +432,15 @@ export default function OrderPage() {
                   autoComplete="tel"
                 />
               </label>
-              {ENABLE_DRINK_LIMITS && isValidPhone(phone) && (
-                <div className="rounded-2xl border border-brand-chrome/80 bg-white/60 p-3 text-sm font-bold text-brand-ink/75">
-                  {checkingTicketCount ? "Checking drink status..." : nextDrinkLabel}
-                </div>
-              )}
             </div>
           </section>
 
-          <div className="fixed inset-x-0 bottom-0 border-t border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_-18px_45px_rgba(46,46,46,0.10)] backdrop-blur">
+          <div className="order-checkout-bar fixed inset-x-0 bottom-0 z-10 border-t border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_-18px_45px_rgba(46,46,46,0.10)] backdrop-blur">
             <div className="mx-auto max-w-md">
+              {selectedDrink && <p className="mb-2 truncate text-sm font-bold text-brand-ink/75">{selectedDrink.name}{tableNumber ? " · Table " + tableNumber : " · Choose a delivery table"}</p>}
               <button disabled={!canSubmit} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink px-5 py-4 text-lg font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)] disabled:cursor-not-allowed disabled:bg-brand-chrome disabled:text-brand-ink/50 disabled:shadow-none">
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Martini className="h-5 w-5" />}
-                {submitButtonLabel}
+                {submitting ? "Opening Square checkout…" : selectedDrink ? `Pay ${formatDrinkPrice(selectedDrink.priceCents)}` : "Choose a drink"}
               </button>
             </div>
           </div>
@@ -525,7 +455,7 @@ function OrderShell({ children }: { children: ReactNode }) {
 }
 
 function Alert({ children }: { children: ReactNode }) {
-  return <div className="my-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{children}</div>;
+  return <div role="alert" className="my-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{children}</div>;
 }
 
 function Loading({ label }: { label: string }) {
@@ -537,22 +467,10 @@ function Loading({ label }: { label: string }) {
   );
 }
 
-function MenuUnavailable({ onRefresh }: { onRefresh: () => void }) {
-  return (
-    <div className="rounded-2xl border border-brand-rust/30 bg-[#fffaf2]/92 p-4 text-brand-ink">
-      <p className="font-black">Menu unavailable. Please refresh or notify bartender.</p>
-      <button className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-brand-rust px-4 py-3 font-bold text-white" onClick={onRefresh} type="button">
-        <RefreshCw className="h-4 w-4" />
-        Refresh menu
-      </button>
-    </div>
-  );
-}
-
 function RestoreOrderAlert({ onClear }: { onClear: () => void }) {
   return (
     <div className="my-3 rounded-2xl border border-brand-rust/30 bg-[#fff4eb] px-4 py-3 text-sm font-semibold text-brand-rust">
-      <p>We couldn't restore your last order. Please listen for your name at pickup.</p>
+      <p>We couldn't restore your last order. Please check with a staff member.</p>
       <button className="mt-3 rounded-xl bg-brand-rust px-4 py-2 font-black text-white" type="button" onClick={onClear}>
         Place another order
       </button>
@@ -576,37 +494,6 @@ function logSupabaseFailure(operation: string, error: unknown) {
   });
 }
 
-async function createOrder(order: Omit<Order, "id" | "created_at">) {
-  const configError = requireSupabase("orders.insert");
-  if (configError || !orderSupabase) return { data: null, error: configError };
-
-  try {
-    const { data, error } = await orderSupabase.from("orders").insert(order).select().single<Order>();
-    return { data, error };
-  } catch (error) {
-    logSupabaseFailure("orders.insert", error);
-    return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
-  }
-}
-
-async function countGuestOrders(phone: string) {
-  const configError = requireSupabase("orders.count");
-  if (configError || !orderSupabase) return { count: null, error: configError };
-
-  try {
-    const { count, error } = await orderSupabase
-      .from("orders")
-      .select("id", { count: "exact", head: true })
-      .eq("phone", phone)
-      .in("status", TICKET_COUNT_STATUSES);
-
-    return { count: count ?? 0, error };
-  } catch (error) {
-    logSupabaseFailure("orders.count", error);
-    return { count: null, error: error instanceof Error ? error : new Error(String(error)) };
-  }
-}
-
 async function getOrderById(id: string) {
   const configError = requireSupabase("orders.trackerSelect");
   if (configError || !orderSupabase) return { data: null, error: configError };
@@ -614,7 +501,7 @@ async function getOrderById(id: string) {
   try {
     const { data, error } = await orderSupabase
       .from("orders")
-      .select("id,name,phone,drink,status,bar_station,table_number,created_at,updated_at")
+      .select("id,name,drink,status,bar_station,table_number,created_at,updated_at,square_order_id")
       .eq("id", id)
       .single<Order>();
 
@@ -638,6 +525,7 @@ async function countOrderQueuePosition(order: Order) {
     const { data, error } = await orderSupabase
       .from("orders")
       .select("id,created_at,status")
+      .not("square_order_id", "is", null)
       .in("status", ACTIVE_QUEUE_STATUSES)
       .order("created_at", { ascending: true, nullsFirst: false })
       .order("id", { ascending: true });
@@ -656,47 +544,6 @@ async function countOrderQueuePosition(order: Order) {
   } catch (error) {
     logSupabaseFailure("orders.queuePosition", error);
     return { position: null, error: error instanceof Error ? error : new Error(String(error)) };
-  }
-}
-
-async function loadDrinks({ setDrinks, setLoading, setError, setUnavailable }: LoadDrinksOptions) {
-  setLoading(true);
-  setUnavailable(false);
-
-  const configError = requireSupabase("drinks.select");
-  if (configError || !orderSupabase) {
-    setDrinks(EVENT_DRINK_MENU);
-    setLoading(false);
-    setError("");
-    setUnavailable(false);
-    return;
-  }
-
-  try {
-    const { data, error } = await orderSupabase
-      .from("drinks")
-      .select("*")
-      .eq("active", true)
-      .eq("is_available", true)
-      .order("display_order", { ascending: true, nullsFirst: false })
-      .order("name", { ascending: true });
-
-    setLoading(false);
-    if (error || !data?.length) {
-      setDrinks(EVENT_DRINK_MENU);
-      setError("");
-      setUnavailable(false);
-      return;
-    }
-
-    setError("");
-    setDrinks(data as Drink[]);
-  } catch (error) {
-    logSupabaseFailure("drinks.select", error);
-    setLoading(false);
-    setDrinks(EVENT_DRINK_MENU);
-    setError("");
-    setUnavailable(false);
   }
 }
 
@@ -741,11 +588,7 @@ function shortOrderId(id: string) {
 function buildStoredConfirmation(order: Order, estimatedWaitMinutes: number | null): OrderConfirmation {
   return {
     ...order,
-    ticketUsed: 0,
-    ticketLabel: "",
-    confirmationMessage: "Your drink order has been placed.",
     estimatedWaitMinutes,
-    payment: null,
   };
 }
 
@@ -790,44 +633,8 @@ function clearStoredActiveOrder() {
   }
 }
 
-function isCustomDrink(drink: Drink) {
-  return drink.name.trim().toLowerCase() === "type your own";
-}
-
-function getDrinkPayment(drink: Drink): DrinkPayment {
-  const category = (drink.category || "").toLowerCase();
-
-  if (category.includes("beer")) {
-    return { kind: "beer", price: 3, link: PAYMENT_LINKS.beer };
-  }
-
-  if (category.includes("wine")) {
-    return { kind: "wine", price: 4, link: PAYMENT_LINKS.wine };
-  }
-
-  return { kind: "cocktail", price: 5, link: PAYMENT_LINKS.cocktail };
-}
-
-function getNextDrinkLabel(count: number | null, payment: DrinkPayment | null) {
-  if (count === null) return "Enter your phone to check complimentary drinks.";
-  if (count === 0) return "Free drink 1 of 2";
-  if (count === 1) return "Free drink 2 of 2";
-  return payment
-    ? `You’ve used your 2 complimentary drinks. Additional drinks require payment.`
-    : "You’ve used your 2 complimentary drinks. Additional drinks require payment.";
-}
-
-function getSubmittedDrinkLabel(existingCount: number, drink: Drink) {
-  if (existingCount === 0) return "Free drink 1 of 2";
-  if (existingCount === 1) return "Free drink 2 of 2";
-
-  const payment = getDrinkPayment(drink);
-  return `Paid drink: $${payment.price}`;
-}
-
-function getConfirmationMessage(existingCount: number) {
-  if (existingCount < MAX_DRINK_TICKETS) return "Your drink order has been placed.";
-  return "Your order has been placed. This drink requires payment.";
+function formatDrinkPrice(priceCents: number) {
+  return (priceCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
 function getConfirmationStatusMessage(order: OrderConfirmation) {
@@ -836,6 +643,7 @@ function getConfirmationStatusMessage(order: OrderConfirmation) {
 
   if (normalizedStatus === "in_progress" && stationName) return `Your drink is being made at the ${stationName}.`;
   if (normalizedStatus === "in_progress") return "Your drink is being made now.";
+  if (normalizedStatus === "ready" && order.table_number) return `Your drink is ready. We’ll bring it to Table ${order.table_number}.`;
   if (normalizedStatus === "ready" && stationName) return `Your drink is ready at the ${stationName}!`;
   if (normalizedStatus === "ready") return "Your drink is ready for pickup.";
   if (normalizedStatus === "completed") return "Enjoy your drink!";
@@ -857,7 +665,7 @@ function LiveOrderTracker({ order, liveUpdateError }: { order: OrderConfirmation
           { id: "received", label: "Order received", active: true },
           { id: "queue", label: "In the queue", active: ["new", "in_progress", "ready", "completed"].includes(normalizedStatus) },
           { id: "making", label: "Being made", active: ["in_progress", "ready", "completed"].includes(normalizedStatus) },
-          { id: "ready", label: normalizedStatus === "completed" ? "Completed / picked up" : "Ready for pickup", active: ["ready", "completed"].includes(normalizedStatus) },
+          { id: "ready", label: normalizedStatus === "completed" ? (order.table_number ? "Delivered" : "Picked up") : (order.table_number ? "Ready for delivery" : "Ready for pickup"), active: ["ready", "completed"].includes(normalizedStatus) },
         ].map((step) => (
           <div key={step.id} className={`flex items-center gap-2 text-sm font-bold ${step.active ? "text-brand-ink" : "text-brand-ink/35"}`}>
             <span className={`h-3 w-3 rounded-full ${step.active ? "bg-brand-sea" : "bg-brand-chrome"}`} />
@@ -865,10 +673,10 @@ function LiveOrderTracker({ order, liveUpdateError }: { order: OrderConfirmation
           </div>
         ))}
       </div>
-      <p className="mt-4 text-base font-black text-brand-ink">{getLiveStatusMessage(normalizedStatus, stationName)}</p>
+      <p className="mt-4 text-base font-black text-brand-ink">{getLiveStatusMessage(normalizedStatus, stationName, order.table_number)}</p>
       {liveUpdateError && (
         <p className="mt-3 rounded-xl border border-brand-rust/30 bg-[#fff4eb] px-3 py-2 text-sm font-bold text-brand-rust">
-          Live updates are having trouble. Please listen for your name at pickup.
+          Live updates are having trouble. Please check with a staff member.
         </p>
       )}
     </section>
@@ -885,11 +693,12 @@ function getStationLabel(station?: BarStation | null) {
   return "";
 }
 
-function getLiveStatusMessage(status: string, stationName: string) {
+function getLiveStatusMessage(status: string, stationName: string, table?: number | null) {
   if (status === "in_progress" && stationName) return `Your drink is being made at the ${stationName}.`;
+  if (status === "ready" && table) return `We’ll bring your drink to Table ${table} shortly.`;
   if (status === "ready" && stationName) return `Your drink is ready at the ${stationName}!`;
   if (status === "ready") return "Your drink is ready! Please head to the pickup area.";
-  if (status === "completed") return "Your drink has been picked up. Cheers!";
+  if (status === "completed") return table ? "Your drink has been delivered. Cheers!" : "Your drink has been picked up. Cheers!";
   return "Your drink is in the queue.";
 }
 

@@ -67,3 +67,28 @@ export default tseslint.config([
   },
 ])
 ```
+
+## Paid table orders
+
+Apply the Supabase paid drink orders migration after the table-number migration.
+Coordinate the database migration and site deployment outside service hours. The new
+dashboard only lists Square-verified tickets, so finish open tickets before switching.
+
+Set these server-only variables on the Vercel project.
+
+- `SUPABASE_URL` (or the existing `VITE_SUPABASE_URL`)
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SQUARE_ACCESS_TOKEN` and `SQUARE_LOCATION_ID`
+- `ORDER_SITE_URL` with the public HTTPS origin for this environment
+- `SQUARE_ENVIRONMENT=sandbox` for test payments
+
+Subscribe Square to `payment.created` and `payment.updated` at
+`/api/drink-checkout` on that same origin. The endpoint uses notifications to
+look up payments through Square's authenticated API. It releases a ticket only
+after Square confirms a completed payment matching the order, location and amount.
+
+In Sandbox, open a table QR URL on a phone and keep the bartender queue open on
+the iPad. Confirm abandoned and declined checkouts leave the queue empty. Pay
+for a drink and verify one ticket appears with the correct table, even if the guest
+closes the payment tab. Then mark it ready and delivered and verify the customer
+tracker reflects both states. Confirm the event prices before enabling live payments.
