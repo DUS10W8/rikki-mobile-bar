@@ -1,5 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { Check, CheckCircle2, GlassWater, Loader2, Martini } from "lucide-react";
+import { Check, CheckCircle2, ChevronDown, GlassWater, Loader2, Martini } from "lucide-react";
 
 import { EVENT_DRINK_MENU } from "./eventMenu";
 import { orderSupabase, orderSupabaseConfig } from "./orderSupabaseClient";
@@ -41,6 +41,7 @@ type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_s
 type QueuePositionOrder = Pick<Order, "id" | "created_at" | "status">;
 
 export default function OrderPage() {
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -357,35 +358,61 @@ export default function OrderPage() {
         {restoreError && <RestoreOrderAlert onClear={placeAnotherOrder} />}
 
         <form onSubmit={submitOrder} className="space-y-5">
-          {Object.entries(groupedDrinks).map(([category, items]) => (
-            <section key={category}>
-              <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-brand-ink/55">{category}</h2>
-              <div className="grid gap-3">
-                {items.map((drink) => (
-                  <button
-                    key={drink.id}
-                    type="button"
-                    className={`flex min-h-20 items-center justify-between rounded-2xl border bg-[#fffaf2]/92 px-4 py-3 text-left shadow-[0_10px_28px_rgba(46,46,46,0.07)] transition ${
-                      selectedDrink?.id === drink.id ? "border-brand-sea ring-2 ring-brand-sea/20" : "border-brand-chrome/80"
-                    }`}
-                    aria-pressed={selectedDrink?.id === drink.id}
-                    onClick={() => {
-                      setSelectedDrink(drink);
-                    }}
-                  >
-                    <span className="min-w-0 pr-3">
-                      <span className="block text-lg font-bold text-brand-ink">{drink.name}</span>
-                      {drink.description && <span className="line-clamp-2 text-sm text-brand-ink/55">{drink.description}</span>}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-3 font-black">
-                      {formatDrinkPrice(drink.priceCents)}
-                      {selectedDrink?.id === drink.id ? <Check className="h-6 w-6 shrink-0 text-brand-sea" /> : <GlassWater className="h-5 w-5 shrink-0 text-brand-rust/60" />}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))}
+          <div className="space-y-3">
+            {Object.entries(groupedDrinks).map(([category, items], index) => {
+              const isOpen = openCategory === category;
+              const panelId = "drink-category-" + index;
+              return (
+                <section key={category} className="overflow-hidden rounded-2xl border border-brand-chrome bg-[#fffaf2]/92 shadow-sm">
+                  <h2>
+                    <button
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-controls={panelId}
+                      className="flex min-h-16 w-full scroll-mb-32 scroll-mt-4 items-center gap-3 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-sea"
+                      onClick={(event) => {
+                        setOpenCategory(isOpen ? null : category);
+                        if (!isOpen) {
+                          const header = event.currentTarget;
+                          requestAnimationFrame(() => header.scrollIntoView({ block: "nearest" }));
+                        }
+                      }}
+                    >
+                      <span className="flex-1 font-black">{category}</span>
+                      <span className="shrink-0 text-sm text-brand-ink/65">{items.length} drinks</span>
+                      <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 transition-transform motion-reduce:transition-none ${isOpen ? "rotate-180" : ""}`} />
+                    </button>
+                  </h2>
+                  <div id={panelId} hidden={!isOpen}>
+                    <div className="grid gap-2 border-t border-brand-chrome/70 p-3">
+                      {items.map((drink) => (
+                        <button
+                          key={drink.id}
+                          type="button"
+                          className={`flex min-h-20 items-center justify-between rounded-2xl border bg-[#fffaf2]/92 px-4 py-3 text-left shadow-[0_10px_28px_rgba(46,46,46,0.07)] transition ${
+                            selectedDrink?.id === drink.id ? "border-brand-sea ring-2 ring-brand-sea/20" : "border-brand-chrome/80"
+                          }`}
+                          aria-pressed={selectedDrink?.id === drink.id}
+                          onClick={() => {
+                            setSelectedDrink(drink);
+                          }}
+                        >
+                          <span className="min-w-0 pr-3">
+                            <span className="block text-lg font-bold text-brand-ink">{drink.name}</span>
+                            {drink.description && <span className="line-clamp-2 text-sm text-brand-ink/55">{drink.description}</span>}
+                          </span>
+                          <span className="flex shrink-0 items-center gap-3 font-black">
+                            {formatDrinkPrice(drink.priceCents)}
+                            {selectedDrink?.id === drink.id ? <Check className="h-6 w-6 shrink-0 text-brand-sea" /> : <GlassWater className="h-5 w-5 shrink-0 text-brand-rust/60" />}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              );
+            })}
+          </div>
 
           <section className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_14px_36px_rgba(46,46,46,0.08)]">
             <div className="grid gap-3">
