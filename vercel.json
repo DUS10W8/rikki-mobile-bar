@@ -3,5 +3,13 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "functions": {
+    "api/drink-checkout.js": {
+      "includeFiles": "src/order/eventMenu.json"
+    },
+    "api/walkup-checkout.js": {
+      "includeFiles": "src/order/eventMenu.json"
+    }
+  }
 }
