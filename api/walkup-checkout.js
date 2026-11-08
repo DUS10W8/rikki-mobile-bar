@@ -56,7 +56,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       const { data, error } = await db.from("walkup_checkouts").select(fields)
-        .in("status", ["waiting", "opened", "paid"]).order("created_at", { ascending: false }).limit(25);
+        .is("archived_at", null).in("status", ["waiting", "opened", "paid"]).order("created_at", { ascending: false }).limit(25);
       if (error) throw error;
       return res.status(200).json({ orders: data });
     }
@@ -64,6 +64,13 @@ export default async function handler(req, res) {
     const body = req.body ?? {};
     if (!isWalkupId(body.id)) return res.status(400).json({ error: "Invalid walk-up order." });
     if (body.action === "create") return await createWalkup(db, body, res);
+    if (body.action === "archive") {
+      const { data, error } = await db.from("walkup_checkouts").update({ archived_at: new Date().toISOString() })
+        .eq("id", body.id).eq("status", "opened").is("archived_at", null).select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return res.status(409).json({ error: "This payment attempt has already changed. Refresh the list." });
+      return res.status(200).json({ ok: true });
+    }
     if (body.action === "cancel" || body.action === "open") {
       const { data, error } = await db.from("walkup_checkouts")
         .update({ status: body.action === "cancel" ? "cancelled" : "opened" })
