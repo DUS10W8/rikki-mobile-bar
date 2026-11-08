@@ -12,6 +12,7 @@ Object.assign(process.env, {
 let checkout;
 let releases = 0;
 let orderTip = 0;
+let tenderNote = note;
 const payment = { id: "test-payment", status: "APPROVED", source_type: "CARD", location_id: "bar",
   amount_money: { amount: 2300, currency: "USD" }, note };
 globalThis.fetch = async (url, options) => {
@@ -31,7 +32,7 @@ globalThis.fetch = async (url, options) => {
     Object.assign(checkout, JSON.parse(options.body));
     return json([checkout]);
   }
-  if (pathname.endsWith("/transactions/transaction-1")) return json({ transaction: { tenders: [{ id: payment.id, note }] } });
+  if (pathname.includes("/transactions/")) return json({ transaction: { tenders: [{ id: payment.id, note: tenderNote }] } });
   if (pathname === "/v2/payments/test-payment") return json({ payment });
   if (pathname === "/rest/v1/rpc/release_paid_walkup") {
     const body = JSON.parse(options.body);
@@ -74,6 +75,7 @@ const verify = { action: "verify", transactionId: "transaction-1" };
 assert.equal((await call(verify)).code, 409);
 payment.status = "COMPLETED";
 payment.note = "unrelated payment";
+tenderNote = "unrelated tender";
 assert.equal((await call(verify)).code, 409);
 payment.note = note;
 payment.amount_money.amount = 2200;
@@ -86,6 +88,8 @@ orderTip = 200;
 payment.tip_money = { amount: 199, currency: "USD" };
 assert.equal((await call({ action: "reconcile" })).code, 409);
 payment.tip_money.amount = 200;
+payment.note = "";
+tenderNote = note;
 assert.equal((await call({ action: "reconcile" })).code, 200);
 assert.equal((await call(verify)).code, 200);
 assert.equal(releases, 1);

@@ -119,7 +119,7 @@ export default async function handler(req, res) {
     }
     if (body.action === "reconcile") {
       const { data: checkout, error } = await db.from("walkup_checkouts")
-        .select("created_at,status").eq("id", body.id).maybeSingle();
+        .select("created_at,status,amount_cents").eq("id", body.id).maybeSingle();
       if (error) throw error;
       if (checkout?.status === "paid") return res.status(200).json({ ok: true });
       if (checkout?.status !== "opened") return res.status(409).json({ error: "Open checkout before checking for a payment." });
@@ -130,7 +130,17 @@ export default async function handler(req, res) {
       for (let page = 0; page < 5; page += 1) {
         const { payments, cursor } = await squareRequest("payments?" + query);
         for (const payment of payments ?? []) {
-          if (payment.note === note && await releaseWalkupPayment(db, payment)) {
+          if (payment.status !== "COMPLETED" || payment.source_type !== "CARD" ||
+              payment.amount_money?.amount < checkout.amount_cents) continue;
+          let matched = payment.note === note;
+          if (!matched && payment.order_id) {
+            // Square POS can record the note on the transaction tender.
+            const { transaction } = await squareRequest(`locations/${encodeURIComponent(SQUARE_LOCATION_ID)}/transactions/${encodeURIComponent(payment.order_id)}`)
+              .catch(() => ({}));
+            matched = transaction?.tenders?.some((tender) =>
+              (tender.payment_id || tender.id) === payment.id && tender.note === note) ?? false;
+          }
+          if (matched && await releaseWalkupPayment(db, { ...payment, note })) {
             return res.status(200).json({ ok: true });
           }
         }
@@ -145,8 +155,8 @@ export default async function handler(req, res) {
         const paymentId = tender.payment_id || tender.id;
         if (!paymentId) continue;
         const { payment } = await squareRequest(`payments/${encodeURIComponent(paymentId)}`);
-        const note = payment?.note || tender.note;
-        if (payment && note === walkupNotePrefix + body.id && await releaseWalkupPayment(db, { ...payment, note })) {
+        const note = walkupNotePrefix + body.id;
+        if (payment && (payment.note === note || tender.note === note) && await releaseWalkupPayment(db, { ...payment, note })) {
           return res.status(200).json({ ok: true });
         }
       }
