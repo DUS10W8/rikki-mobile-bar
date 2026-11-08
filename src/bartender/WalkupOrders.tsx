@@ -38,6 +38,7 @@ function readPosReturn(): PosReturn | null {
 
 export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const [code, setCode] = useState(() => sessionStorage.getItem(storageKey) || "");
+  const [unlocked, setUnlocked] = useState(false);
   const [entry, setEntry] = useState("");
   const [orders, setOrders] = useState<Walkup[]>([]);
   const [name, setName] = useState("");
@@ -64,6 +65,13 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       body: body ? JSON.stringify(body) : undefined,
     });
     const data = await response.json();
+    if (response.status === 401 && !signal?.aborted) {
+      sessionStorage.removeItem(storageKey);
+      setCode("");
+      setUnlocked(false);
+      setOrders([]);
+      throw new Error("The server did not accept that staff passphrase. Re-enter the Production WALKUP_STAFF_CODE.");
+    }
     if (!response.ok) throw new Error(data.error || "Walk-up checkout is unavailable.");
     return data;
   }, [code]);
@@ -74,7 +82,10 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     const update = async () => {
       try {
         const data = await request(undefined, controller.signal);
-        if (!controller.signal.aborted) setOrders(data.orders);
+        if (!controller.signal.aborted) {
+          setOrders(data.orders);
+          setUnlocked(true);
+        }
       } catch (error) {
         if (!controller.signal.aborted) setError((error as Error).message);
       }
@@ -141,17 +152,20 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
           <input className={input} aria-label="Walk-up staff code" placeholder="Walk-up staff code" type="password" value={entry} onChange={(event) => setEntry(event.target.value)} required />
           <button className={button}>Unlock</button>
         </form>
+      ) : !unlocked && !error ? (
+        <p className="my-2 text-sm" role="status">Checking staff access…</p>
       ) : (
         <>
           <button type="button" className="my-2 text-sm underline" onClick={() => {
             sessionStorage.removeItem(storageKey);
             setCode("");
+            setUnlocked(false);
             setOrders([]);
             setError("");
             setPosLink(null);
             sessionStorage.removeItem(pendingLinkKey);
           }}>Lock payment screen</button>
-          {!phone && (
+          {unlocked && !phone && (
             <form className="mb-4 grid gap-3" onSubmit={(event) => {
               event.preventDefault();
               requestId.current ??= crypto.randomUUID();

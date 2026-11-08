@@ -10,8 +10,8 @@ const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
 
 function hasStaffAccess(value, expected) {
   if (typeof value !== "string" || value.length > 128) return false;
-  const supplied = Buffer.from(value);
-  const secret = Buffer.from(expected);
+  const supplied = Buffer.from(value.trim());
+  const secret = Buffer.from(expected.trim());
   return supplied.length === secret.length && timingSafeEqual(supplied, secret);
 }
 
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
   const { WALKUP_STAFF_CODE, SQUARE_POS_APPLICATION_ID, SQUARE_LOCATION_ID, SQUARE_ACCESS_TOKEN,
     ORDER_SITE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
   const dbUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  if (!WALKUP_STAFF_CODE || WALKUP_STAFF_CODE.length < 16 || !SQUARE_POS_APPLICATION_ID ||
+  if (!WALKUP_STAFF_CODE || WALKUP_STAFF_CODE.trim().length < 16 || !SQUARE_POS_APPLICATION_ID ||
       !SQUARE_LOCATION_ID || !SQUARE_ACCESS_TOKEN || !ORDER_SITE_URL || !SUPABASE_SERVICE_ROLE_KEY || !dbUrl) {
     return res.status(503).json({ error: "Walk-up checkout has not been configured." });
   }
