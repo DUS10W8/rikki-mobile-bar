@@ -9,7 +9,7 @@ type Walkup = {
   status: "waiting" | "opened" | "paid";
 };
 
-type PosReturn = { state?: string; transaction_id?: string; error_code?: string };
+type PosReturn = { state?: string; transaction_id?: string; error_code?: string; status?: string };
 const apiPath = "/api/walkup-checkout";
 const storageKey = "rikki-walkup-staff";
 const pendingLinkKey = "rikki-walkup-square-link";
@@ -18,6 +18,13 @@ const input = "rounded-xl border border-brand-chrome bg-white px-3 py-2";
 
 function price(cents: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+}
+
+function posErrorMessage(code?: string) {
+  if (code === "user_id_mismatch") return "Square POS is signed in to a different location. Switch to Rikki’s Mobile Bar before retrying.";
+  if (code === "user_not_active") return "Square says this location has not activated card processing.";
+  if (code === "payment_canceled") return "Square POS canceled this payment.";
+  return "Square POS returned without confirming payment.";
 }
 
 function readPosReturn(): PosReturn | null {
@@ -174,7 +181,13 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
               <button className={button} disabled={!total || busy}>Send to iPhone · {price(total)}</button>
             </form>
           )}
-          {phone && posReturn?.error_code && <p className="my-2 text-sm font-bold">Square didn’t return a completed payment. Check Square POS before sending a new payment request.</p>}
+          {phone && posReturn && (posReturn.status === "error" || posReturn.error_code) && (
+            <div className="my-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-900" role="alert">
+              <p className="font-bold">{posErrorMessage(posReturn.error_code)}</p>
+              {typeof posReturn.error_code === "string" && <p>Square error: {posReturn.error_code.slice(0, 80)}</p>}
+              <p>Check Square Transactions before starting a new charge.</p>
+            </div>
+          )}
           {phone && posReturn?.state && posReturn.transaction_id && (
             <button type="button" className={button} disabled={busy} onClick={() => void act({
               action: "verify", id: posReturn.state, transactionId: posReturn.transaction_id,
