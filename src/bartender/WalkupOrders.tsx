@@ -12,6 +12,7 @@ type Walkup = {
 type PosReturn = { state?: string; transaction_id?: string; error_code?: string };
 const apiPath = "/api/walkup-checkout";
 const storageKey = "rikki-walkup-staff";
+const pendingLinkKey = "rikki-walkup-square-link";
 const button = "rounded-xl bg-brand-ink px-4 py-2 font-bold text-white disabled:opacity-50";
 const input = "rounded-xl border border-brand-chrome bg-white px-3 py-2";
 
@@ -37,7 +38,14 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [posReturn, setPosReturn] = useState(readPosReturn);
-  const [posLink, setPosLink] = useState<{ id: string; url: string } | null>(null);
+  const [posLink, setPosLink] = useState<{ id: string; url: string } | null>(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(pendingLinkKey) || "null");
+      return typeof saved?.id === "string" && saved.url?.startsWith("square-commerce-v1://payment/create?data=") ? saved : null;
+    } catch {
+      return null;
+    }
+  });
   const requestId = useRef<string | null>(null);
   const submitted = useRef(false);
 
@@ -134,6 +142,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
             setOrders([]);
             setError("");
             setPosLink(null);
+            sessionStorage.removeItem(pendingLinkKey);
           }}>Lock payment screen</button>
           {!phone && (
             <form className="mb-4 grid gap-3" onSubmit={(event) => {
@@ -179,21 +188,22 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
               <li key={order.id} className="rounded-xl border border-brand-chrome bg-white p-3">
                 <p className="font-black">{order.name} · {price(order.amount_cents)}</p>
                 <p className="text-sm">{order.drink}</p>
-                <p className="my-1 text-sm font-bold">{order.status === "paid" ? "Paid · Sent to bar" : order.status === "opened" ? "Awaiting Square confirmation" : "Waiting for payment"}</p>
+                <p className="my-1 text-sm font-bold">{order.status === "paid" ? "Paid · Sent to bar" : order.status === "opened" ? (posLink?.id === order.id ? "Ready to open Square POS" : "Payment unconfirmed · Check Square POS") : "Waiting for payment"}</p>
                 {order.status === "waiting" && (
                   <button type="button" className={button} disabled={busy} onClick={() => void act({
                     action: phone ? "open" : "cancel", id: order.id,
                   }, ({ url }) => {
                     if (!phone || !url) return;
-                    setPosLink({ id: order.id, url });
-                    window.location.assign(url);
-                  })}>{phone ? "Open Square Checkout" : "Cancel before payment"}</button>
+                    const link = { id: order.id, url };
+                    sessionStorage.setItem(pendingLinkKey, JSON.stringify(link));
+                    setPosLink(link);
+                  })}>{phone ? "Prepare payment" : "Cancel before payment"}</button>
                 )}
                 {phone && order.status === "opened" && posLink?.id === order.id && (
-                  <a className="text-sm underline" href={posLink.url} onClick={(event) => {
-                    if (!window.confirm("Continue only if Square never opened. Check Square POS first to avoid charging twice.")) event.preventDefault();
-                    else setPosLink(null);
-                  }}>Open Square if it didn’t launch</a>
+                  <a className={`mt-2 inline-block ${button}`} href={posLink.url} onClick={() => {
+                    sessionStorage.removeItem(pendingLinkKey);
+                    window.setTimeout(() => setPosLink(null), 0);
+                  }}>Open Square POS · {price(order.amount_cents)}</a>
                 )}
               </li>
             ))}
