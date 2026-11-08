@@ -117,6 +117,28 @@ export default async function handler(req, res) {
       };
       return res.status(200).json({ url: "square-commerce-v1://payment/create?data=" + encodeURIComponent(JSON.stringify(request)) });
     }
+    if (body.action === "reconcile") {
+      const { data: checkout, error } = await db.from("walkup_checkouts")
+        .select("created_at,status").eq("id", body.id).maybeSingle();
+      if (error) throw error;
+      if (checkout?.status === "paid") return res.status(200).json({ ok: true });
+      if (checkout?.status !== "opened") return res.status(409).json({ error: "Open checkout before checking for a payment." });
+      const query = new URLSearchParams({
+        location_id: SQUARE_LOCATION_ID, begin_time: new Date(checkout.created_at).toISOString(), limit: "100",
+      });
+      const note = walkupNotePrefix + body.id;
+      for (let page = 0; page < 5; page += 1) {
+        const { payments, cursor } = await squareRequest("payments?" + query);
+        for (const payment of payments ?? []) {
+          if (payment.note === note && await releaseWalkupPayment(db, payment)) {
+            return res.status(200).json({ ok: true });
+          }
+        }
+        if (!cursor) break;
+        query.set("cursor", cursor);
+      }
+      return res.status(409).json({ error: "No completed Square payment could be matched to this order. If Square shows a charge, keep the receipt and do not pay again." });
+    }
     if (body.action === "verify" && typeof body.transactionId === "string" && squareId.test(body.transactionId)) {
       const { transaction } = await squareRequest(`locations/${encodeURIComponent(SQUARE_LOCATION_ID)}/transactions/${body.transactionId}`);
       for (const tender of transaction?.tenders ?? []) {

@@ -240,11 +240,16 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                   })}>{phone ? "Prepare payment" : "Cancel before payment"}</button>
                 )}
                 {order.status === "opened" && posLink?.id !== order.id && (
+                  <div className="flex flex-wrap gap-3">
+                    <button type="button" className="text-sm font-bold underline" disabled={busy} onClick={() => {
+                      void act({ action: "reconcile", id: order.id });
+                    }}>Find Square payment</button>
                   <button type="button" className="text-sm font-bold underline" disabled={busy} onClick={() => {
                     if (window.confirm("Clear this attempt only after checking that no charge appears in Square Transactions.")) {
                       void act({ action: "archive", id: order.id });
                     }
                   }}>Clear failed attempt</button>
+                  </div>
                 )}
                 {phone && order.status === "opened" && posLink?.id === order.id && (
                   <a className={`mt-2 inline-block ${button}`} href={posLink.url} onClick={() => {
