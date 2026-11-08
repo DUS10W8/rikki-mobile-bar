@@ -205,7 +205,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                   </label>
                 ))}
               </div>
-              <button className={button} disabled={!total || busy}>Send to iPhone · {price(total)}</button>
+              <button className={button} disabled={!total || busy}>Send to iPhone · {price(total)} subtotal</button>
             </form>
           )}
           {phone && posReturn && (posReturn.status === "error" || posReturn.error_code) && (
@@ -226,7 +226,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
           <ul className="grid gap-2">
             {orders.map((order) => (
               <li key={order.id} className="rounded-xl border border-brand-chrome bg-white p-3">
-                <p className="font-black">{order.name} · {price(order.amount_cents)}</p>
+                <p className="font-black">{order.name} · {price(order.amount_cents)} subtotal</p>
                 <p className="text-sm">{order.drink}</p>
                 <p className="my-1 text-sm font-bold">{order.status === "paid" ? "Paid · Sent to bar" : order.status === "opened" ? (posLink?.id === order.id ? "Ready to open Square POS" : "Payment unconfirmed · Check Square POS") : "Waiting for payment"}</p>
                 {order.status === "waiting" && (
@@ -255,7 +255,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                   <a className={`mt-2 inline-block ${button}`} href={posLink.url} onClick={() => {
                     sessionStorage.removeItem(pendingLinkKey);
                     window.setTimeout(() => setPosLink(null), 0);
-                  }}>Open Square POS · {price(order.amount_cents)}</a>
+                  }}>Open Square POS</a>
                 )}
               </li>
             ))}

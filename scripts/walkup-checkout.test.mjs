@@ -21,8 +21,9 @@ globalThis.fetch = async (url, options) => {
     return json([]);
   }
   if (pathname === "/rest/v1/walkup_checkouts" && options.method === "GET") {
-    return json([{ status: checkout.status, created_at: "2026-11-07T20:00:00Z" }]);
+    return json([{ status: checkout.status, amount_cents: checkout.amount_cents, created_at: "2026-11-07T20:00:00Z" }]);
   }
+  if (pathname === "/v2/orders/square-order-1") return json({ order: { id: "square-order-1", location_id: "bar", total_money: { amount: 2344, currency: "USD" }, total_tax_money: { amount: 44, currency: "USD" } } });
   if (pathname === "/v2/payments") return json({ payments: [payment] });
   if (pathname === "/rest/v1/walkup_checkouts" && options.method === "PATCH") {
     if (searchParams.get("status") !== "eq." + checkout.status) return json([]);
@@ -76,7 +77,10 @@ assert.equal((await call(verify)).code, 409);
 payment.note = note;
 payment.amount_money.amount = 2200;
 assert.equal((await call(verify)).code, 409);
-payment.amount_money.amount = 2300;
+payment.order_id = "square-order-1";
+payment.amount_money.amount = 2345;
+assert.equal((await call({ action: "reconcile" })).code, 409);
+payment.amount_money.amount = 2344;
 assert.equal((await call({ action: "reconcile" })).code, 200);
 assert.equal((await call(verify)).code, 200);
 assert.equal(releases, 1);
