@@ -1,26 +1,12 @@
 import { createRequire } from "node:module";
 import { createClient } from "@supabase/supabase-js";
+import { squareRequest as square } from "../src/server/square.js";
+import { releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
 
 const { drinks } = createRequire(import.meta.url)("../src/order/eventMenu.json");
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
 const orderFields = "id,name,drink,table_number,handoff,status,bar_station,created_at,updated_at,square_order_id";
-
-async function square(path, body) {
-  const host = process.env.SQUARE_ENVIRONMENT === "sandbox"
-    ? "connect.squareupsandbox.com" : "connect.squareup.com";
-  const response = await fetch(`https://${host}/v2/${path}`, {
-    method: body ? "POST" : "GET",
-    headers: {
-      Authorization: `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
-      "Square-Version": "2026-09-16",
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!response.ok) throw new Error(`Square returned ${response.status}`);
-  return response.json();
-}
 
 async function releaseIfPaid(db, checkout, payment) {
   if (payment.order_id !== checkout.square_order_id ||
@@ -99,6 +85,12 @@ async function checkoutStatus(db, id, res) {
 
 async function paymentNotification(db, body, res) {
   const reported = body.data?.object?.payment;
+  if (typeof reported?.id === "string" && squareId.test(reported.id) &&
+      typeof reported.note === "string" && reported.note.startsWith(walkupNotePrefix)) {
+    const { payment } = await square(`payments/${encodeURIComponent(reported.id)}`);
+    await releaseWalkupPayment(db, payment);
+    return res.status(204).end();
+  }
   if (typeof reported?.id !== "string" || !squareId.test(reported.id) ||
       typeof reported.order_id !== "string" || !squareId.test(reported.order_id)) return res.status(204).end();
   const { data: checkout, error } = await db.from("drink_checkouts").select("square_order_id,amount_cents")

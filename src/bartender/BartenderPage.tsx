@@ -1,3 +1,4 @@
+import WalkupOrders from "./WalkupOrders";
 import { HANDOFF_LABELS, shortOrderId } from "../order/orderHandoff";
 import type { OrderHandoff } from "../order/orderHandoff";
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
@@ -26,6 +27,7 @@ type BartenderOrder = {
   drink: string;
   status: OrderStatus;
   bar_station?: BarStation | null;
+  square_order_id?: string | null;
   handoff?: OrderHandoff | null;
   table_number?: number | null;
   created_at?: string;
@@ -44,6 +46,15 @@ const STATION_STORAGE_KEY = "rikki-bartender-station";
 const MAX_DRINK_TICKETS = 2;
 
 export default function BartenderPage() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("walkup") === "phone" || params.has("data")) {
+    return <main className="mx-auto max-w-lg p-4"><WalkupOrders phone /></main>;
+  }
+  return <BartenderDashboard />;
+}
+
+function BartenderDashboard() {
+  const [showWalkup, setShowWalkup] = useState(false);
   const [authorized, setAuthorized] = useState(() => sessionStorage.getItem(PIN_SESSION_KEY) === "true");
   const [station, setStation] = useState<BarStation | "">(() => {
     const savedStation = localStorage.getItem(STATION_STORAGE_KEY);
@@ -295,6 +306,12 @@ export default function BartenderPage() {
 
         <QueueSummary activeQueueCount={activeQueueCount} readyCount={readyOrders.length} />
 
+        <div className="my-3">
+          <button type="button" className="rounded-xl bg-brand-ink px-4 py-2 font-bold text-white" aria-expanded={showWalkup} onClick={() => setShowWalkup((open) => !open)}>
+            {showWalkup ? "Hide walk-up orders" : "Walk-up order"}
+          </button>
+          {showWalkup && <div className="mt-3"><WalkupOrders /></div>}
+        </div>
         <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           <DashboardColumn id="new-orders" title="New" count={newOrders.length}>
             <div className="grid gap-3">
@@ -506,9 +523,9 @@ function KitchenOrderCard({
             <h2 className="min-w-0 flex-1 truncate font-heading text-3xl font-black leading-tight text-brand-ink" title={order.name}>{getDisplayName(order.name)}</h2>
             <span className="shrink-0 pt-1 text-xs font-black text-brand-ink/45">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
           </div>
-          {(order.handoff || order.table_number) && (
+          {(isWalkupOrder(order) || order.handoff || order.table_number) && (
             <div className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-brand-rust px-2.5 py-1 text-sm font-black uppercase tracking-wide text-white shadow-sm">
-              {order.handoff ? HANDOFF_LABELS[order.handoff] : "Table " + order.table_number}
+              {isWalkupOrder(order) ? "Paid · Walk-up" : order.handoff ? HANDOFF_LABELS[order.handoff] : "Table " + order.table_number}
             </div>
           )}
           <div className="flex items-start justify-between gap-3">
@@ -590,6 +607,10 @@ function ActionButton({
   );
 }
 
+function isWalkupOrder(order: BartenderOrder) {
+  return order.square_order_id?.startsWith("walkup:") ?? false;
+}
+
 function getOrderActions(order: BartenderOrder): Array<{ label: string; status: NormalizedOrderStatus; tone: "default" | "ready" | "complete" }> {
   const normalizedStatus = normalizeOrderStatus(order.status);
   const readyLabel = order.handoff === "upstairs" ? "Send upstairs" : order.handoff === "outdoor_pickup" ? "Ready for pickup" : "Ready";
@@ -605,7 +626,7 @@ function getOrderActions(order: BartenderOrder): Array<{ label: string; status: 
   }
 
   if (normalizedStatus === "ready") {
-    return [{ label: order.handoff === "outdoor_pickup" ? "Mark picked up" : "Mark delivered", status: "completed", tone: "complete" }];
+    return [{ label: isWalkupOrder(order) ? "Handed to guest" : order.handoff === "outdoor_pickup" ? "Mark picked up" : "Mark delivered", status: "completed", tone: "complete" }];
   }
 
   return [];

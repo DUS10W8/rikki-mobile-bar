@@ -91,3 +91,25 @@ In Sandbox, open the printed event QR URL on a phone and keep the bartender queu
 the iPad. Confirm abandoned and declined checkouts leave the queue empty. Pay
 for a drink and verify one ticket appears with the selected handoff option, even if the guest
 closes the payment tab. Test both handoff paths. For outdoor pickup, mark the drink ready and then picked up. For upstairs handoff, mark it sent when the runner leaves and then delivered. Verify that each step appears in the guest tracker. Set up a marked meeting spot upstairs before service. Confirm the event prices before enabling live payments.
+
+## Walk-up checkout on the bar iPhone
+
+Apply the walk-up orders migration after the paid orders and handoff migrations.
+In Vercel, set SQUARE_POS_APPLICATION_ID to the production Square Application ID
+and WALKUP_STAFF_CODE to a dedicated random staff passphrase of at least 16
+characters. Save the passphrase as a server-only Secret. The existing casual
+bartender PIN cannot authorize a walk-up charge.
+
+In Square Developer, open the app's Point of Sale API page and register
+https://www.rikkismobile.com/bartender as the Web Callback URL. Keep the existing
+payment.created and payment.updated subscription. The POS callback can verify
+the payment when the phone returns, and Square payment notifications can also
+release it when they contain the order's payment note.
+
+On the iPad, open Bartender and select Walk-up order. On the iPhone, sign in to
+Square POS for the configured location, enable Tap to Pay and open
+https://www.rikkismobile.com/bartender?walkup=phone in Safari. Enter the dedicated
+walk-up code on both devices. Send an order from the iPad, open Square Checkout
+on the iPhone, and confirm it appears in the drink queue only after Square
+accepts payment. If Square is closed or a payment result is uncertain, check
+Square POS before starting another charge for that guest.
