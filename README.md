@@ -90,7 +90,7 @@ after Square confirms a completed payment matching the order, location and amoun
 In Sandbox, open the printed event QR URL on a phone and keep the bartender queue open on
 the iPad. Confirm abandoned and declined checkouts leave the queue empty. Pay
 for a drink and verify one ticket appears with the selected handoff option, even if the guest
-closes the payment tab. Test both handoff paths. For outdoor pickup, mark the drink ready and then picked up. For upstairs handoff, mark it sent when the runner leaves and then delivered. Verify that each step appears in the guest tracker. Set up a marked meeting spot upstairs before service. Confirm the event prices before enabling live payments.
+closes the payment tab. Test both handoff paths. For outdoor pickup, mark the drink ready and then picked up. For upstairs handoff, mark it sent when the runner leaves and then delivered. Verify that each step appears in the guest tracker. Meet guests at the doorway at the top of the stairs. Confirm the event prices before enabling live payments.
 
 ## Walk-up checkout on the bar iPhone
 

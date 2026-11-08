@@ -422,7 +422,7 @@ export default function OrderPage() {
                   <label key={option} className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-brand-chrome px-3 py-2 has-[:checked]:border-brand-sea has-[:checked]:bg-brand-sea/10">
                     <input type="radio" name="handoff" checked={handoff === option} onChange={() => setHandoff(option)} />
                     <span><strong className="block">{HANDOFF_LABELS[option]}</strong>
-                      <span className="text-sm text-brand-ink/70">{option === "upstairs" ? "Meet our runner at the marked upstairs handoff spot." : "Come to the outdoor bar when your drink is ready."}</span>
+                      <span className="text-sm text-brand-ink/70">{option === "upstairs" ? "Meet our runner at the doorway at the top of the stairs." : "Come to the outdoor bar when your drink is ready."}</span>
                     </span>
                   </label>
                 ))}
@@ -697,7 +697,7 @@ function getLiveStatusMessage(status: string, stationName: string, table?: numbe
 
 function handoffReadyMessage(handoff: OrderHandoff) {
   return handoff === "upstairs"
-    ? "Your drink is on the way. Meet us at the marked upstairs handoff spot and show your order number."
+    ? "Your drink is on the way. Meet us at the doorway at the top of the stairs and show your order number."
     : "Your drink is ready. Show your order number at the outdoor bar.";
 }
 
