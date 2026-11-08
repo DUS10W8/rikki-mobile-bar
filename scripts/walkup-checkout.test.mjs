@@ -53,7 +53,7 @@ async function call(body, staffCode = code, cookie) {
 }
 const create = { action: "create", name: "Alex", items: [
   { id: "atlas-espresso-martini", quantity: 1 },
-  { id: "atlas-classic-hot-cocoa", quantity: 2 },
+  { id: "atlas-cocoa-classic", quantity: 2 },
 ] };
 assert.equal((await call(create, "wrong")).code, 401);
 const signedIn = await call(create);

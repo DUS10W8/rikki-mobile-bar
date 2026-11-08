@@ -54,31 +54,22 @@ assert.equal((await call("POST", { ...details, handoff: "outdoor_pickup" })).cod
 assert.equal(checkout.handoff, "outdoor_pickup");
 assert.equal((await call("POST", { ...details, drinkId: "event-modelo" })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "atlas-na-cranberry-spritz" })).code, 409);
-assert.equal((await call("POST", { ...details, drinkId: "atlas-cranberry-spritz", amountCents: 1200 })).code, 409);
+assert.equal((await call("POST", { ...details, drinkId: "atlas-cranberry-spritz", amountCents: 1100 })).code, 409);
+assert.equal((await call("POST", { ...details, drinkId: "atlas-aperol-spritz", amountCents: 1200 })).code, 409);
 for (const [drinkId, amountCents, name] of [
-  ["atlas-espresso-martini", 1300, "Espresso Martini"],
-  ["atlas-mint-to-be-beautiful", 1200, "Mint to Be Beautiful Mojito"],
-  ["atlas-cranberry-spritz", 1100, "Cranberry Spritz"],
-  ["atlas-aperol-spritz", 1200, "Aperol Spritz"],
-  ["atlas-classic-martini", 1300, "Classic Martini"],
-  ["atlas-vodka-soda", 900, "Vodka Soda"],
-  ["atlas-vodka-cranberry", 900, "Vodka Cranberry"],
-  ["atlas-rum-coke", 900, "Rum & Coke"],
-  ["atlas-gin-tonic", 900, "Gin & Tonic"],
-  ["atlas-whiskey-coke", 1000, "Whiskey & Coke"],
-  ["atlas-basic-mixed-drink", 1000, "Basic Mixed Drink"],
-  ["atlas-premium-mixed-drink", 1300, "Premium Mixed Drink"],
-  ["atlas-sparkling-wine", 1000, "Champagne / Sparkling Wine"],
-  ["atlas-premium-red-wine", 1200, "Premium Red Wine"],
-  ["atlas-baileys", 900, "Baileys 2 oz"],
-  ["atlas-social-tonic-energy", 1000, "Social Tonic Energy"],
-  ["atlas-social-tonic-calm", 1000, "Social Tonic Calm"],
-  ["atlas-social-tonic-hydrate", 1000, "Social Tonic Hydrate"],
-  ["atlas-social-tonic-social", 1000, "Social Tonic Social"],
-  ["atlas-mockjito", 800, "Mockjito"],
-  ["atlas-classic-hot-cocoa", 500, "Classic Hot Cocoa"],
-  ["atlas-loaded-cocoa", 800, "Loaded Cocoa"],
-  ["atlas-baileys-hot-cocoa", 1200, "Baileys Hot Cocoa"],
+  ["atlas-espresso-martini",1300,"Espresso Martini"],
+  ["atlas-cocoa-classic",500,"Cocoa & Confidence — Classic"],
+  ["atlas-cocoa-spiked",1000,"Cocoa & Confidence — Spiked"],
+  ["atlas-mint-to-be-beautiful",1200,"Mint to Be Beautiful"],
+  ["atlas-cranberry-spritz",1200,"Cranberry Spritz"],
+  ["atlas-mockjito-calm",1000,"Mockjito (N/A) — Calm"],
+  ["atlas-mockjito-hydration",1000,"Mockjito (N/A) — Hydration"],
+  ["atlas-mockjito-energy",1000,"Mockjito (N/A) — Energy"],
+  ["atlas-mockjito-social",1000,"Mockjito (N/A) — Social"],
+  ["atlas-na-cranberry-spritz-calm",1000,"Cranberry Spritz (N/A) — Calm"],
+  ["atlas-na-cranberry-spritz-hydration",1000,"Cranberry Spritz (N/A) — Hydration"],
+  ["atlas-na-cranberry-spritz-energy",1000,"Cranberry Spritz (N/A) — Energy"],
+  ["atlas-na-cranberry-spritz-social",1000,"Cranberry Spritz (N/A) — Social"],
 ]) {
   assert.equal((await call("POST", { ...details, drinkId, amountCents })).code, 200);
   assert.equal(squareOrder.quick_pay.price_money.amount, amountCents);
