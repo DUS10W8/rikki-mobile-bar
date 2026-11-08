@@ -21,8 +21,13 @@ export async function releaseWalkupPayment(db, payment) {
     if (amount < checkout.amount_cents || typeof payment.order_id !== "string" || !payment.order_id) return false;
     const { order } = await squareRequest("orders/" + encodeURIComponent(payment.order_id));
     const tax = order?.total_tax_money;
+    const orderTip = order?.total_tip_money;
+    const paymentTip = payment.tip_money;
+    const includesMatchingTip = orderTip?.currency === "USD" && paymentTip?.currency === "USD" &&
+      Number.isInteger(orderTip.amount) && orderTip.amount > 0 && orderTip.amount === paymentTip.amount &&
+      order?.total_money?.amount === amount + orderTip.amount;
     if (order?.id !== payment.order_id || order.location_id !== payment.location_id ||
-        order.total_money?.currency !== "USD" || order.total_money.amount !== amount ||
+        order.total_money?.currency !== "USD" || (order.total_money.amount !== amount && !includesMatchingTip) ||
         tax?.currency !== "USD" || tax.amount !== amount - checkout.amount_cents) return false;
   }
 
