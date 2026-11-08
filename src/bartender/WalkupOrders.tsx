@@ -39,6 +39,7 @@ function readPosReturn(): PosReturn | null {
 export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const [code, setCode] = useState(() => sessionStorage.getItem(storageKey) || "");
   const [unlocked, setUnlocked] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [entry, setEntry] = useState("");
   const [orders, setOrders] = useState<Walkup[]>([]);
   const [name, setName] = useState("");
@@ -61,7 +62,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     const response = await fetch(apiPath, {
       method: body ? "POST" : "GET",
       signal,
-      headers: { "Content-Type": "application/json", "X-Walkup-Code": code },
+      headers: { "Content-Type": "application/json", "X-Walkup-Code": code, "X-Walkup-Request": "1" },
       body: body ? JSON.stringify(body) : undefined,
     });
     const data = await response.json();
@@ -70,6 +71,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       setCode("");
       setUnlocked(false);
       setOrders([]);
+      if (!code && !body) return { orders: [], locked: true };
       throw new Error("The server did not accept that staff passphrase. Re-enter the Production WALKUP_STAFF_CODE.");
     }
     if (!response.ok) throw new Error(data.error || "Walk-up checkout is unavailable.");
@@ -77,17 +79,22 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   }, [code]);
 
   useEffect(() => {
-    if (!code) return;
     const controller = new AbortController();
     const update = async () => {
       try {
         const data = await request(undefined, controller.signal);
         if (!controller.signal.aborted) {
           setOrders(data.orders);
-          setUnlocked(true);
+          setUnlocked(!data.locked);
+          if (code && !data.locked) {
+            sessionStorage.removeItem(storageKey);
+            setCode("");
+          }
         }
       } catch (error) {
         if (!controller.signal.aborted) setError((error as Error).message);
+      } finally {
+        if (!controller.signal.aborted) setCheckingSession(false);
       }
     };
     void update();
@@ -121,7 +128,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   };
 
   useEffect(() => {
-    if (!phone || !code || !posReturn?.state || !posReturn.transaction_id) return;
+    if (!phone || !unlocked || !posReturn?.state || !posReturn.transaction_id) return;
     const controller = new AbortController();
     void request({ action: "verify", id: posReturn.state, transactionId: posReturn.transaction_id }, controller.signal)
       .then(() => {
@@ -133,30 +140,36 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
         if (!controller.signal.aborted) setError(error.message);
       });
     return () => controller.abort();
-  }, [code, phone, posReturn, request]);
+  }, [unlocked, phone, posReturn, request]);
 
   return (
     <section className="rounded-2xl border border-brand-chrome bg-[#fffaf2] p-4 text-brand-ink">
       <h2 className="text-xl font-black">{phone ? "Walk-up payments" : "Walk-up orders"}</h2>
       {!phone && <p className="my-2 text-sm">Open <a className="underline" href="/bartender?walkup=phone">the payment screen</a> in Safari on the bar iPhone and enter the same staff code.</p>}
       {error && <p className="my-2 rounded-lg bg-rose-50 p-2 text-sm text-rose-900" role="alert">{error}</p>}
-      {!code ? (
+      {checkingSession ? (
+        <p className="my-2 text-sm" role="status">Checking staff access…</p>
+      ) : !unlocked ? (
         <form className="mt-3 flex flex-wrap gap-2" onSubmit={(event) => {
           event.preventDefault();
           const value = entry.trim();
           if (!value) return;
-          sessionStorage.setItem(storageKey, value);
+          setCheckingSession(true);
           setCode(value);
           setEntry("");
         }}>
           <input className={input} aria-label="Walk-up staff code" placeholder="Walk-up staff code" type="password" value={entry} onChange={(event) => setEntry(event.target.value)} required />
           <button className={button}>Unlock</button>
         </form>
-      ) : !unlocked && !error ? (
-        <p className="my-2 text-sm" role="status">Checking staff access…</p>
       ) : (
         <>
-          <button type="button" className="my-2 text-sm underline" onClick={() => {
+          <button type="button" className="my-2 text-sm underline" onClick={async () => {
+            try {
+              await request({ action: "lock" });
+            } catch (error) {
+              setError((error as Error).message);
+              return;
+            }
             sessionStorage.removeItem(storageKey);
             setCode("");
             setUnlocked(false);

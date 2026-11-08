@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { createRequire } from "node:module";
 import { createClient } from "@supabase/supabase-js";
 import { squareRequest } from "../src/server/square.js";
@@ -13,6 +13,26 @@ function hasStaffAccess(value, expected) {
   const supplied = Buffer.from(value.trim());
   const secret = Buffer.from(expected.trim());
   return supplied.length === secret.length && timingSafeEqual(supplied, secret);
+}
+
+const sessionName = "rikki_walkup";
+const sessionSeconds = 12 * 60 * 60;
+
+function sessionSignature(expiry, secret) {
+  return createHmac("sha256", secret.trim()).update("walkup:" + expiry).digest("hex");
+}
+
+function hasSession(cookieHeader, secret) {
+  const value = cookieHeader?.split(";").map((entry) => entry.trim()).find((entry) => entry.startsWith(sessionName + "="));
+  const [expiry, signature] = value?.slice(sessionName.length + 1).split(".") ?? [];
+  if (!/^\d{10}$/.test(expiry ?? "") || Number(expiry) <= Math.floor(Date.now() / 1000)) return false;
+  return hasStaffAccess(signature, sessionSignature(expiry, secret));
+}
+
+function setSession(res, secret, maxAge) {
+  const expiry = Math.floor(Date.now() / 1000) + maxAge;
+  const value = maxAge ? expiry + "." + sessionSignature(expiry, secret) : "";
+  res.setHeader("Set-Cookie", sessionName + "=" + value + "; Path=/api/walkup-checkout; Max-Age=" + maxAge + "; HttpOnly; Secure; SameSite=Lax");
 }
 
 async function createWalkup(db, body, res) {
@@ -48,10 +68,17 @@ export default async function handler(req, res) {
       !SQUARE_LOCATION_ID || !SQUARE_ACCESS_TOKEN || !ORDER_SITE_URL || !SUPABASE_SERVICE_ROLE_KEY || !dbUrl) {
     return res.status(503).json({ error: "Walk-up checkout has not been configured." });
   }
-  if (!hasStaffAccess(req.headers["x-walkup-code"], WALKUP_STAFF_CODE)) {
+  if (req.headers["x-walkup-request"] !== "1") return res.status(403).json({ error: "Invalid walk-up request." });
+  if (req.method === "POST" && req.body?.action === "lock") {
+    setSession(res, WALKUP_STAFF_CODE, 0);
+    return res.status(200).json({ ok: true });
+  }
+  const validCode = hasStaffAccess(req.headers["x-walkup-code"], WALKUP_STAFF_CODE);
+  if (!validCode && !hasSession(req.headers.cookie, WALKUP_STAFF_CODE)) {
     return res.status(401).json({ error: "Enter the walk-up staff code." });
   }
 
+  if (validCode) setSession(res, WALKUP_STAFF_CODE, sessionSeconds);
   const db = createClient(dbUrl, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
     if (req.method === "GET") {

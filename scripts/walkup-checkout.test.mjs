@@ -39,9 +39,9 @@ globalThis.fetch = async (url, options) => {
   throw Error(pathname);
 };
 
-async function call(body, staffCode = code) {
-  const res = { setHeader() {}, status(value) { this.code = value; return this; }, json(data) { this.data = data; } };
-  await handler({ method: "POST", headers: { "x-walkup-code": staffCode }, body: { id, ...body } }, res);
+async function call(body, staffCode = code, cookie) {
+  const res = { setHeader(name, value) { if (name === "Set-Cookie") this.cookie = value; }, status(value) { this.code = value; return this; }, json(data) { this.data = data; } };
+  await handler({ method: "POST", headers: { "x-walkup-code": staffCode, "x-walkup-request": "1", cookie }, body: { id, ...body } }, res);
   return res;
 }
 const create = { action: "create", name: "Alex", items: [
@@ -49,7 +49,13 @@ const create = { action: "create", name: "Alex", items: [
   { id: "atlas-classic-hot-cocoa", quantity: 2 },
 ] };
 assert.equal((await call(create, "wrong")).code, 401);
-assert.equal((await call(create)).code, 201);
+const signedIn = await call(create);
+assert.equal(signedIn.code, 201);
+assert.match(signedIn.cookie, /HttpOnly; Secure; SameSite=Lax/);
+const cookie = signedIn.cookie.split(";")[0];
+assert.equal((await call(create, "", cookie)).code, 201);
+assert.equal((await call(create, "", cookie + "0")).code, 401);
+assert.match((await call({ action: "lock" }, "", cookie)).cookie, /Max-Age=0/);
 assert.equal(checkout.amount_cents, 2300);
 const opened = await call({ action: "open" });
 assert.equal(opened.code, 200);
