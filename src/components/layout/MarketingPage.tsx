@@ -13,7 +13,7 @@ export type FaqItem = { q: string; a: ReactNode };
 
 /** Shared chrome (header/footer/CTA banner/FAQ) for standalone marketing & blog routes. */
 
-export function MarketingHeader() {
+export function MarketingHeader({ quoteHref = "/#book" }: { quoteHref?: string }) {
   return (
     <header className="sticky top-0 z-40 border-b border-brand-chrome bg-[#fff8ec]/92 backdrop-blur-xl">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
@@ -29,12 +29,12 @@ export function MarketingHeader() {
           </div>
         </a>
         <div className="flex items-center gap-2">
-          <a href="/#book" className="hidden sm:block">
+          <a href={quoteHref} className="hidden sm:block">
             <Button variant="outline" size="sm" className="rounded-2xl border-brand-ink/25 bg-white">
               Get a Quote
             </Button>
           </a>
-          <a href="/#book">
+          <a href={quoteHref}>
             <Button size="sm" className="chrome-button rounded-2xl border-brand-sea bg-brand-sea text-white">
               Check Availability
             </Button>
@@ -180,6 +180,7 @@ export function MarketingFooter() {
             <li><a href="/mobile-bar-tri-cities-wa" className="hover:text-brand-ink hover:underline">Tri-Cities Mobile Bar</a></li>
             <li><a href="/mobile-bar-walla-walla-wa" className="hover:text-brand-ink hover:underline">Walla Walla Mobile Bar</a></li>
             <li><a href="/licensed-mobile-bar-washington" className="hover:text-brand-ink hover:underline">Licensed Alcohol Service</a></li>
+            <li><a href="/order-from-your-seat" className="hover:text-brand-ink hover:underline">Order From Your Seat</a></li>
           </ul>
         </div>
         <div className="text-xs text-brand-ink/70">
@@ -206,10 +207,10 @@ export function MarketingFooter() {
   );
 }
 
-export default function MarketingPage({ children }: { children: ReactNode }) {
+export default function MarketingPage({ children, quoteHref }: { children: ReactNode; quoteHref?: string }) {
   return (
     <div className="min-h-screen bg-[#fff8ec] text-brand-ink">
-      <MarketingHeader />
+      <MarketingHeader quoteHref={quoteHref} />
       <main id="main">{children}</main>
       <AuthorityReferences />
       <MarketingFooter />

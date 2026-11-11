@@ -10,6 +10,7 @@ export const routeModules: Record<string, string> = {
   "/mobile-bar-tri-cities-wa": "./pages/seo/MobileBarTriCitiesPage.tsx",
   "/mobile-bar-walla-walla-wa": "./pages/seo/MobileBarWallaWallaPage.tsx",
   "/licensed-mobile-bar-washington": "./pages/seo/LicensedMobileBarPage.tsx",
+  "/order-from-your-seat": "./pages/seo/OrderFromYourSeatPage.tsx",
   "/blog": "./pages/blog/BlogIndexPage.tsx",
   "/blog/wedding-bartender-cost-washington": "./pages/blog/WeddingBartenderCostPage.tsx",
   "/blog/how-much-alcohol-for-100-wedding-guests": "./pages/blog/AlcoholFor100GuestsPage.tsx",

@@ -28,6 +28,11 @@ export const routeSeoConfig = {
     description:
       "Rikki's Mobile Bar holds a Washington liquor license, so we can purchase and serve alcohol directly for qualifying private events — no BYOB shopping required.",
   },
+  "order-from-your-seat": {
+    title: "QR Code Drink Ordering for Events in the Tri-Cities | Rikki's Mobile Bar",
+    description:
+      "Guests scan a QR code, order and pay on their phone, and get a live status until the drink is ready or walked to them. Order-from-your-seat bar service from Rikki's Mobile Bar.",
+  },
   blog: {
     title: "Wedding & Event Bar Planning Guides | Rikki's Mobile Bar",
     description:
