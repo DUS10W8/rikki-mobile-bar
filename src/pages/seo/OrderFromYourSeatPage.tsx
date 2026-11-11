@@ -27,7 +27,7 @@ const steps = [
   {
     icon: CreditCard,
     title: "Pay",
-    body: "Checkout runs through Square with Apple Pay, Google Pay, or a card. The order only reaches the bartender once Square confirms the payment.",
+    body: "When guests buy their own drinks, checkout runs through Square with Apple Pay, Google Pay, or a card, and the order reaches the bartender once Square confirms the payment. At a hosted bar the drinks are on the host.",
   },
   {
     icon: BellRing,
@@ -63,7 +63,7 @@ const faqs = [
   },
   {
     q: "How do guests pay?",
-    a: "Through Square's hosted checkout, using Apple Pay, Google Pay, or a card. An order is released to the bartender only after Square confirms a completed payment for the right amount.",
+    a: "At events where guests buy their own drinks, they pay through Square's checkout using Apple Pay, Google Pay, or a card. An order is released to the bartender only after Square confirms a completed payment for the right amount. At a hosted bar, the host covers the drinks.",
   },
   {
     q: "How do guests know their drink is ready?",
@@ -83,11 +83,15 @@ const faqs = [
   },
   {
     q: "Does QR ordering work for a hosted bar?",
-    a: "It is built for events where guests buy their own drinks. If you are hosting the bar and still want guests to order from their seats, tell us in your quote request and we'll talk through what fits.",
+    a: "Yes. We offer order-from-your-seat service for hosted bars as well as events where guests buy their own drinks. Guests order from their seats the same way, and the host covers the drinks.",
+  },
+  {
+    q: "Does it cost extra?",
+    a: "No. There is no added charge for QR ordering. If you would rather keep things traditional, you can choose ordering at the bar only.",
   },
   {
     q: "How do I add it to my event?",
-    a: "Mention order-from-your-seat service when you request a quote. We'll confirm whether your venue and guest count suit it and include it in your estimate.",
+    a: "Mention order-from-your-seat service when you request a quote. It doesn't change your price, and we'll confirm how it fits your venue and guest count.",
   },
 ];
 
@@ -244,6 +248,7 @@ export default function OrderFromYourSeatPage() {
             <li className="flex gap-3"><span className="font-bold text-brand-sea">&bull;</span><span>The same licensed bar team and drinks as any Rikki's event. The ordering is how guests reach us, not a replacement for the bar.</span></li>
             <li className="flex gap-3"><span className="font-bold text-brand-sea">&bull;</span><span>A runner for handoffs when the bar and the guests are in different places.</span></li>
             <li className="flex gap-3"><span className="font-bold text-brand-sea">&bull;</span><span>Nothing for you to set up or manage. We built the ordering system ourselves and run it on the day.</span></li>
+            <li className="flex gap-3"><span className="font-bold text-brand-sea">&bull;</span><span>No extra charge. It works for hosted bars and for events where guests buy their own drinks, and you can choose ordering at the bar only if you prefer.</span></li>
           </ul>
         </div>
       </section>
@@ -258,8 +263,8 @@ export default function OrderFromYourSeatPage() {
               Check your date and build a live estimate
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-brand-ink/80 md:text-lg">
-              About two minutes, no payment required. Mention order-from-your-seat service in your details and we'll
-              include it when we confirm your quote.
+              About two minutes, no payment required. Mention order-from-your-seat service in your details. It is
+              included at no extra charge.
             </p>
           </div>
           <BookingFlow formspreeId="xgvgzrnn" />
