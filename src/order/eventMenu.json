@@ -1,95 +1,32 @@
 {
   "drinks": [
     {
-      "id": "atlas-espresso-martini",
-      "name": "Espresso Martini",
+      "id": "hamilton-sweater-weather",
+      "name": "Sweater Weather",
       "category": "Cocktails & Cocoa",
-      "description": "Vodka · Espresso · Coffee liqueur",
+      "description": "Warm mulled apple cider with bourbon and a mini cinnamon-sugar donut",
       "priceCents": 1300
     },
     {
-      "id": "atlas-cocoa-classic",
-      "name": "Cocoa & Confidence — Classic",
+      "id": "hamilton-golden-hour",
+      "name": "Golden Hour",
       "category": "Cocktails & Cocoa",
-      "description": "Rich hot chocolate · Whipped cream · Chocolate shavings",
-      "priceCents": 500
-    },
-    {
-      "id": "atlas-cocoa-spiked",
-      "name": "Cocoa & Confidence — Spiked",
-      "category": "Cocktails & Cocoa",
-      "description": "Rich hot chocolate · Whipped cream · Chocolate shavings",
-      "priceCents": 1000
-    },
-    {
-      "id": "atlas-mint-to-be-beautiful",
-      "name": "Mint to Be Beautiful",
-      "category": "Cocktails & Cocoa",
-      "description": "Rum · Fresh mint · Lime · Soda · Simple syrup",
+      "description": "Apple cider mimosa with sparkling wine and a fresh apple slice",
       "priceCents": 1200
     },
     {
-      "id": "atlas-cranberry-spritz",
-      "name": "Cranberry Spritz",
+      "id": "hamilton-cozy-cocoa",
+      "name": "Cozy Cocoa",
       "category": "Cocktails & Cocoa",
-      "description": "Vodka · Cranberry · Lemon · Sparkling water",
-      "priceCents": 1200
+      "description": "Rich hot chocolate with whipped cream and chocolate shavings",
+      "priceCents": 800
     },
     {
-      "id": "atlas-mockjito-calm",
-      "name": "Mockjito (N/A) — Calm",
-      "category": "N/A Social Tonics",
-      "description": "Fresh mint · Lime · Soda · Relax + unwind",
-      "priceCents": 1000
-    },
-    {
-      "id": "atlas-mockjito-hydration",
-      "name": "Mockjito (N/A) — Hydration",
-      "category": "N/A Social Tonics",
-      "description": "Fresh mint · Lime · Soda · Refresh + replenish",
-      "priceCents": 1000
-    },
-    {
-      "id": "atlas-mockjito-energy",
-      "name": "Mockjito (N/A) — Energy",
-      "category": "N/A Social Tonics",
-      "description": "Fresh mint · Lime · Soda · Boost + go",
-      "priceCents": 1000
-    },
-    {
-      "id": "atlas-mockjito-social",
-      "name": "Mockjito (N/A) — Social",
-      "category": "N/A Social Tonics",
-      "description": "Fresh mint · Lime · Soda · Bright + upbeat",
-      "priceCents": 1000
-    },
-    {
-      "id": "atlas-na-cranberry-spritz-calm",
-      "name": "Cranberry Spritz (N/A) — Calm",
-      "category": "N/A Social Tonics",
-      "description": "Cranberry · Lemon · Sparkling water · Relax + unwind",
-      "priceCents": 1000
-    },
-    {
-      "id": "atlas-na-cranberry-spritz-hydration",
-      "name": "Cranberry Spritz (N/A) — Hydration",
-      "category": "N/A Social Tonics",
-      "description": "Cranberry · Lemon · Sparkling water · Refresh + replenish",
-      "priceCents": 1000
-    },
-    {
-      "id": "atlas-na-cranberry-spritz-energy",
-      "name": "Cranberry Spritz (N/A) — Energy",
-      "category": "N/A Social Tonics",
-      "description": "Cranberry · Lemon · Sparkling water · Boost + go",
-      "priceCents": 1000
-    },
-    {
-      "id": "atlas-na-cranberry-spritz-social",
-      "name": "Cranberry Spritz (N/A) — Social",
-      "category": "N/A Social Tonics",
-      "description": "Cranberry · Lemon · Sparkling water · Bright + upbeat",
-      "priceCents": 1000
+      "id": "hamilton-bloody-mary",
+      "name": "The Bloody Mary",
+      "category": "Cocktails & Cocoa",
+      "description": "Savory Bloody Mary with a seasoned rim, pickled asparagus, bacon, olives, cheese, lime, and celery",
+      "priceCents": 1500
     }
   ]
 }

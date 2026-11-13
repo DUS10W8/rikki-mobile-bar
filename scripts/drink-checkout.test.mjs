@@ -47,29 +47,20 @@ async function call(method, body) {
   return res;
 }
 
-const details = { id, drinkId: "atlas-espresso-martini", name: "Alex", phone: "", handoff: "upstairs", amountCents: 1300 };
+const details = { id, drinkId: "hamilton-sweater-weather", name: "Alex", phone: "", handoff: "upstairs", amountCents: 1300 };
 assert.equal((await call("POST", { ...details, amountCents: 1 })).code, 409);
 assert.equal((await call("POST", { ...details, handoff: "table" })).code, 400);
 assert.equal((await call("POST", { ...details, handoff: "outdoor_pickup" })).code, 200);
 assert.equal(checkout.handoff, "outdoor_pickup");
 assert.equal((await call("POST", { ...details, drinkId: "event-modelo" })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "atlas-na-cranberry-spritz" })).code, 409);
-assert.equal((await call("POST", { ...details, drinkId: "atlas-cranberry-spritz", amountCents: 1100 })).code, 409);
+assert.equal((await call("POST", { ...details, drinkId: "hamilton-golden-hour", amountCents: 1100 })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "atlas-aperol-spritz", amountCents: 1200 })).code, 409);
 for (const [drinkId, amountCents, name] of [
-  ["atlas-espresso-martini",1300,"Espresso Martini"],
-  ["atlas-cocoa-classic",500,"Cocoa & Confidence — Classic"],
-  ["atlas-cocoa-spiked",1000,"Cocoa & Confidence — Spiked"],
-  ["atlas-mint-to-be-beautiful",1200,"Mint to Be Beautiful"],
-  ["atlas-cranberry-spritz",1200,"Cranberry Spritz"],
-  ["atlas-mockjito-calm",1000,"Mockjito (N/A) — Calm"],
-  ["atlas-mockjito-hydration",1000,"Mockjito (N/A) — Hydration"],
-  ["atlas-mockjito-energy",1000,"Mockjito (N/A) — Energy"],
-  ["atlas-mockjito-social",1000,"Mockjito (N/A) — Social"],
-  ["atlas-na-cranberry-spritz-calm",1000,"Cranberry Spritz (N/A) — Calm"],
-  ["atlas-na-cranberry-spritz-hydration",1000,"Cranberry Spritz (N/A) — Hydration"],
-  ["atlas-na-cranberry-spritz-energy",1000,"Cranberry Spritz (N/A) — Energy"],
-  ["atlas-na-cranberry-spritz-social",1000,"Cranberry Spritz (N/A) — Social"],
+  ["hamilton-sweater-weather", 1300, "Sweater Weather"],
+  ["hamilton-golden-hour", 1200, "Golden Hour"],
+  ["hamilton-cozy-cocoa", 800, "Cozy Cocoa"],
+  ["hamilton-bloody-mary", 1500, "The Bloody Mary"],
 ]) {
   assert.equal((await call("POST", { ...details, drinkId, amountCents })).code, 200);
   assert.equal(squareOrder.quick_pay.price_money.amount, amountCents);

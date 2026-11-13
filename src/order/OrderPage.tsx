@@ -346,7 +346,7 @@ export default function OrderPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-sea">{BAR_NAME}</p>
-              <h1 className="text-3xl font-black text-brand-ink">Atlas Beauty Drink Menu</h1>
+              <h1 className="text-3xl font-black text-brand-ink">Hamilton Day Spa Drink Menu</h1>
               <p className="mt-1 text-sm font-bold text-brand-ink/65">Six Years of Beauty</p>
             </div>
           </div>
