@@ -128,9 +128,18 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   };
 
   useEffect(() => {
-    if (!phone || !unlocked || !posReturn?.state || !posReturn.transaction_id) return;
+    if (!phone || !unlocked || !posReturn?.state || posReturn.error_code) return;
     const controller = new AbortController();
-    void request({ action: "verify", id: posReturn.state, transactionId: posReturn.transaction_id }, controller.signal)
+    const id = posReturn.state;
+    const reconcile = () => request({ action: "reconcile", id }, controller.signal);
+    const verification = posReturn.transaction_id
+      ? request({ action: "verify", id, transactionId: posReturn.transaction_id }, controller.signal)
+        .catch((error) => {
+          if (controller.signal.aborted) throw error;
+          return reconcile();
+        })
+      : reconcile();
+    void verification
       .then(() => {
         if (controller.signal.aborted) return;
         window.history.replaceState(null, "", "/bartender?walkup=phone");

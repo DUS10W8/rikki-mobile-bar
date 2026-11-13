@@ -1,5 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { Check, CheckCircle2, ChevronDown, GlassWater, Loader2, Martini } from "lucide-react";
+import { CheckCircle2, ChevronDown, Loader2, Martini } from "lucide-react";
 
 import { HANDOFF_LABELS, shortOrderId } from "./orderHandoff";
 import type { OrderHandoff } from "./orderHandoff";
@@ -14,7 +14,7 @@ const CONNECT_URL = "https://www.rikkismobile.com/connect";
 const ORDER_POLL_INTERVAL_MS = 4000;
 const ACTIVE_ORDER_STORAGE_KEY = "rikki-active-order";
 const ACTIVE_QUEUE_STATUSES = ["new", "in_progress", "New", "In Progress"];
-type Drink = (typeof EVENT_DRINK_MENU)[number];
+
 
 type OrderStatus = "new" | "in_progress" | "ready" | "completed" | "New" | "In Progress" | "Ready" | "Completed";
 
@@ -45,7 +45,10 @@ type QueuePositionOrder = Pick<Order, "id" | "created_at" | "status">;
 
 export default function OrderPage() {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
-  const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const cart = EVENT_DRINK_MENU.filter(({ id }) => quantities[id] > 0)
+    .map((drink) => ({ ...drink, quantity: quantities[drink.id] }));
+  const total = cart.reduce((sum, drink) => sum + drink.priceCents * drink.quantity, 0);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [handoff, setHandoff] = useState<OrderHandoff>("outdoor_pickup");
@@ -190,7 +193,7 @@ export default function OrderPage() {
   }, [trackingOrderId, trackingOrderStatus, soundAlertEnabled]);
 
   const groupedDrinks = useMemo(() => {
-    return EVENT_DRINK_MENU.reduce<Record<string, Drink[]>>((groups, drink) => {
+    return EVENT_DRINK_MENU.reduce<Record<string, (typeof EVENT_DRINK_MENU)[number][]>>((groups, drink) => {
       const key = drink.category || "House";
       groups[key] = groups[key] || [];
       groups[key].push(drink);
@@ -199,20 +202,20 @@ export default function OrderPage() {
   }, []);
 
   const canSubmit = Boolean(
-    selectedDrink && name.trim().length >= 2 && !submitting,
+    cart.length > 0 && name.trim().length >= 2 && !submitting,
   );
 
   const submitOrder = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canSubmit || !selectedDrink) return;
+    if (!canSubmit) return;
     setError("");
     setSubmitting(true);
     const details = JSON.stringify({
-      drinkId: String(selectedDrink.id),
+      items: cart.map(({ id, quantity }) => ({ id, quantity })),
       name: name.trim(),
       phone: isValidPhone(phone) ? normalizePhone(phone) : "",
       handoff,
-      amountCents: selectedDrink.priceCents,
+      amountCents: total,
     });
     if (checkoutRequest.current?.details !== details) {
       checkoutRequest.current = { id: crypto.randomUUID(), details };
@@ -350,7 +353,7 @@ export default function OrderPage() {
               <p className="mt-1 text-sm font-bold text-brand-ink/65">Six Years of Beauty</p>
             </div>
           </div>
-          <p className="mt-3 text-sm text-brand-ink/70">Choose a drink and a handoff spot, then pay securely with Square.</p>
+          <p className="mt-3 text-sm text-brand-ink/70">Choose your drinks and a handoff spot, then pay securely with Square.</p>
           </div>
         </header>
 
@@ -386,26 +389,26 @@ export default function OrderPage() {
                   <div id={panelId} hidden={!isOpen}>
                     <div className="grid gap-2 border-t border-brand-chrome/70 p-3">
                       {items.map((drink) => (
-                        <button
-                          key={drink.id}
-                          type="button"
-                          className={`flex min-h-20 items-center justify-between rounded-2xl border bg-[#fffaf2]/92 px-4 py-3 text-left shadow-[0_10px_28px_rgba(46,46,46,0.07)] transition ${
-                            selectedDrink?.id === drink.id ? "border-brand-sea ring-2 ring-brand-sea/20" : "border-brand-chrome/80"
-                          }`}
-                          aria-pressed={selectedDrink?.id === drink.id}
-                          onClick={() => {
-                            setSelectedDrink(drink);
-                          }}
-                        >
-                          <span className="min-w-0 pr-3">
-                            <span className="block text-lg font-bold text-brand-ink">{drink.name}</span>
-                            {drink.description && <span className="line-clamp-2 text-sm text-brand-ink/55">{drink.description}</span>}
-                          </span>
-                          <span className="flex shrink-0 items-center gap-3 font-black">
-                            {formatDrinkPrice(drink.priceCents)}
-                            {selectedDrink?.id === drink.id ? <Check className="h-6 w-6 shrink-0 text-brand-sea" /> : <GlassWater className="h-5 w-5 shrink-0 text-brand-rust/60" />}
-                          </span>
-                        </button>
+                        <div key={drink.id} className="flex items-center justify-between gap-3 rounded-2xl border border-brand-chrome bg-[#fffaf2] p-4">
+                          <div>
+                            <span className="block text-lg font-bold">{drink.name}</span>
+                            <span className="block text-sm text-brand-ink/70">{drink.description}</span>
+                            <span className="font-bold">{formatDrinkPrice(drink.priceCents)}</span>
+                          </div>
+                          <select
+                            aria-label={`Quantity for ${drink.name}`}
+                            className="rounded-xl border border-brand-chrome bg-white p-2"
+                            value={quantities[drink.id] ?? 0}
+                            onChange={({ target }) => {
+                              const quantity = Number(target.value);
+                              setQuantities((current) => ({ ...current, [drink.id]: quantity }));
+                            }}
+                          >
+                            {Array.from({ length: 11 }, (_, quantity) => (
+                              <option key={quantity} value={quantity}>Qty: {quantity}</option>
+                            ))}
+                          </select>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -447,10 +450,15 @@ export default function OrderPage() {
 
           <div className="order-checkout-bar fixed inset-x-0 bottom-0 z-10 border-t border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_-18px_45px_rgba(46,46,46,0.10)] backdrop-blur">
             <div className="mx-auto max-w-md">
-              {selectedDrink && <p className="mb-2 truncate text-sm font-bold text-brand-ink/75">{selectedDrink.name}{" · " + HANDOFF_LABELS[handoff]}</p>}
+              {cart.length > 0 && (
+                <ul aria-label="Your order" className="mb-2 text-sm font-bold text-brand-ink/75">
+                  {cart.map((drink) => <li key={drink.id}>{drink.quantity} × {drink.name}</li>)}
+                  <li>{HANDOFF_LABELS[handoff]}</li>
+                </ul>
+              )}
               <button disabled={!canSubmit} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink px-5 py-4 text-lg font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)] disabled:cursor-not-allowed disabled:bg-brand-chrome disabled:text-brand-ink/50 disabled:shadow-none">
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Martini className="h-5 w-5" />}
-                {submitting ? "Opening Square checkout…" : selectedDrink ? `Pay ${formatDrinkPrice(selectedDrink.priceCents)}` : "Choose a drink"}
+                {submitting ? "Opening Square checkout…" : cart.length ? `Pay ${formatDrinkPrice(total)}` : "Choose your drinks"}
               </button>
             </div>
           </div>

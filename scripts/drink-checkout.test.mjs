@@ -67,6 +67,14 @@ for (const [drinkId, amountCents, name] of [
   assert.equal(squareOrder.quick_pay.name, name);
   assert.equal(checkout.drink, name);
 }
+const items = [{ id: "hamilton-golden-hour", quantity: 2 }, { id: "hamilton-cozy-cocoa", quantity: 1 }];
+assert.equal((await call("POST", { ...details, items, amountCents: 3200 })).code, 200);
+assert.deepEqual(squareOrder.order.line_items.map(({ name, quantity, base_price_money }) =>
+  [name, quantity, base_price_money.amount]), [["Golden Hour", "2", 1200], ["Cozy Cocoa", "1", 800]]);
+assert.equal(checkout.drink, "2 × Golden Hour, 1 × Cozy Cocoa");
+assert.equal((await call("POST", { ...details, items, amountCents: 3100 })).code, 409);
+assert.equal((await call("POST", { ...details, items: [items[0], items[0]], amountCents: 4800 })).code, 400);
+
 assert.equal((await call("POST", details)).code, 200);
 assert.equal(squareOrder.quick_pay.price_money.amount, 1300);
 assert.equal(checkout.handoff, "upstairs");

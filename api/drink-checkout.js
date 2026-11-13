@@ -21,30 +21,49 @@ async function releaseIfPaid(db, checkout, payment) {
 }
 
 async function startCheckout(db, req, res) {
-  const { id, drinkId, name, phone, handoff, amountCents } = req.body ?? {};
-  if (typeof id !== "string" || !uuid.test(id) || typeof drinkId !== "string" ||
+  const { id, drinkId, items, name, phone, handoff, amountCents } = req.body ?? {};
+  if (typeof id !== "string" || !uuid.test(id) ||
       typeof name !== "string" || name.trim().length < 2 || name.length > 80 ||
       typeof phone !== "string" || phone.length > 30 ||
       !['outdoor_pickup', 'upstairs'].includes(handoff)) {
     return res.status(400).json({ error: "Choose a drink and enter your name and handoff option." });
   }
 
-  const drink = drinks.find((item) => item.id === drinkId);
-  if (!drink) return res.status(409).json({ error: "That drink is unavailable. Refresh the menu and choose again." });
-
-  const drinkName = drink.name;
-  const amount = drink.priceCents;
+  const requested = items === undefined ? [{ id: drinkId, quantity: 1 }] : items;
+  if (!Array.isArray(requested) || !requested.length || requested.length > drinks.length) {
+    return res.status(400).json({ error: "Choose at least one drink." });
+  }
+  const basket = new Map();
+  for (const item of requested) {
+    const drink = drinks.find(({ id }) => id === item?.id);
+    if (!drink) return res.status(409).json({ error: "That drink is unavailable. Refresh the menu and choose again." });
+    if (basket.has(drink.id) || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10) {
+      return res.status(400).json({ error: "Choose a valid quantity for each drink." });
+    }
+    basket.set(drink.id, { ...drink, quantity: item.quantity });
+  }
+  const selected = [...basket.values()];
+  const single = selected.length === 1 && selected[0].quantity === 1;
+  const drinkName = single ? selected[0].name : selected.map(({ name, quantity }) => `${quantity} × ${name}`).join(", ");
+  const amount = selected.reduce((total, drink) => total + drink.priceCents * drink.quantity, 0);
   if (amount !== amountCents) return res.status(409).json({ error: "The price changed. Refresh the menu and choose again." });
   const returnUrl = new URL("/order", process.env.ORDER_SITE_URL);
   returnUrl.searchParams.set("checkout", id);
 
   const { payment_link: link } = await square("online-checkout/payment-links", {
     idempotency_key: id,
-    quick_pay: {
+    ...(single ? { quick_pay: {
       name: drinkName,
       location_id: process.env.SQUARE_LOCATION_ID,
       price_money: { amount, currency: "USD" },
-    },
+    } } : { order: {
+      location_id: process.env.SQUARE_LOCATION_ID,
+      line_items: selected.map((drink) => ({
+        name: drink.name,
+        quantity: String(drink.quantity),
+        base_price_money: { amount: drink.priceCents, currency: "USD" },
+      })),
+    } }),
     checkout_options: { redirect_url: returnUrl.href },
   });
   if (!link?.url || !link.order_id) throw new Error("Square did not create a checkout link");

@@ -13,6 +13,7 @@ let checkout;
 let releases = 0;
 let orderTip = 0;
 let tenderNote = note;
+let orderTenders;
 const payment = { id: "test-payment", status: "APPROVED", source_type: "CARD", location_id: "bar",
   amount_money: { amount: 2900, currency: "USD" }, note };
 globalThis.fetch = async (url, options) => {
@@ -25,7 +26,7 @@ globalThis.fetch = async (url, options) => {
   if (pathname === "/rest/v1/walkup_checkouts" && options.method === "GET") {
     return json([{ status: checkout.status, amount_cents: checkout.amount_cents, created_at: "2026-11-07T20:00:00Z" }]);
   }
-  if (pathname === "/v2/orders/square-order-1") return json({ order: { id: "square-order-1", location_id: "bar", total_money: { amount: 2944 + orderTip, currency: "USD" }, total_tip_money: { amount: orderTip, currency: "USD" }, total_tax_money: { amount: 44, currency: "USD" } } });
+  if (pathname === "/v2/orders/square-order-1") return json({ order: { id: "square-order-1", location_id: "bar", tenders: orderTenders, total_money: { amount: 2944 + orderTip, currency: "USD" }, total_tip_money: { amount: orderTip, currency: "USD" }, total_tax_money: { amount: 44, currency: "USD" } } });
   if (pathname === "/v2/payments") return json({ payments: [payment] });
   if (pathname === "/rest/v1/walkup_checkouts" && options.method === "PATCH") {
     if (searchParams.get("status") !== "eq." + checkout.status) return json([]);
@@ -93,4 +94,9 @@ tenderNote = note;
 assert.equal((await call({ action: "reconcile" })).code, 200);
 assert.equal((await call(verify)).code, 200);
 assert.equal(releases, 1);
+checkout.status = "opened";
+tenderNote = "";
+orderTenders = [{ payment_id: payment.id, note }];
+assert.equal((await call({ ...verify, transactionId: "square-order-1" })).code, 200);
+assert.equal(releases, 2);
 console.log("Walk-up checkout tests passed with mocked Square and Supabase.");

@@ -59,6 +59,14 @@ async function createWalkup(db, body, res) {
   return res.status(201).json({ ok: true });
 }
 
+async function squareTenders(location, orderId) {
+  const id = encodeURIComponent(orderId);
+  const { order } = await squareRequest(`orders/${id}`).catch(() => ({}));
+  const { transaction } = await squareRequest(`locations/${encodeURIComponent(location)}/transactions/${id}`)
+    .catch(() => ({}));
+  return [...(order?.tenders ?? []), ...(transaction?.tenders ?? [])];
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   const { WALKUP_STAFF_CODE, SQUARE_POS_APPLICATION_ID, SQUARE_LOCATION_ID, SQUARE_ACCESS_TOKEN,
@@ -132,14 +140,9 @@ export default async function handler(req, res) {
         for (const payment of payments ?? []) {
           if (payment.status !== "COMPLETED" || payment.source_type !== "CARD" ||
               payment.amount_money?.amount < checkout.amount_cents) continue;
-          let matched = payment.note === note;
-          if (!matched && payment.order_id) {
-            // Square POS can record the note on the transaction tender.
-            const { transaction } = await squareRequest(`locations/${encodeURIComponent(SQUARE_LOCATION_ID)}/transactions/${encodeURIComponent(payment.order_id)}`)
-              .catch(() => ({}));
-            matched = transaction?.tenders?.some((tender) =>
-              (tender.payment_id || tender.id) === payment.id && tender.note === note) ?? false;
-          }
+          const matched = payment.note === note || (payment.order_id &&
+            (await squareTenders(SQUARE_LOCATION_ID, payment.order_id)).some((tender) =>
+              (tender.payment_id || tender.id) === payment.id && tender.note === note));
           if (matched && await releaseWalkupPayment(db, { ...payment, note })) {
             return res.status(200).json({ ok: true });
           }
@@ -150,8 +153,7 @@ export default async function handler(req, res) {
       return res.status(409).json({ error: "No completed Square payment could be matched to this order. If Square shows a charge, keep the receipt and do not pay again." });
     }
     if (body.action === "verify" && typeof body.transactionId === "string" && squareId.test(body.transactionId)) {
-      const { transaction } = await squareRequest(`locations/${encodeURIComponent(SQUARE_LOCATION_ID)}/transactions/${body.transactionId}`);
-      for (const tender of transaction?.tenders ?? []) {
+      for (const tender of await squareTenders(SQUARE_LOCATION_ID, body.transactionId)) {
         const paymentId = tender.payment_id || tender.id;
         if (!paymentId) continue;
         const { payment } = await squareRequest(`payments/${encodeURIComponent(paymentId)}`);
