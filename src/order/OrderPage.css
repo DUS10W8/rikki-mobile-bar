@@ -110,3 +110,60 @@
 .order-checkout-bar {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
+
+.order-quantity {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border: 1px solid #d7cabb;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.order-quantity button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 0.9rem;
+  cursor: pointer;
+  transition: transform 140ms ease, background-color 140ms ease;
+}
+
+.order-quantity button:last-child {
+  background: #2e2e2e;
+  color: white;
+}
+
+.order-quantity button:not(:disabled):active {
+  transform: scale(0.86);
+}
+
+.order-quantity button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.order-quantity-value {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.order-quantity-value span {
+  animation: order-quantity-pop 230ms ease-out;
+}
+
+@keyframes order-quantity-pop {
+  0% { transform: scale(0.8); }
+  48% { transform: scale(1.27); color: #88522f; }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-quantity button { transition: none; }
+  .order-quantity button:not(:disabled):active { transform: none; }
+  .order-quantity-value span { animation: none; }
+}

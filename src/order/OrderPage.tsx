@@ -1,5 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, ChevronDown, Loader2, Martini } from "lucide-react";
+import { CheckCircle2, ChevronDown, Loader2, Martini, Minus, Plus } from "lucide-react";
 
 import { HANDOFF_LABELS, shortOrderId } from "./orderHandoff";
 import type { OrderHandoff } from "./orderHandoff";
@@ -395,19 +395,25 @@ export default function OrderPage() {
                             <span className="block text-sm text-brand-ink/70">{drink.description}</span>
                             <span className="font-bold">{formatDrinkPrice(drink.priceCents)}</span>
                           </div>
-                          <select
-                            aria-label={`Quantity for ${drink.name}`}
-                            className="rounded-xl border border-brand-chrome bg-white p-2"
-                            value={quantities[drink.id] ?? 0}
-                            onChange={({ target }) => {
-                              const quantity = Number(target.value);
-                              setQuantities((current) => ({ ...current, [drink.id]: quantity }));
-                            }}
-                          >
-                            {Array.from({ length: 11 }, (_, quantity) => (
-                              <option key={quantity} value={quantity}>Qty: {quantity}</option>
-                            ))}
-                          </select>
+                          <div className="order-quantity" role="group" aria-label={`Quantity for ${drink.name}`}>
+                            <button type="button" aria-label={`Remove one ${drink.name}`}
+                              disabled={!quantities[drink.id]}
+                              onClick={() => setQuantities((current) => ({
+                                ...current, [drink.id]: Math.max(0, (current[drink.id] ?? 0) - 1),
+                              }))}>
+                              <Minus size={19} aria-hidden="true" />
+                            </button>
+                            <output className="order-quantity-value" aria-live="polite">
+                              <span key={quantities[drink.id] ?? 0}>{quantities[drink.id] ?? 0}</span>
+                            </output>
+                            <button type="button" aria-label={`Add one ${drink.name}`}
+                              disabled={quantities[drink.id] >= 10}
+                              onClick={() => setQuantities((current) => ({
+                                ...current, [drink.id]: Math.min(10, (current[drink.id] ?? 0) + 1),
+                              }))}>
+                              <Plus size={19} aria-hidden="true" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
