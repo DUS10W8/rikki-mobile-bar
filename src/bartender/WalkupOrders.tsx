@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EVENT_DRINK_MENU } from "../order/eventMenu";
+import salsaMenu from "../order/salsaMenu.json";
 
 type Walkup = {
   id: string;
@@ -43,7 +44,22 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const [entry, setEntry] = useState("");
   const [orders, setOrders] = useState<Walkup[]>([]);
   const [name, setName] = useState("");
+  const [eventMenu, setEventMenu] = useState("hamilton");
+  const menu = eventMenu === "salsa" ? salsaMenu : EVENT_DRINK_MENU;
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [search, setSearch] = useState("");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const query = normalize(search.trim());
+  const categories = [...new Set(menu.map(item => item.category))];
+  if (eventMenu === "salsa") categories.sort((a, b) =>
+    ["Signature cocktails", "Beer and seltzer", "Mixed drinks", "Mules", "Food", "Alcohol-free"].indexOf(a) -
+    ["Signature cocktails", "Beer and seltzer", "Mixed drinks", "Mules", "Food", "Alcohol-free"].indexOf(b));
+  const matches = menu.filter(item => normalize(item.name + " " + item.category).includes(query));
+  function changeQuantity(id: string, delta: number) {
+    requestId.current = null;
+    setQuantities(current => ({ ...current, [id]: Math.max(0, Math.min(10, (current[id] || 0) + delta)) }));
+  }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [posReturn, setPosReturn] = useState(readPosReturn);
@@ -105,7 +121,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     };
   }, [code, request]);
 
-  const items = EVENT_DRINK_MENU.filter((drink) => quantities[drink.id])
+  const items = menu.filter((drink) => quantities[drink.id])
     .map((drink) => ({ id: drink.id, quantity: quantities[drink.id], priceCents: drink.priceCents }));
   const total = items.reduce((sum, item) => sum + item.quantity * item.priceCents, 0);
 
@@ -191,29 +207,65 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
             <form className="mb-4 grid gap-3" onSubmit={(event) => {
               event.preventDefault();
               requestId.current ??= crypto.randomUUID();
-              void act({ action: "create", id: requestId.current, name, items }, () => {
+              void act({ action: "create", id: requestId.current, eventMenu, name, items }, () => {
                 requestId.current = null;
-                setName("");
+                setSearch(""); setName("");
                 setQuantities({});
               });
             }}>
-              <input className={input} aria-label="Guest name" placeholder="Guest name (optional)" value={name} maxLength={80} onChange={(event) => {
+              <input className={input} aria-label="Guest name" disabled={busy} placeholder="Guest name (optional)" value={name} maxLength={80} onChange={(event) => {
                 requestId.current = null;
                 setName(event.target.value);
               }} />
-              <div className="max-h-72 overflow-auto rounded-xl border border-brand-chrome">
-                {EVENT_DRINK_MENU.map((drink) => (
-                  <label key={drink.id} className="flex items-center justify-between gap-3 border-b border-brand-chrome px-3 py-2">
-                    <span>{drink.name} · {price(drink.priceCents)}</span>
-                    <select className={input} value={quantities[drink.id] || 0} onChange={(event) => {
-                      requestId.current = null;
-                      setQuantities((current) => ({ ...current, [drink.id]: Number(event.target.value) }));
-                    }}>
-                      {Array.from({ length: 11 }, (_, quantity) => <option key={quantity}>{quantity}</option>)}
-                    </select>
+              <label>Event menu <select className={input} value={eventMenu} disabled={busy || total > 0} onChange={event => { setSearch(""); setEventMenu(event.target.value); requestId.current = null; }}>
+                <option value="hamilton">Hamilton</option>
+                <option value="salsa">Salsa Night</option>
+              </select></label>
+              <fieldset disabled={busy} className="grid gap-4 md:grid-cols-[2fr_1fr]">
+                <div>
+                  <label className="grid gap-1">Find an item
+                    <input className={input} type="search" value={search} onChange={event => setSearch(event.target.value)} />
                   </label>
-                ))}
-              </div>
+                  <div className="mt-3 grid gap-2">
+                    {categories.map((category, index) => {
+                      const entries = matches.filter(item => item.category === category);
+                      if (!entries.length) return null;
+                      const open = query.length > 0 || (expanded[category] ?? index === 0);
+                      return <section key={category} className="rounded-xl border border-brand-chrome bg-white">
+                        <button type="button" aria-expanded={open} disabled={!!query}
+                          className="flex min-h-12 w-full items-center justify-between px-4 text-left font-bold"
+                          onClick={() => setExpanded(current => ({ ...current, [category]: !open }))}>
+                          {category}<span aria-hidden="true">{open ? "▴" : "▾"}</span>
+                        </button>
+                        {open && <div className="grid grid-cols-2 gap-2 px-2 pb-2">
+                          {entries.map(item => <button key={item.id} type="button"
+                            className="rounded-lg border border-brand-chrome p-3 text-left disabled:opacity-50"
+                            disabled={quantities[item.id] >= 10} onClick={() => changeQuantity(item.id, 1)}>
+                            <strong className="block">{item.name}</strong>{price(item.priceCents)}
+                            {!!quantities[item.id] && <span className="ml-2 text-sm">{quantities[item.id]} on ticket</span>}
+                          </button>)}
+                        </div>}
+                      </section>;
+                    })}
+                    {!matches.length && <p role="status">No items match “{search}”.</p>}
+                  </div>
+                </div>
+                <section aria-label="Current ticket" className="self-start rounded-xl border border-brand-chrome p-3 md:sticky md:top-3">
+                  <h3 className="font-bold">Current ticket · {price(total)}</h3>
+                  {!items.length && <p>Tap an item to add it.</p>}
+                  {items.map(line => {
+                    const label = menu.find(item => item.id === line.id)!.name;
+                    return <div key={line.id} className="border-b py-2">
+                      <strong>{label}</strong> · {price(line.quantity * line.priceCents)}
+                      <div className="flex items-center gap-3">
+                        <button type="button" className={input} aria-label={'Remove one ' + label} onClick={() => changeQuantity(line.id, -1)}>−</button>
+                        {line.quantity}
+                        <button type="button" className={input} disabled={line.quantity >= 10} aria-label={'Add one ' + label} onClick={() => changeQuantity(line.id, 1)}>+</button>
+                      </div>
+                    </div>;
+                  })}
+                </section>
+              </fieldset>
               <button className={button} disabled={!total || busy}>Send to iPhone · {price(total)} subtotal</button>
             </form>
           )}
