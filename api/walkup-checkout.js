@@ -1,11 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { createRequire } from "node:module";
 import { createClient } from "@supabase/supabase-js";
 import { squareRequest } from "../src/server/square.js";
 import { isWalkupId, releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
 
-const { drinks } = createRequire(import.meta.url)("../src/order/eventMenu.json");
-const salsaMenu = createRequire(import.meta.url)("../src/order/salsaMenu.json");
+import { activeMenuId, menus } from "../src/server/menus.js";
 const fields = "id,name,drink,amount_cents,status";
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
 
@@ -37,7 +35,8 @@ function setSession(res, secret, maxAge) {
 }
 
 async function createWalkup(db, body, res) {
-  const menu = body.eventMenu === "salsa" ? salsaMenu : drinks;
+  const menu = menus[body.eventMenu ?? activeMenuId];
+  if (!menu) return res.status(400).json({ error: "Choose an event menu." });
   if (!Array.isArray(body.items) || !body.items.length || body.items.length > menu.length ||
       typeof body.name !== "string" || body.name.length > 80) {
     return res.status(400).json({ error: "Choose at least one drink." });

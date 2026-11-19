@@ -1,9 +1,9 @@
-import { createRequire } from "node:module";
 import { createClient } from "@supabase/supabase-js";
 import { squareRequest as square } from "../src/server/square.js";
 import { releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
 
-const { drinks } = createRequire(import.meta.url)("../src/order/eventMenu.json");
+import { activeMenu as drinks } from "../src/server/menus.js";
+
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
 const orderFields = "id,name,drink,table_number,handoff,status,bar_station,created_at,updated_at,square_order_id";

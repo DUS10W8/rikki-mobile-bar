@@ -3,7 +3,7 @@ import { CheckCircle2, ChevronDown, Loader2, Martini, Minus, Plus } from "lucide
 
 import { HANDOFF_LABELS, shortOrderId } from "./orderHandoff";
 import type { OrderHandoff } from "./orderHandoff";
-import { EVENT_DRINK_MENU } from "./eventMenu";
+import { ACTIVE_EVENT, EVENT_DRINK_MENU, sortCategories } from "./eventMenu";
 import { orderSupabase, orderSupabaseConfig } from "./orderSupabaseClient";
 import "./OrderPage.css";
 
@@ -193,12 +193,13 @@ export default function OrderPage() {
   }, [trackingOrderId, trackingOrderStatus, soundAlertEnabled]);
 
   const groupedDrinks = useMemo(() => {
-    return EVENT_DRINK_MENU.reduce<Record<string, (typeof EVENT_DRINK_MENU)[number][]>>((groups, drink) => {
+    const groups = EVENT_DRINK_MENU.reduce<Record<string, (typeof EVENT_DRINK_MENU)[number][]>>((groups, drink) => {
       const key = drink.category || "House";
       groups[key] = groups[key] || [];
       groups[key].push(drink);
       return groups;
     }, {});
+    return Object.fromEntries(sortCategories(Object.keys(groups)).map((category) => [category, groups[category]]));
   }, []);
 
   const canSubmit = Boolean(
@@ -349,11 +350,10 @@ export default function OrderPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-sea">{BAR_NAME}</p>
-              <h1 className="text-3xl font-black text-brand-ink">Hamilton Day Spa Drink Menu</h1>
-              <p className="mt-1 text-sm font-bold text-brand-ink/65">Six Years of Beauty</p>
+              <h1 className="text-3xl font-black text-brand-ink">{ACTIVE_EVENT.title}</h1>
             </div>
           </div>
-          <p className="mt-3 text-sm text-brand-ink/70">Choose your drinks and a handoff spot, then pay securely with Square.</p>
+          <p className="mt-3 text-sm text-brand-ink/70">{ACTIVE_EVENT.intro}</p>
           </div>
         </header>
 
@@ -382,7 +382,7 @@ export default function OrderPage() {
                       }}
                     >
                       <span className="flex-1 font-black">{category}</span>
-                      <span className="shrink-0 text-sm text-brand-ink/65">{items.length} drinks</span>
+                      <span className="shrink-0 text-sm text-brand-ink/65">{items.length} {items.length === 1 ? "item" : "items"}</span>
                       <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 transition-transform motion-reduce:transition-none ${isOpen ? "rotate-180" : ""}`} />
                     </button>
                   </h2>
@@ -392,7 +392,7 @@ export default function OrderPage() {
                         <div key={drink.id} className="flex items-center justify-between gap-3 rounded-2xl border border-brand-chrome bg-[#fffaf2] p-4">
                           <div>
                             <span className="block text-lg font-bold">{drink.name}</span>
-                            <span className="block text-sm text-brand-ink/70">{drink.description}</span>
+                            {drink.description && <span className="block text-sm text-brand-ink/70">{drink.description}</span>}
                             <span className="font-bold">{formatDrinkPrice(drink.priceCents)}</span>
                           </div>
                           <div className="order-quantity" role="group" aria-label={`Quantity for ${drink.name}`}>

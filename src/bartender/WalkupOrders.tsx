@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { EVENT_DRINK_MENU } from "../order/eventMenu";
-import salsaMenu from "../order/salsaMenu.json";
+import { ACTIVE_EVENT, EVENT_DRINK_MENU, EVENT_MENUS, sortCategories } from "../order/eventMenu";
 
 type Walkup = {
   id: string;
@@ -44,17 +43,14 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const [entry, setEntry] = useState("");
   const [orders, setOrders] = useState<Walkup[]>([]);
   const [name, setName] = useState("");
-  const [eventMenu, setEventMenu] = useState("hamilton");
-  const menu = eventMenu === "salsa" ? salsaMenu : EVENT_DRINK_MENU;
+  const [eventMenu, setEventMenu] = useState(ACTIVE_EVENT.menu);
+  const menu = EVENT_MENUS[eventMenu] ?? EVENT_DRINK_MENU;
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const query = normalize(search.trim());
-  const categories = [...new Set(menu.map(item => item.category))];
-  if (eventMenu === "salsa") categories.sort((a, b) =>
-    ["Signature cocktails", "Beer and seltzer", "Mixed drinks", "Mules", "Food", "Alcohol-free"].indexOf(a) -
-    ["Signature cocktails", "Beer and seltzer", "Mixed drinks", "Mules", "Food", "Alcohol-free"].indexOf(b));
+  const categories = sortCategories([...new Set(menu.map(item => item.category))]);
   const matches = menu.filter(item => normalize(item.name + " " + item.category).includes(query));
   function changeQuantity(id: string, delta: number) {
     requestId.current = null;

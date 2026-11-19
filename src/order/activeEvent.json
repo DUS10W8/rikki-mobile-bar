@@ -1,0 +1,6 @@
+{
+  "menu": "salsa",
+  "title": "Salsa Night Menu",
+  "intro": "Choose your drinks and food and a handoff spot, then pay securely with Square.",
+  "categoryOrder": ["Signature cocktails", "Beer and seltzer", "Mixed drinks", "Mules", "Food", "Alcohol-free"]
+}
