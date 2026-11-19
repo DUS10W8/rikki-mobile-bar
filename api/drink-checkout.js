@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { squareRequest as square } from "../src/server/square.js";
 import { releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
 
-import { activeMenu as drinks } from "../src/server/menus.js";
+import { activeHandoffs, activeMenu as drinks } from "../src/server/menus.js";
 
 const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
@@ -25,7 +25,7 @@ async function startCheckout(db, req, res) {
   if (typeof id !== "string" || !uuid.test(id) ||
       typeof name !== "string" || name.trim().length < 2 || name.length > 80 ||
       typeof phone !== "string" || phone.length > 30 ||
-      !['outdoor_pickup', 'upstairs'].includes(handoff)) {
+      !activeHandoffs.includes(handoff)) {
     return res.status(400).json({ error: "Choose a drink and enter your name and handoff option." });
   }
 

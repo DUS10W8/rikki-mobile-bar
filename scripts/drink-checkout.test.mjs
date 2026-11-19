@@ -47,11 +47,12 @@ async function call(method, body) {
   return res;
 }
 
-const details = { id, drinkId: "salsa-lunazul-margarita", name: "Alex", phone: "", handoff: "upstairs", amountCents: 1299 };
+const details = { id, drinkId: "salsa-lunazul-margarita", name: "Alex", phone: "", handoff: "doorway_pickup", amountCents: 1299 };
 assert.equal((await call("POST", { ...details, amountCents: 1 })).code, 409);
 assert.equal((await call("POST", { ...details, handoff: "table" })).code, 400);
-assert.equal((await call("POST", { ...details, handoff: "outdoor_pickup" })).code, 200);
-assert.equal(checkout.handoff, "outdoor_pickup");
+// Salsa Night has no runner: only the doorway pickup table is offered
+assert.equal((await call("POST", { ...details, handoff: "upstairs" })).code, 400);
+assert.equal((await call("POST", { ...details, handoff: "outdoor_pickup" })).code, 400);
 assert.equal((await call("POST", { ...details, drinkId: "event-modelo" })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "hamilton-sweater-weather", amountCents: 1300 })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "salsa-patron-paloma", amountCents: 1599 })).code, 409);
@@ -83,7 +84,7 @@ assert.equal((await call("POST", { ...details, items: [items[0], items[0]], amou
 
 assert.equal((await call("POST", details)).code, 200);
 assert.equal(squareOrder.quick_pay.price_money.amount, 1299);
-assert.equal(checkout.handoff, "upstairs");
+assert.equal(checkout.handoff, "doorway_pickup");
 assert.equal((await call("GET")).code, 202);
 const notification = { type: "payment.updated", data: { object: { payment: { id: "payment-1", order_id: "order-1", status: "COMPLETED" } } } };
 assert.equal((await call("POST", notification)).code, 204);
@@ -95,7 +96,7 @@ assert.equal(releases, 0);
 payment.amount_money.amount = 1299;
 assert.equal((await call("POST", notification)).code, 204);
 assert.equal(releases, 1);
-assert.deepEqual((await call("GET")).data.order, { id: "ticket-1", handoff: "upstairs" });
+assert.deepEqual((await call("GET")).data.order, { id: "ticket-1", handoff: "doorway_pickup" });
 await call("POST", notification);
 assert.equal(releases, 2);
 assert.match(await (await import("node:fs/promises")).readFile("supabase/migrations/20261107000000_paid_drink_orders.sql", "utf8"), /on conflict \(square_order_id\) do nothing/i);

@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { DENOMINATIONS, cashShortcuts, money, parseCents } from "./cashMoney";
+import { shortOrderId } from "../order/orderHandoff";
 
 export type Shift = {
   shift_id: string;
@@ -17,7 +18,7 @@ export type Shift = {
 };
 
 export type CashSale = { id: string; subtotalCents: number; taxCents: number; totalCents: number; label: string };
-export type CashResult = { total_cents: number; received_cents: number; change_cents: number; repeat?: boolean };
+export type CashResult = { order_id?: string | null; total_cents: number; received_cents: number; change_cents: number; repeat?: boolean };
 
 type Request = (body: object) => Promise<Record<string, unknown>>;
 const big = "min-h-14 w-full rounded-2xl px-4 text-lg font-black disabled:opacity-40";
@@ -60,10 +61,10 @@ export function CashPanel({ sale, shift, operator, request, onDone, onCancel }: 
     setError("");
     try {
       const data = await request({ action: "cash_status", id: sale.id });
-      const order = data.order as { status?: string; tender?: string; cash_received_cents?: number; change_cents?: number } | null;
+      const order = data.order as { status?: string; tender?: string; cash_received_cents?: number; change_cents?: number; order_id?: string } | null;
       if (order?.status === "paid" && order.tender === "cash") {
         setUncertain(false);
-        onDone({ total_cents: sale.totalCents, received_cents: order.cash_received_cents ?? 0, change_cents: order.change_cents ?? 0, repeat: true });
+        onDone({ order_id: order.order_id, total_cents: sale.totalCents, received_cents: order.cash_received_cents ?? 0, change_cents: order.change_cents ?? 0, repeat: true });
       } else {
         setUncertain(false);
         setError("Not recorded yet. The cash you already took counts — tap Confirm cash received again (it will not charge twice).");
@@ -124,6 +125,13 @@ export function ChangeDue({ result, onNext }: { result: CashResult; onNext: () =
       <p className="text-sm font-bold">Paid in cash · ticket sent to the bar{result.repeat ? " (already recorded)" : ""}</p>
       <p className="my-2 text-5xl font-black" aria-live="assertive">Give {money(result.change_cents)}</p>
       <p className="text-sm">Received {money(result.received_cents)} · Due {money(result.total_cents)}</p>
+      {result.order_id && (
+        <p className="mt-3 rounded-xl bg-white px-3 py-2 text-emerald-950">
+          <span className="block text-sm font-bold">Tell the guest and write on the cup:</span>
+          <span className="text-4xl font-black tracking-wider">#{shortOrderId(result.order_id)}</span>
+          <span className="block text-sm">Pick up at the door table when the code shows Ready.</span>
+        </p>
+      )}
       <button type="button" className={`${big} mt-3 bg-emerald-800 text-white`} onClick={onNext}>Start next order</button>
     </section>
   );
