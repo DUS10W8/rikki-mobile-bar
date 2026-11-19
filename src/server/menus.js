@@ -9,3 +9,5 @@ export const menus = {
 };
 export const activeMenuId = require("../order/activeEvent.json").menu;
 export const activeMenu = menus[activeMenuId];
+// Handoff choices guests may pick for the active event (no runner at Salsa Night: pickup only).
+export const activeHandoffs = require("../order/activeEvent.json").handoffs ?? ["outdoor_pickup", "upstairs"];
