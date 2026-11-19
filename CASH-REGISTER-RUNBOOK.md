@@ -37,3 +37,15 @@ Each walk-up sale has exactly one tender. Card sales reconcile to Square, and ca
 
 ## Rehearsal
 `practice-register.html` runs the real register screen against a fake server, with tax set to 0 and no real money. Start it with `npm run dev` and open `/practice-register.html`.
+
+## Salsa Night floor setup (window + doorway room)
+- **Window (5×5 ft) = order and pay.** iPad register and card iPhone go on the sill or a shelf. Check wristbands here, before taking payment. Hang the menu on the wall to the left, where the line forms, so guests choose while they wait. Put a sign: "Order here →".
+- **Doorway = pickup for drinks and food.** Set a table across the opening, angled so guests can't reach in. Put a sign: "Pick up".
+  - Leave a gap of about 2 ft at one end, closed with a rope or stanchion, for staff, ice, kegs and food. **Ask the venue whether this doorway is the room's only exit.** If it is, the gap must stay clear.
+  - Set a phone or tablet on the table showing **/bartender?view=ready**. Unlock /bartender on that device first. It shows the codes of ready orders with first names, and how many are being made.
+- **Codes:** every order gets a 6-character code.
+  - Cash sales show it in big type on the change screen: say it to the guest and write it on the cup or food container.
+  - Card walk-ups show it on the paid order in the iPad list.
+  - QR guests see it on their phone.
+- **QR orders:** guests order and pay from their seats, and there's no runner. Their phone says "ready at the pickup table by the bar door." Whoever hands over the order checks the code **and the wristband**, because nobody has seen these guests yet.
+- **Bar board buttons:** QR tickets use **Made · to pickup table**, then **Picked up · wristband checked**. Walk-up tickets use **Made**, then **Handed to guest**.
