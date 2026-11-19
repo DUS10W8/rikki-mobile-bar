@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Practice register</title></head>
+<body><main style="max-width:1100px;margin:auto;padding:12px"><div id="register"></div></main>
+<script type="module">
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import WalkupOrders from '/src/bartender/WalkupOrders.tsx';
+import salsa from '/src/order/salsaMenu.json';
+import '/src/index.css';
+// Mock server with the database's rules: tax 0, idempotent cash, one open shift, append-only drawer.
+const S = window.__state = JSON.parse(sessionStorage.getItem('mock') || 'null') || { tickets: {}, shift: null, entries: [], closes: [], dropNext: false, calls: [] };
+const save = () => sessionStorage.setItem('mock', JSON.stringify(S));
+const expected = () => S.entries.reduce((a, e) => a + e.amount, 0);
+const summary = () => S.shift && { shift_id: S.shift.id, event_label: S.shift.label, opened_by: S.shift.by, opening_float_cents: S.shift.float,
+  cash_sales_cents: S.entries.filter(e => e.kind === 'sale').reduce((a, e) => a + e.amount, 0),
+  cash_refunds_cents: S.entries.filter(e => e.kind === 'refund').reduce((a, e) => a + e.amount, 0),
+  paid_in_cents: 0, payouts_cents: 0, drops_cents: S.entries.filter(e => e.kind === 'drop').reduce((a, e) => a + e.amount, 0),
+  expected_cents: expected(), counted_cents: null, over_short_cents: null };
+const fail = (m) => Response.json({ error: m }, { status: 409 });
+const orig = window.fetch.bind(window);
+window.fetch = async (url, options = {}) => {
+  if (!String(url).startsWith('/api/walkup-checkout')) return orig(url, options);
+  const b = options.body ? JSON.parse(options.body) : null;
+  S.calls.push(b?.action || 'GET');
+  try {
+    if (!b) return Response.json({ orders: Object.values(S.tickets).reverse(), shift: summary(), lastClosed: null });
+    if (b.action === 'create') {
+      const lines = b.items.map(l => ({ ...salsa.find(i => i.id === l.id), quantity: l.quantity }));
+      S.tickets[b.id] ??= { id: b.id, name: b.name || 'Walk-up guest', status: 'waiting', tax_cents: 0,
+        drink: lines.map(l => l.quantity + ' × ' + l.name).join(', '), amount_cents: lines.reduce((a, l) => a + l.priceCents * l.quantity, 0) };
+      return Response.json({ ok: true, order: S.tickets[b.id] }, { status: 201 });
+    }
+    if (b.action === 'open_shift') { S.shift = { id: crypto.randomUUID(), label: b.eventLabel, by: b.operator, float: b.floatCents }; S.entries.push({ kind: 'float', amount: b.floatCents }); return Response.json({ shiftId: S.shift.id }); }
+    if (b.action === 'pay_cash') {
+      const t = S.tickets[b.id];
+      if (t.status === 'paid') return Response.json({ result: { total_cents: t.amount_cents, received_cents: t.cash_received_cents, change_cents: t.change_cents, repeat: true } });
+      const total = t.amount_cents + t.tax_cents;
+      if (b.receivedCents < total) return fail('Cash received is less than the amount due');
+      Object.assign(t, { status: 'paid', tender: 'cash', cash_received_cents: b.receivedCents, change_cents: b.receivedCents - total });
+      S.entries.push({ kind: 'sale', amount: total, id: b.id });
+      if (S.dropNext) { S.dropNext = false; throw new TypeError('Load failed'); }   // server saved, reply lost
+      return Response.json({ result: { total_cents: total, received_cents: b.receivedCents, change_cents: t.change_cents, repeat: false } });
+    }
+    if (b.action === 'cash_status') return Response.json({ order: S.tickets[b.id] });
+    if (b.action === 'close_shift') {
+      const counted = Object.entries(b.denominations).reduce((a, [k, v]) => a + Number(k) * v, 0);
+      const r = { counted_cents: counted, expected_cents: expected(), variance_cents: counted - expected() };
+      S.closes.push(r); S.shift = null; return Response.json({ result: r });
+    }
+    if (b.action === 'cancel') { S.tickets[b.id].status = 'cancelled'; delete S.tickets[b.id]; return Response.json({ ok: true }); }
+    return Response.json({ ok: true });
+  } finally { save(); }
+};
+createRoot(document.querySelector('#register')).render(React.createElement(WalkupOrders));
+</script></body></html>
