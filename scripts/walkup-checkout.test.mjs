@@ -52,7 +52,7 @@ async function call(body, staffCode = code, cookie) {
   await handler({ method: "POST", headers: { "x-walkup-code": staffCode, "x-walkup-request": "1", cookie }, body: { id, ...body } }, res);
   return res;
 }
-const create = { action: "create", name: "Alex", items: [
+const create = { action: "create", eventMenu: "hamilton", name: "Alex", items: [
   { id: "hamilton-sweater-weather", quantity: 1 },
   { id: "hamilton-cozy-cocoa", quantity: 2 },
 ] };

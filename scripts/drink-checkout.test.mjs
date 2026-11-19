@@ -15,7 +15,7 @@ let checkout;
 let order;
 let squareOrder;
 let releases = 0;
-const payment = { order_id: "order-1", status: "APPROVED", location_id: "bar", amount_money: { amount: 1300, currency: "USD" } };
+const payment = { order_id: "order-1", status: "APPROVED", location_id: "bar", amount_money: { amount: 1299, currency: "USD" } };
 const json = (body) => Response.json(body);
 globalThis.fetch = async (input, options) => {
   const { pathname } = new URL(input);
@@ -47,50 +47,52 @@ async function call(method, body) {
   return res;
 }
 
-const details = { id, drinkId: "hamilton-sweater-weather", name: "Alex", phone: "", handoff: "upstairs", amountCents: 1300 };
+const details = { id, drinkId: "salsa-lunazul-margarita", name: "Alex", phone: "", handoff: "upstairs", amountCents: 1299 };
 assert.equal((await call("POST", { ...details, amountCents: 1 })).code, 409);
 assert.equal((await call("POST", { ...details, handoff: "table" })).code, 400);
 assert.equal((await call("POST", { ...details, handoff: "outdoor_pickup" })).code, 200);
 assert.equal(checkout.handoff, "outdoor_pickup");
 assert.equal((await call("POST", { ...details, drinkId: "event-modelo" })).code, 409);
+assert.equal((await call("POST", { ...details, drinkId: "hamilton-sweater-weather", amountCents: 1300 })).code, 409);
+assert.equal((await call("POST", { ...details, drinkId: "salsa-patron-paloma", amountCents: 1599 })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "atlas-na-cranberry-spritz" })).code, 409);
-assert.equal((await call("POST", { ...details, drinkId: "hamilton-golden-hour", amountCents: 1100 })).code, 409);
+assert.equal((await call("POST", { ...details, drinkId: "salsa-corona", amountCents: 600 })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "atlas-aperol-spritz", amountCents: 1200 })).code, 409);
 for (const [drinkId, amountCents, name] of [
-  ["hamilton-sweater-weather", 1300, "Sweater Weather"],
-  ["hamilton-golden-hour", 1200, "Golden Hour"],
-  ["hamilton-cozy-cocoa", 800, "Cozy Cocoa"],
-  ["hamilton-bloody-mary", 1500, "The Bloody Mary"],
+  ["salsa-lunazul-margarita", 1299, "Lunazul Margarita"],
+  ["salsa-lunazul-paloma", 1299, "Lunazul Paloma"],
+  ["salsa-pulled-pork-sandwich", 1299, "Pulled pork sandwich"],
+  ["salsa-corona", 699, "Corona"],
 ]) {
   assert.equal((await call("POST", { ...details, drinkId, amountCents })).code, 200);
   assert.equal(squareOrder.quick_pay.price_money.amount, amountCents);
   assert.equal(squareOrder.quick_pay.name, name);
   assert.equal(checkout.drink, name);
 }
-const items = [{ id: "hamilton-golden-hour", quantity: 2 }, { id: "hamilton-cozy-cocoa", quantity: 1 }];
-assert.equal((await call("POST", { ...details, items, amountCents: 3200 })).code, 200);
+const items = [{ id: "salsa-corona", quantity: 2 }, { id: "salsa-paleta", quantity: 1 }];
+assert.equal((await call("POST", { ...details, items, amountCents: 1797 })).code, 200);
 assert.deepEqual(squareOrder.order.line_items.map(({ name, quantity, base_price_money }) =>
-  [name, quantity, base_price_money.amount]), [["Golden Hour", "2", 1200], ["Cozy Cocoa", "1", 800]]);
-assert.equal(checkout.drink, "2 × Golden Hour, 1 × Cozy Cocoa");
+  [name, quantity, base_price_money.amount]), [["Corona", "2", 699], ["Paleta", "1", 399]]);
+assert.equal(checkout.drink, "2 × Corona, 1 × Paleta");
 assert.deepEqual(checkout.items, [
-  { id: "hamilton-golden-hour", name: "Golden Hour", quantity: 2, price_cents: 1200 },
-  { id: "hamilton-cozy-cocoa", name: "Cozy Cocoa", quantity: 1, price_cents: 800 },
+  { id: "salsa-corona", name: "Corona", quantity: 2, price_cents: 699 },
+  { id: "salsa-paleta", name: "Paleta", quantity: 1, price_cents: 399 },
 ]);
-assert.equal((await call("POST", { ...details, items, amountCents: 3100 })).code, 409);
-assert.equal((await call("POST", { ...details, items: [items[0], items[0]], amountCents: 4800 })).code, 400);
+assert.equal((await call("POST", { ...details, items, amountCents: 1796 })).code, 409);
+assert.equal((await call("POST", { ...details, items: [items[0], items[0]], amountCents: 2796 })).code, 400);
 
 assert.equal((await call("POST", details)).code, 200);
-assert.equal(squareOrder.quick_pay.price_money.amount, 1300);
+assert.equal(squareOrder.quick_pay.price_money.amount, 1299);
 assert.equal(checkout.handoff, "upstairs");
 assert.equal((await call("GET")).code, 202);
 const notification = { type: "payment.updated", data: { object: { payment: { id: "payment-1", order_id: "order-1", status: "COMPLETED" } } } };
 assert.equal((await call("POST", notification)).code, 204);
 assert.equal(releases, 0);
 payment.status = "COMPLETED";
-payment.amount_money.amount = 1299;
+payment.amount_money.amount = 1298;
 await call("POST", notification);
 assert.equal(releases, 0);
-payment.amount_money.amount = 1300;
+payment.amount_money.amount = 1299;
 assert.equal((await call("POST", notification)).code, 204);
 assert.equal(releases, 1);
 assert.deepEqual((await call("GET")).data.order, { id: "ticket-1", handoff: "upstairs" });
