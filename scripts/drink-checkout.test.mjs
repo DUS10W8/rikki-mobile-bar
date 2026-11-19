@@ -72,6 +72,10 @@ assert.equal((await call("POST", { ...details, items, amountCents: 3200 })).code
 assert.deepEqual(squareOrder.order.line_items.map(({ name, quantity, base_price_money }) =>
   [name, quantity, base_price_money.amount]), [["Golden Hour", "2", 1200], ["Cozy Cocoa", "1", 800]]);
 assert.equal(checkout.drink, "2 × Golden Hour, 1 × Cozy Cocoa");
+assert.deepEqual(checkout.items, [
+  { id: "hamilton-golden-hour", name: "Golden Hour", quantity: 2, price_cents: 1200 },
+  { id: "hamilton-cozy-cocoa", name: "Cozy Cocoa", quantity: 1, price_cents: 800 },
+]);
 assert.equal((await call("POST", { ...details, items, amountCents: 3100 })).code, 409);
 assert.equal((await call("POST", { ...details, items: [items[0], items[0]], amountCents: 4800 })).code, 400);
 

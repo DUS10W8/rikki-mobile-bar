@@ -71,6 +71,8 @@ async function startCheckout(db, req, res) {
   const { error } = await db.from("drink_checkouts").upsert({
     id, square_order_id: link.order_id, name: name.trim(), phone,
     drink: drinkName, handoff, amount_cents: amount,
+    // Structured lines: the database deducts each item's recipe from stock when payment releases the ticket.
+    items: selected.map(({ id, name, quantity, priceCents }) => ({ id, name, quantity, price_cents: priceCents })),
   }, { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;
   return res.status(200).json({ url: link.url });

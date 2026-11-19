@@ -65,6 +65,10 @@ assert.equal((await call(create, "", cookie)).code, 201);
 assert.equal((await call(create, "", cookie + "0")).code, 401);
 assert.match((await call({ action: "lock" }, "", cookie)).cookie, /Max-Age=0/);
 assert.equal(checkout.amount_cents, 2900);
+assert.deepEqual(checkout.items, [
+  { id: "hamilton-sweater-weather", name: "Sweater Weather", quantity: 1, price_cents: 1300 },
+  { id: "hamilton-cozy-cocoa", name: "Cozy Cocoa", quantity: 2, price_cents: 800 },
+]);
 const opened = await call({ action: "open" });
 assert.equal(opened.code, 200);
 const request = JSON.parse(new URL(opened.data.url).searchParams.get("data"));
