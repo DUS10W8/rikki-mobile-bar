@@ -1,7 +1,7 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChevronDown, Loader2, Martini, Minus, Plus } from "lucide-react";
 
-import { HANDOFF_LABELS, shortOrderId } from "./orderHandoff";
+import { HANDOFF_DETAILS, HANDOFF_LABELS, handoffReadyMessage, isDelivered, shortOrderId } from "./orderHandoff";
 import type { OrderHandoff } from "./orderHandoff";
 import { ACTIVE_EVENT, EVENT_DRINK_MENU, sortCategories } from "./eventMenu";
 import "./OrderPage.css";
@@ -48,7 +48,8 @@ export default function OrderPage() {
   const total = cart.reduce((sum, drink) => sum + drink.priceCents * drink.quantity, 0);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [handoff, setHandoff] = useState<OrderHandoff>("outdoor_pickup");
+  const handoffOptions = ACTIVE_EVENT.handoffs as OrderHandoff[];
+  const [handoff, setHandoff] = useState<OrderHandoff>(handoffOptions[0]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
@@ -422,17 +423,25 @@ export default function OrderPage() {
 
           <section className="rounded-[1.5rem] border border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_14px_36px_rgba(46,46,46,0.08)]">
             <div className="grid gap-3">
-              <fieldset className="grid gap-2">
-                <legend className="mb-2 text-sm font-bold text-brand-ink/75">Where should we meet you?</legend>
-                {(["outdoor_pickup", "upstairs"] as const).map((option) => (
-                  <label key={option} className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-brand-chrome px-3 py-2 has-[:checked]:border-brand-sea has-[:checked]:bg-brand-sea/10">
-                    <input type="radio" name="handoff" checked={handoff === option} onChange={() => setHandoff(option)} />
-                    <span><strong className="block">{HANDOFF_LABELS[option]}</strong>
-                      <span className="text-sm text-brand-ink/70">{option === "upstairs" ? "Meet our runner at the doorway at the top of the stairs." : "Come to the outdoor bar when your drink is ready."}</span>
-                    </span>
-                  </label>
-                ))}
-              </fieldset>
+              {handoffOptions.length === 1 ? (
+                <div className="rounded-xl border border-brand-sea/40 bg-brand-sea/10 px-3 py-2">
+                  <p className="text-sm font-bold text-brand-ink/75">Pickup</p>
+                  <strong className="block">{HANDOFF_LABELS[handoff]}</strong>
+                  <span className="text-sm text-brand-ink/70">{HANDOFF_DETAILS[handoff]}</span>
+                </div>
+              ) : (
+                <fieldset className="grid gap-2">
+                  <legend className="mb-2 text-sm font-bold text-brand-ink/75">Where should we meet you?</legend>
+                  {handoffOptions.map((option) => (
+                    <label key={option} className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-brand-chrome px-3 py-2 has-[:checked]:border-brand-sea has-[:checked]:bg-brand-sea/10">
+                      <input type="radio" name="handoff" checked={handoff === option} onChange={() => setHandoff(option)} />
+                      <span><strong className="block">{HANDOFF_LABELS[option]}</strong>
+                        <span className="text-sm text-brand-ink/70">{HANDOFF_DETAILS[option]}</span>
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+              )}
               <label className="grid gap-1">
                 <span className="text-sm font-bold text-brand-ink/75">Name</span>
                 <input className="order-input" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder="Alex" autoComplete="name" />
@@ -622,7 +631,7 @@ function LiveOrderTracker({ order, liveUpdateError }: { order: OrderConfirmation
           { id: "received", label: "Order received", active: true },
           { id: "queue", label: "In the queue", active: ["new", "in_progress", "ready", "completed"].includes(normalizedStatus) },
           { id: "making", label: "Being made", active: ["in_progress", "ready", "completed"].includes(normalizedStatus) },
-          { id: "ready", label: normalizedStatus === "completed" ? ((order.handoff === "upstairs" || order.table_number) ? "Delivered" : "Picked up") : (order.handoff === "upstairs" ? "On the way upstairs" : order.table_number ? "Ready for delivery" : "Ready for pickup"), active: ["ready", "completed"].includes(normalizedStatus) },
+          { id: "ready", label: normalizedStatus === "completed" ? (isDelivered(order.handoff) ? "Delivered" : "Picked up") : (order.handoff === "upstairs" ? "On the way upstairs" : "Ready for pickup"), active: ["ready", "completed"].includes(normalizedStatus) },
         ].map((step) => (
           <div key={step.id} className={`flex items-center gap-2 text-sm font-bold ${step.active ? "text-brand-ink" : "text-brand-ink/35"}`}>
             <span className={`h-3 w-3 rounded-full ${step.active ? "bg-brand-sea" : "bg-brand-chrome"}`} />
@@ -656,14 +665,8 @@ function getLiveStatusMessage(status: string, stationName: string, table?: numbe
   if (status === "ready" && table) return `We’ll bring your drink to Table ${table} shortly.`;
   if (status === "ready" && stationName) return `Your drink is ready at the ${stationName}!`;
   if (status === "ready") return "Your drink is ready! Please head to the pickup area.";
-  if (status === "completed") return (handoff === "upstairs" || table) ? "Your drink has been delivered. Cheers!" : "Your drink has been picked up. Cheers!";
+  if (status === "completed") return isDelivered(handoff) ? "Your drink has been delivered. Cheers!" : "Your order has been picked up. Cheers!";
   return "Your drink is in the queue.";
-}
-
-function handoffReadyMessage(handoff: OrderHandoff) {
-  return handoff === "upstairs"
-    ? "Your drink is on the way. Meet us at the doorway at the top of the stairs and show your order number."
-    : "Your drink is ready. Show your order number at the outdoor bar.";
 }
 
 function playCustomerChime() {
