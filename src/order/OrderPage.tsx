@@ -4,7 +4,6 @@ import { CheckCircle2, ChevronDown, Loader2, Martini, Minus, Plus } from "lucide
 import { HANDOFF_LABELS, shortOrderId } from "./orderHandoff";
 import type { OrderHandoff } from "./orderHandoff";
 import { ACTIVE_EVENT, EVENT_DRINK_MENU, sortCategories } from "./eventMenu";
-import { orderSupabase, orderSupabaseConfig } from "./orderSupabaseClient";
 import "./OrderPage.css";
 
 const BAR_NAME = "Rikki's Mobile Bar";
@@ -13,7 +12,6 @@ const TIP_URL = "https://www.rikkismobile.com/tip";
 const CONNECT_URL = "https://www.rikkismobile.com/connect";
 const ORDER_POLL_INTERVAL_MS = 4000;
 const ACTIVE_ORDER_STORAGE_KEY = "rikki-active-order";
-const ACTIVE_QUEUE_STATUSES = ["new", "in_progress", "New", "In Progress"];
 
 
 type OrderStatus = "new" | "in_progress" | "ready" | "completed" | "New" | "In Progress" | "Ready" | "Completed";
@@ -41,7 +39,6 @@ type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_s
   orderCode: string;
 };
 
-type QueuePositionOrder = Pick<Order, "id" | "created_at" | "status">;
 
 export default function OrderPage() {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
@@ -502,73 +499,27 @@ function RestoreOrderAlert({ onClear }: { onClear: () => void }) {
   );
 }
 
-function requireSupabase(operation: string) {
-  if (orderSupabase) return null;
-  const error = new Error(orderSupabaseConfig.error || "Supabase is not configured.");
-  logSupabaseFailure(operation, error);
-  return error;
-}
-
-function logSupabaseFailure(operation: string, error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error("[Supabase request failed]", {
-    operation,
-    status: "network/config",
-    message,
-  });
-}
+// Order status comes from the server (/api/drink-checkout?order=), which returns this
+// guest's order and queue position only. The browser no longer reads the orders table.
+const queuePositions = new Map<string, number | null>();
 
 async function getOrderById(id: string) {
-  const configError = requireSupabase("orders.trackerSelect");
-  if (configError || !orderSupabase) return { data: null, error: configError };
-
   try {
-    const { data, error } = await orderSupabase
-      .from("orders")
-      .select("id,name,drink,status,bar_station,table_number,handoff,created_at,updated_at,square_order_id")
-      .eq("id", id)
-      .single<Order>();
-
-    return { data, error };
+    const response = await fetch(`/api/drink-checkout?order=${encodeURIComponent(id)}`, { cache: "no-store" });
+    if (!response.ok) return { data: null, error: new Error(`Order lookup failed (${response.status})`) };
+    const { order, position } = await response.json() as { order: Order; position: number | null };
+    queuePositions.set(order.id, position);
+    return { data: order, error: null };
   } catch (error) {
-    logSupabaseFailure("orders.trackerSelect", error);
+    console.error("[Order lookup failed]", error instanceof Error ? error.message : String(error));
     return { data: null, error: error instanceof Error ? error : new Error(String(error)) };
   }
 }
 
 async function countOrderQueuePosition(order: Order) {
   const normalizedStatus = normalizeStatus(order.status);
-  if (normalizedStatus !== "new" && normalizedStatus !== "in_progress") {
-    return { position: null, error: null };
-  }
-
-  const configError = requireSupabase("orders.queuePosition");
-  if (configError || !orderSupabase) return { position: null, error: configError };
-
-  try {
-    const { data, error } = await orderSupabase
-      .from("orders")
-      .select("id,created_at,status")
-      .not("square_order_id", "is", null)
-      .in("status", ACTIVE_QUEUE_STATUSES)
-      .order("created_at", { ascending: true, nullsFirst: false })
-      .order("id", { ascending: true });
-
-    if (error) return { position: null, error };
-
-    const activeOrders = ((data || []) as QueuePositionOrder[]).filter((item) => {
-      if (!order.created_at || !item.created_at) return true;
-      if (item.created_at < order.created_at) return true;
-      if (item.created_at === order.created_at) return item.id <= order.id;
-      return false;
-    });
-
-    const position = activeOrders.findIndex((item) => item.id === order.id);
-    return { position: position >= 0 ? position + 1 : Math.max(activeOrders.length, 1), error: null };
-  } catch (error) {
-    logSupabaseFailure("orders.queuePosition", error);
-    return { position: null, error: error instanceof Error ? error : new Error(String(error)) };
-  }
+  if (normalizedStatus !== "new" && normalizedStatus !== "in_progress") return { position: null, error: null };
+  return { position: queuePositions.get(order.id) ?? null, error: null };
 }
 
 function isValidPhone(value: string) {

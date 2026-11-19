@@ -1,18 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ACTIVE_EVENT, EVENT_DRINK_MENU, EVENT_MENUS, sortCategories } from "../order/eventMenu";
+import { CashPanel, ChangeDue, DrawerPanel, type CashResult, type CashSale, type Shift } from "./cash";
+import { money, parseCents } from "./cashMoney";
 
 type Walkup = {
   id: string;
   name: string;
   drink: string;
   amount_cents: number;
+  tax_cents: number | null;
   status: "waiting" | "opened" | "paid";
+  tender?: "card" | "cash" | null;
+  change_cents?: number | null;
 };
 
 type PosReturn = { state?: string; transaction_id?: string; error_code?: string; status?: string };
 const apiPath = "/api/walkup-checkout";
 const storageKey = "rikki-walkup-staff";
 const pendingLinkKey = "rikki-walkup-square-link";
+const pendingCashKey = "rikki-walkup-cash-pending";   // survives reload: the sale being paid in cash
+const operatorKey = "rikki-walkup-operator";
+const managerKey = "rikki-walkup-manager";
+
+function readPendingCash(): CashSale | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(pendingCashKey) || "null");
+    return typeof saved?.id === "string" && Number.isInteger(saved.totalCents) ? saved : null;
+  } catch {
+    return null;
+  }
+}
 const button = "rounded-xl bg-brand-ink px-4 py-2 font-bold text-white disabled:opacity-50";
 const input = "rounded-xl border border-brand-chrome bg-white px-3 py-2";
 
@@ -43,6 +60,19 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const [entry, setEntry] = useState("");
   const [orders, setOrders] = useState<Walkup[]>([]);
   const [name, setName] = useState("");
+  const [operator, setOperatorState] = useState(() => localStorage.getItem(operatorKey) || "");
+  const [managerCode, setManagerCodeState] = useState(() => sessionStorage.getItem(managerKey) || "");
+  const [shift, setShift] = useState<Shift | null>(null);
+  const [lastClosed, setLastClosed] = useState<Shift | null>(null);
+  const [cashSale, setCashSaleState] = useState<CashSale | null>(readPendingCash);
+  const [cashResult, setCashResult] = useState<CashResult | null>(null);
+  const setOperator = (value: string) => { setOperatorState(value); localStorage.setItem(operatorKey, value); };
+  const setManagerCode = (value: string) => { setManagerCodeState(value); sessionStorage.setItem(managerKey, value); };
+  const setCashSale = (sale: CashSale | null) => {
+    setCashSaleState(sale);
+    if (sale) localStorage.setItem(pendingCashKey, JSON.stringify(sale));
+    else localStorage.removeItem(pendingCashKey);
+  };
   const [eventMenu, setEventMenu] = useState(ACTIVE_EVENT.menu);
   const menu = EVENT_MENUS[eventMenu] ?? EVENT_DRINK_MENU;
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -71,10 +101,12 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const submitted = useRef(false);
 
   const request = useCallback(async (body?: object, signal?: AbortSignal) => {
-    const response = await fetch(apiPath, {
+    const headers: Record<string, string> = { "Content-Type": "application/json", "X-Walkup-Code": code, "X-Walkup-Request": "1" };
+    if (managerCode) headers["X-Manager-Code"] = managerCode;
+    const response = await fetch(body || phone ? apiPath : apiPath + "?drawer=1", {
       method: body ? "POST" : "GET",
       signal,
-      headers: { "Content-Type": "application/json", "X-Walkup-Code": code, "X-Walkup-Request": "1" },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
     const data = await response.json();
@@ -88,7 +120,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     }
     if (!response.ok) throw new Error(data.error || "Walk-up checkout is unavailable.");
     return data;
-  }, [code]);
+  }, [code, managerCode, phone]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -98,6 +130,10 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
         if (!controller.signal.aborted) {
           setOrders(data.orders);
           setUnlocked(!data.locked);
+          if (!phone) {
+            setShift(data.shift ?? null);
+            setLastClosed(data.lastClosed ?? null);
+          }
           if (code && !data.locked) {
             sessionStorage.removeItem(storageKey);
             setCode("");
@@ -115,13 +151,60 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       controller.abort();
       window.clearInterval(timer);
     };
-  }, [code, request]);
+  }, [code, request, phone]);
+
+  const refresh = async () => {
+    try {
+      const data = await request();
+      setOrders(data.orders);
+      if (!phone) {
+        setShift(data.shift ?? null);
+        setLastClosed(data.lastClosed ?? null);
+      }
+    } catch (error) {
+      setError((error as Error).message);
+    }
+  };
+
+  const startCash = (order: { id: string; amount_cents: number; tax_cents: number | null; drink: string }) => {
+    if (order.tax_cents === null || order.tax_cents === undefined) {
+      setError("Tax could not be calculated when this order was rung. Cancel it and ring it again, or take card.");
+      return;
+    }
+    setCashResult(null);
+    setCashSale({ id: order.id, subtotalCents: order.amount_cents, taxCents: order.tax_cents,
+      totalCents: order.amount_cents + order.tax_cents, label: order.drink });
+  };
+
+  const takeCash = () => {
+    if (!total || busy) return;
+    if (!operator.trim()) { setError("Enter your name in the Cash drawer section first."); return; }
+    requestId.current ??= crypto.randomUUID();
+    void act({ action: "create", id: requestId.current, eventMenu, name, items }, (data) => {
+      requestId.current = null;
+      setSearch(""); setName("");
+      setQuantities({});
+      const created = (data as { order?: Walkup }).order;
+      if (created) startCash(created);
+    });
+  };
+
+  const refundCash = (order: Walkup) => {
+    if (!shift) { setError("Open the cash drawer to refund cash."); return; }
+    const entered = window.prompt(`Refund how much cash for ${order.drink}? Paid ${money(order.amount_cents + (order.tax_cents ?? 0))}.`);
+    const amountCents = entered ? parseCents(entered) : null;
+    if (!amountCents) return;
+    const reason = window.prompt("Reason for the refund (what happened to the item?)")?.trim();
+    if (!reason) return;
+    void act({ action: "cash_refund", id: order.id, refundId: crypto.randomUUID(), shiftId: shift.shift_id,
+      amountCents, reason, operator }, () => setError(`Refunded ${money(amountCents)} cash. If the item came back sealed, log it as returned stock.`));
+  };
 
   const items = menu.filter((drink) => quantities[drink.id])
     .map((drink) => ({ id: drink.id, quantity: quantities[drink.id], priceCents: drink.priceCents }));
   const total = items.reduce((sum, item) => sum + item.quantity * item.priceCents, 0);
 
-  const act = async (body: object, onSuccess?: (data: { url?: string }) => void) => {
+  const act = async (body: object, onSuccess?: (data: { url?: string; order?: Walkup }) => void) => {
     if (submitted.current) return;
     submitted.current = true;
     setBusy(true);
@@ -131,6 +214,10 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       onSuccess?.(data);
       const updated = await request();
       setOrders(updated.orders);
+      if (!phone) {
+        setShift(updated.shift ?? null);
+        setLastClosed(updated.lastClosed ?? null);
+      }
     } catch (error) {
       setError((error as Error).message);
     } finally {
@@ -199,7 +286,17 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
             setPosLink(null);
             sessionStorage.removeItem(pendingLinkKey);
           }}>Lock payment screen</button>
-          {unlocked && !phone && (
+          {unlocked && !phone && cashResult && (
+            <div className="mb-4"><ChangeDue result={cashResult} onNext={() => { setCashResult(null); setCashSale(null); }} /></div>
+          )}
+          {unlocked && !phone && cashSale && !cashResult && (
+            <div className="mb-4">
+              <CashPanel sale={cashSale} shift={shift} operator={operator} request={request}
+                onDone={(result) => { setCashResult(result); void refresh(); }}
+                onCancel={() => setCashSale(null)} />
+            </div>
+          )}
+          {unlocked && !phone && !cashSale && !cashResult && (
             <form className="mb-4 grid gap-3" onSubmit={(event) => {
               event.preventDefault();
               requestId.current ??= crypto.randomUUID();
@@ -209,10 +306,6 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                 setQuantities({});
               });
             }}>
-              <input className={input} aria-label="Guest name" disabled={busy} placeholder="Guest name (optional)" value={name} maxLength={80} onChange={(event) => {
-                requestId.current = null;
-                setName(event.target.value);
-              }} />
               <label>Event menu <select className={input} value={eventMenu} disabled={busy || total > 0} onChange={event => { setSearch(""); setEventMenu(event.target.value); requestId.current = null; }}>
                 <option value="hamilton">Hamilton</option>
                 <option value="salsa">Salsa Night</option>
@@ -262,7 +355,18 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                   })}
                 </section>
               </fieldset>
-              <button className={button} disabled={!total || busy}>Send to iPhone · {price(total)} subtotal</button>
+              <input className={input} aria-label="Guest name" disabled={busy} placeholder="Guest name (optional)" value={name} maxLength={80} onChange={(event) => {
+                requestId.current = null;
+                setName(event.target.value);
+              }} />
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" className="min-h-14 rounded-2xl bg-emerald-800 px-3 text-lg font-black text-white disabled:opacity-40" disabled={!total || busy} onClick={takeCash}>
+                  Take cash · {price(total)}+tax
+                </button>
+                <button className="min-h-14 rounded-2xl bg-brand-ink px-3 text-lg font-black text-white disabled:opacity-40" disabled={!total || busy}>
+                  Card on iPhone · {price(total)}+tax
+                </button>
+              </div>
             </form>
           )}
           {phone && posReturn && (posReturn.status === "error" || posReturn.error_code) && (
@@ -285,8 +389,17 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
               <li key={order.id} className="rounded-xl border border-brand-chrome bg-white p-3">
                 <p className="font-black">{order.name} · {price(order.amount_cents)} subtotal</p>
                 <p className="text-sm">{order.drink}</p>
-                <p className="my-1 text-sm font-bold">{order.status === "paid" ? "Paid · Sent to bar" : order.status === "opened" ? (posLink?.id === order.id ? "Ready to open Square POS" : "Payment unconfirmed · Check Square POS") : "Waiting for payment"}</p>
-                {order.status === "waiting" && (
+                <p className="my-1 text-sm font-bold">{order.status === "paid" ? (order.tender === "cash" ? `Paid cash · change ${money(order.change_cents ?? 0)} · Sent to bar` : "Paid · Sent to bar") : order.status === "opened" ? (posLink?.id === order.id ? "Ready to open Square POS" : "Payment unconfirmed · Check Square POS") : "Waiting for payment"}</p>
+                {!phone && order.status === "waiting" && cashSale?.id !== order.id && (
+                  <button type="button" className={`${button} mr-2 bg-emerald-800`} disabled={busy || order.tax_cents === null} onClick={() => startCash(order)}>
+                    Take cash · {money(order.amount_cents + (order.tax_cents ?? 0))}
+                  </button>
+                )}
+                {!phone && order.status === "opened" && <p className="text-xs font-bold text-rose-900">Card attempt open — find or clear it in Square before taking cash.</p>}
+                {!phone && order.status === "paid" && order.tender === "cash" && (
+                  <button type="button" className="text-sm font-bold underline" disabled={busy} onClick={() => refundCash(order)}>Cash refund</button>
+                )}
+                {order.status === "waiting" && (phone || cashSale?.id !== order.id) && (
                   <button type="button" className={button} disabled={busy} onClick={() => void act({
                     action: phone ? "open" : "cancel", id: order.id,
                   }, ({ url }) => {
@@ -318,6 +431,8 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
             ))}
           </ul>
           {!orders.length && <p className="text-sm text-brand-ink/65">No walk-up orders yet.</p>}
+          {!phone && <DrawerPanel shift={shift} lastClosed={lastClosed} operator={operator} setOperator={setOperator}
+            managerCode={managerCode} setManagerCode={setManagerCode} request={request} onChanged={() => void refresh()} />}
         </>
       )}
     </section>

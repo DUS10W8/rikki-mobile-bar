@@ -78,6 +78,25 @@ async function startCheckout(db, req, res) {
   return res.status(200).json({ url: link.url });
 }
 
+const trackerFields = "id,name,drink,status,bar_station,table_number,handoff,created_at,updated_at";
+const activeStatuses = ["New", "In Progress", "new", "in_progress"];
+
+// Guest tracker: one order by its unguessable id, plus queue position. No phone numbers.
+async function trackOrder(db, id, res) {
+  if (typeof id !== "string" || !uuid.test(id)) return res.status(400).json({ error: "Invalid order." });
+  const { data: order, error } = await db.from("orders").select(trackerFields).eq("id", id).maybeSingle();
+  if (error) throw error;
+  if (!order) return res.status(404).json({ error: "Order not found." });
+  let position = null;
+  if (activeStatuses.includes(order.status)) {
+    const { count, error: countError } = await db.from("orders").select("id", { count: "exact", head: true })
+      .not("square_order_id", "is", null).in("status", activeStatuses).lte("created_at", order.created_at);
+    if (countError) throw countError;
+    position = Math.max(count ?? 1, 1);
+  }
+  return res.status(200).json({ order, position });
+}
+
 async function checkoutStatus(db, id, res) {
   if (typeof id !== "string" || !uuid.test(id)) return res.status(400).json({ error: "Invalid checkout." });
   const { data: checkout, error } = await db.from("drink_checkouts").select("square_order_id,amount_cents").eq("id", id).maybeSingle();
@@ -137,6 +156,7 @@ export default async function handler(req, res) {
     const db = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+    if (req.method === "GET" && req.query.order) return await trackOrder(db, req.query.order, res);
     if (req.method === "GET") return await checkoutStatus(db, req.query.checkout, res);
     if (req.body?.type === "payment.created" || req.body?.type === "payment.updated") {
       return await paymentNotification(db, req.body, res);

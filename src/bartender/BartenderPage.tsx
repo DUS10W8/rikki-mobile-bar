@@ -14,7 +14,7 @@ import {
 
 import { BARTENDER_POLL_INTERVAL_MS, ENABLE_DRINK_LIMITS, ENABLE_READY_SMS } from "../order/eventConfig";
 import { EVENT_DRINK_MENU } from "../order/eventMenu";
-import { orderSupabase, orderSupabaseConfig } from "../order/orderSupabaseClient";
+import { orderSupabase } from "../order/orderSupabaseClient";
 
 type NormalizedOrderStatus = "new" | "in_progress" | "ready" | "completed";
 type OrderStatus = NormalizedOrderStatus | "New" | "In Progress" | "Ready" | "Completed";
@@ -40,8 +40,10 @@ type DrinkMenuItem = {
   category: string | null;
 };
 
-const BARTENDER_PIN = import.meta.env.VITE_BARTENDER_PIN?.trim() || "";
-const PIN_SESSION_KEY = "rikki-bartender-pin-ok";
+// Staff unlock with the server-checked WALKUP_STAFF_CODE. The server sets a 12-hour
+// HttpOnly session shared with the walk-up register; nothing secret ships in this bundle.
+const ORDERS_API = "/api/bartender-orders";
+let staffCodeForNextRequest = "";
 const STATION_STORAGE_KEY = "rikki-bartender-station";
 const MAX_DRINK_TICKETS = 2;
 
@@ -55,7 +57,8 @@ export default function BartenderPage() {
 
 function BartenderDashboard() {
   const [showWalkup, setShowWalkup] = useState(false);
-  const [authorized, setAuthorized] = useState(() => sessionStorage.getItem(PIN_SESSION_KEY) === "true");
+  const [authorized, setAuthorized] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
   const [station, setStation] = useState<BarStation | "">(() => {
     const savedStation = localStorage.getItem(STATION_STORAGE_KEY);
     return savedStation === "white_bar" || savedStation === "brown_bar" ? savedStation : "";
@@ -73,29 +76,25 @@ function BartenderDashboard() {
   const newOrderIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    // Restore an existing staff session (cookie) without asking for the code again.
+    let ignore = false;
+    void staffFetch(ORDERS_API).then((response) => {
+      if (ignore) return;
+      setAuthorized(response.ok);
+      setCheckingAccess(false);
+    }).catch(() => !ignore && setCheckingAccess(false));
+    return () => { ignore = true; };
+  }, []);
+
+  useEffect(() => {
     if (!authorized) return undefined;
 
-    const refreshOrders = (silent = false) => loadOrders({ setOrders, setLoading, setError, silent });
+    const refreshOrders = (silent = false) => loadOrders({ setOrders, setLoading, setError, silent, onLocked: () => setAuthorized(false) });
 
     refreshOrders();
     loadDrinkMenu({ setDrinkMenu });
     const pollId = window.setInterval(() => refreshOrders(true), BARTENDER_POLL_INTERVAL_MS);
-
-    if (!orderSupabase) {
-      return () => window.clearInterval(pollId);
-    }
-
-    const channel = orderSupabase
-      .channel("bartender-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-        refreshOrders(true);
-      })
-      .subscribe();
-
-    return () => {
-      window.clearInterval(pollId);
-      orderSupabase.removeChannel(channel);
-    };
+    return () => window.clearInterval(pollId);
   }, [authorized]);
 
   useEffect(() => {
@@ -132,21 +131,26 @@ function BartenderDashboard() {
   }, [orders]);
   const ticketLabelsByOrderId = useMemo(() => (ENABLE_DRINK_LIMITS ? getTicketLabelsByOrderId(orders, drinkMenu) : {}), [orders, drinkMenu]);
 
-  const unlock = (event: FormEvent<HTMLFormElement>) => {
+  const unlock = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPinError("");
-
-    if (!BARTENDER_PIN) {
-      setPinError("Bartender PIN is not configured. Add VITE_BARTENDER_PIN in Vercel.");
+    const code = pin.trim();
+    if (!code) return;
+    staffCodeForNextRequest = code;
+    const response = await staffFetch(ORDERS_API).catch(() => null);
+    staffCodeForNextRequest = "";
+    if (!response) {
+      setPinError("Could not reach the server. Check the connection and try again.");
       return;
     }
-
-    if (pin.trim() !== BARTENDER_PIN) {
-      setPinError("Incorrect PIN.");
+    if (response.status === 401) {
+      setPinError("That staff code was not accepted.");
       return;
     }
-
-    sessionStorage.setItem(PIN_SESSION_KEY, "true");
+    if (!response.ok) {
+      setPinError("The queue is unavailable right now.");
+      return;
+    }
     setAuthorized(true);
     setPin("");
   };
@@ -202,6 +206,10 @@ function BartenderDashboard() {
     setUpdatingId(null);
   };
 
+  if (checkingAccess) {
+    return <BartenderShell><main className="mx-auto max-w-md px-5 py-16 text-center font-bold text-brand-ink/70" role="status">Checking staff access…</main></BartenderShell>;
+  }
+
   if (!authorized) {
     return (
       <BartenderShell>
@@ -217,12 +225,11 @@ function BartenderDashboard() {
               </div>
             </div>
             <label className="mt-6 grid gap-2">
-              <span className="text-sm font-bold text-brand-ink/70">PIN</span>
+              <span className="text-sm font-bold text-brand-ink/70">Staff code</span>
               <input
                 value={pin}
                 onChange={(event) => setPin(event.target.value)}
                 className="min-h-12 rounded-2xl border border-brand-chrome bg-[#fffaf2] px-4 text-lg font-bold text-brand-ink outline-none focus:border-brand-sea focus:ring-2 focus:ring-brand-sea/20"
-                inputMode="numeric"
                 type="password"
                 autoComplete="current-password"
               />
@@ -283,7 +290,7 @@ function BartenderDashboard() {
           </div>
           <button
             className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-brand-chrome bg-[#fffaf2]/90 px-3 text-sm font-bold text-brand-ink shadow-sm sm:min-h-11 sm:gap-2 sm:rounded-2xl sm:px-4 sm:text-base"
-            onClick={() => loadOrders({ setOrders, setLoading, setError })}
+            onClick={() => loadOrders({ setOrders, setLoading, setError, onLocked: () => setAuthorized(false) })}
             type="button"
           >
             <RefreshCw className="h-4 w-4" />
@@ -525,7 +532,7 @@ function KitchenOrderCard({
           </div>
           {(isWalkupOrder(order) || order.handoff || order.table_number) && (
             <div className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-brand-rust px-2.5 py-1 text-sm font-black uppercase tracking-wide text-white shadow-sm">
-              {isWalkupOrder(order) ? "Paid · Walk-up" : order.handoff ? HANDOFF_LABELS[order.handoff] : "Table " + order.table_number}
+              {isWalkupOrder(order) ? (order.square_order_id?.startsWith("cash:") ? "Paid cash · Walk-up" : "Paid card · Walk-up") : order.handoff ? HANDOFF_LABELS[order.handoff] : "Table " + order.table_number}
             </div>
           )}
           <div className="flex items-start justify-between gap-3">
@@ -608,12 +615,12 @@ function ActionButton({
 }
 
 function isWalkupOrder(order: BartenderOrder) {
-  return order.square_order_id?.startsWith("walkup:") ?? false;
+  return /^(walkup|cash):/.test(order.square_order_id ?? "");
 }
 
 function getOrderActions(order: BartenderOrder): Array<{ label: string; status: NormalizedOrderStatus; tone: "default" | "ready" | "complete" }> {
   const normalizedStatus = normalizeOrderStatus(order.status);
-  const readyLabel = order.handoff === "upstairs" ? "Send upstairs" : order.handoff === "outdoor_pickup" ? "Ready for pickup" : "Ready";
+  const readyLabel = isWalkupOrder(order) ? "Made" : order.handoff === "upstairs" ? "Send upstairs" : order.handoff === "outdoor_pickup" ? "Ready for pickup" : "Ready";
   if (normalizedStatus === "new") {
     return [
       { label: "Start", status: "in_progress", tone: "default" },
@@ -704,11 +711,12 @@ function getStatusCardStyle(status: OrderStatus) {
   return styles[normalizedStatus];
 }
 
-function requireSupabase(operation: string) {
-  if (orderSupabase) return null;
-  const error = new Error(orderSupabaseConfig.error || "Supabase is not configured.");
-  console.error("[Supabase request failed]", { operation, message: error.message });
-  return error;
+function staffFetch(url: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  headers.set("X-Walkup-Request", "1");
+  if (staffCodeForNextRequest) headers.set("X-Walkup-Code", staffCodeForNextRequest);
+  if (init.body) headers.set("Content-Type", "application/json");
+  return fetch(url, { ...init, headers, credentials: "same-origin", cache: "no-store" });
 }
 
 async function loadOrders({
@@ -716,70 +724,51 @@ async function loadOrders({
   setLoading,
   setError,
   silent = false,
+  onLocked,
 }: {
   setOrders: (orders: BartenderOrder[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string) => void;
   silent?: boolean;
+  onLocked: () => void;
 }) {
   if (!silent) setLoading(true);
-
-  const configError = requireSupabase("orders.select");
-  if (configError || !orderSupabase) {
+  try {
+    const response = await staffFetch(ORDERS_API);
+    if (response.status === 401) {
+      onLocked();
+      return;
+    }
+    const payload = await response.json().catch(() => ({})) as { orders?: BartenderOrder[]; error?: string };
+    if (!response.ok) throw new Error(payload.error || "The order queue is unavailable.");
+    setError("");
+    setOrders(payload.orders ?? []);
+  } catch (error) {
+    // Keep showing the last good list during a brief connection drop.
+    setError(error instanceof Error ? error.message : "The order queue is unavailable.");
+  } finally {
     if (!silent) setLoading(false);
-    setOrders([]);
-    setError(configError?.message || "Supabase is not configured.");
-    return;
   }
-
-  const { data, error } = await orderSupabase
-    .from("orders")
-    .select("*")
-    .not("square_order_id", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(75);
-
-  if (!silent) setLoading(false);
-
-  if (error) {
-    setOrders([]);
-    setError(error.message);
-    return;
-  }
-
-  setError("");
-  setOrders((data || []) as BartenderOrder[]);
 }
 
 async function loadDrinkMenu({ setDrinkMenu }: { setDrinkMenu: (drinks: DrinkMenuItem[]) => void }) {
-  const configError = requireSupabase("drinks.select");
-  if (configError || !orderSupabase) {
+  if (!orderSupabase) {
     setDrinkMenu(EVENT_DRINK_MENU);
     return;
   }
-
   try {
     const { data, error } = await orderSupabase.from("drinks").select("name, category");
     setDrinkMenu(error ? EVENT_DRINK_MENU : [...EVENT_DRINK_MENU, ...((data || []) as DrinkMenuItem[])]);
-  } catch (error) {
-    console.error("[Supabase request failed]", {
-      operation: "drinks.select",
-      message: error instanceof Error ? error.message : String(error),
-    });
+  } catch {
     setDrinkMenu(EVENT_DRINK_MENU);
   }
 }
 
 async function updateOrderStatus(id: string, status: NormalizedOrderStatus, barStation?: BarStation | null) {
-  const configError = requireSupabase("orders.update");
-  if (configError || !orderSupabase) return { error: configError || new Error("Supabase is not configured.") };
-
   try {
-    const update: { status: OrderStatus; bar_station?: BarStation | null } = { status: toPersistedOrderStatus(status) };
-    if (barStation !== undefined) update.bar_station = barStation;
-
-    const { error } = await orderSupabase.from("orders").update(update).eq("id", id);
-    return { error };
+    const response = await staffFetch(ORDERS_API, { method: "POST", body: JSON.stringify({ id, status, barStation }) });
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    return { error: response.ok ? null : new Error(payload.error || "Status could not be saved.") };
   } catch (error) {
     return { error: error instanceof Error ? error : new Error(String(error)) };
   }
@@ -789,10 +778,8 @@ async function sendReadySms(order: BartenderOrder) {
   try {
     const response = await fetch("/api/send-ready-sms", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Bartender-Pin": BARTENDER_PIN,
-      },
+      headers: { "Content-Type": "application/json", "X-Walkup-Request": "1" },
+      credentials: "same-origin",
       body: JSON.stringify({
         orderId: order.id,
         name: order.name,
