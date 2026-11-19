@@ -1,23 +1,14 @@
-const jsonHeaders = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-Bartender-Pin",
-};
+import { authorizeStaff } from "../src/server/staffSession.js";
+
+const jsonHeaders = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 
 export default async function handler(request, response) {
-  if (request.method === "OPTIONS") {
-    return response.status(204).setHeader("Access-Control-Allow-Origin", "*").end();
-  }
-
   if (request.method !== "POST") {
     return sendJson(response, 405, { message: "Method not allowed." });
   }
 
-  const configuredPin = (process.env.BARTENDER_PIN || process.env.VITE_BARTENDER_PIN || "").trim();
-  const submittedPin = String(request.headers["x-bartender-pin"] || request.body?.pin || "").trim();
-
-  if (!configuredPin || submittedPin !== configuredPin) {
+  // Staff session only (the old PIN was shipped in the public site bundle).
+  if (request.headers["x-walkup-request"] !== "1" || !authorizeStaff(request, response)) {
     return sendJson(response, 401, { message: "Unauthorized." });
   }
 
@@ -72,7 +63,7 @@ export default async function handler(request, response) {
 }
 
 async function getOrder(body) {
-  const orderId = String(body.orderId || "");
+  const orderId = /^[0-9a-f-]{36}$/i.test(String(body.orderId || "")) ? String(body.orderId) : "";
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -103,13 +94,7 @@ async function getOrder(body) {
     }
   }
 
-  return {
-    orderId,
-    name: String(body.name || ""),
-    phone: String(body.phone || ""),
-    drink: String(body.drink || ""),
-    ready_sms_sent_at: null,
-  };
+  return { orderId: null, phone: null };
 }
 
 async function markSmsSent(orderId) {

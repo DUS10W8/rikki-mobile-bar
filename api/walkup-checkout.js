@@ -1,38 +1,12 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { squareRequest } from "../src/server/square.js";
 import { isWalkupId, releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
+import { authorizeStaff, hasManagerAccess, setSession } from "../src/server/staffSession.js";
+import { salesTaxBasisPoints, taxCents } from "../src/server/tax.js";
 
 import { activeMenuId, menus } from "../src/server/menus.js";
-const fields = "id,name,drink,amount_cents,status";
+const fields = "id,name,drink,amount_cents,tax_cents,status,tender,cash_received_cents,change_cents,order_id,created_at";
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
-
-function hasStaffAccess(value, expected) {
-  if (typeof value !== "string" || value.length > 128) return false;
-  const supplied = Buffer.from(value.trim());
-  const secret = Buffer.from(expected.trim());
-  return supplied.length === secret.length && timingSafeEqual(supplied, secret);
-}
-
-const sessionName = "rikki_walkup";
-const sessionSeconds = 12 * 60 * 60;
-
-function sessionSignature(expiry, secret) {
-  return createHmac("sha256", secret.trim()).update("walkup:" + expiry).digest("hex");
-}
-
-function hasSession(cookieHeader, secret) {
-  const value = cookieHeader?.split(";").map((entry) => entry.trim()).find((entry) => entry.startsWith(sessionName + "="));
-  const [expiry, signature] = value?.slice(sessionName.length + 1).split(".") ?? [];
-  if (!/^\d{10}$/.test(expiry ?? "") || Number(expiry) <= Math.floor(Date.now() / 1000)) return false;
-  return hasStaffAccess(signature, sessionSignature(expiry, secret));
-}
-
-function setSession(res, secret, maxAge) {
-  const expiry = Math.floor(Date.now() / 1000) + maxAge;
-  const value = maxAge ? expiry + "." + sessionSignature(expiry, secret) : "";
-  res.setHeader("Set-Cookie", sessionName + "=" + value + "; Path=/api/walkup-checkout; Max-Age=" + maxAge + "; HttpOnly; Secure; SameSite=Lax");
-}
 
 async function createWalkup(db, body, res) {
   const menu = menus[body.eventMenu ?? activeMenuId];
@@ -53,13 +27,108 @@ async function createWalkup(db, body, res) {
   const drink = order.map(({ drink, quantity }) => `${quantity} × ${drink.name}`).join(", ");
   if (drink.length > 250) return res.status(400).json({ error: "Split this order into smaller groups of drinks." });
   const amount = order.reduce((total, item) => total + item.quantity * item.drink.priceCents, 0);
+  // Tax is fixed when the order is rung, from the server's rule. Null = rule unavailable:
+  // card still works (Square adds tax), cash is refused until the order is rung again.
+  const basisPoints = await salesTaxBasisPoints().catch((error) => {
+    console.error("Sales tax lookup failed", error.message);
+    return null;
+  });
   const { error } = await db.from("walkup_checkouts").upsert({
     id: body.id, name: body.name.trim() || "Walk-up guest", drink, amount_cents: amount,
+    tax_basis_points: basisPoints, tax_cents: basisPoints === null ? null : taxCents(amount, basisPoints),
     // Structured lines: the database deducts each item's recipe from stock when payment releases the ticket.
     items: order.map(({ drink, quantity }) => ({ id: drink.id, name: drink.name, quantity, price_cents: drink.priceCents })),
   }, { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;
-  return res.status(201).json({ ok: true });
+  // Return what is stored, so a retried create reports the original totals.
+  const { data: saved, error: readError } = await db.from("walkup_checkouts").select(fields).eq("id", body.id).maybeSingle();
+  if (readError) throw readError;
+  return res.status(201).json({ ok: true, order: saved });
+}
+
+const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+const operatorOf = (body) => typeof body.operator === "string" && body.operator.trim().length >= 1 && body.operator.length <= 60
+  ? body.operator.trim() : null;
+const cents = (value, max = 1000000) => Number.isInteger(value) && value >= 0 && value <= max ? value : null;
+
+// Database rules raise plain-language messages; pass those to the cashier as a 409.
+async function rpc(db, res, name, args, shape = (data) => data) {
+  const { data, error } = await db.rpc(name, args);
+  if (error) {
+    if (error.code === "P0001" || error.code === "23505") return res.status(409).json({ error: error.message });
+    throw error;
+  }
+  return res.status(200).json(shape(data));
+}
+
+const cashActions = ["open_shift", "pay_cash", "drawer_movement", "cash_refund", "close_shift"];
+
+async function cashAction(db, req, body, res) {
+  if (!cashActions.includes(body.action)) return null;
+  const operator = operatorOf(body);
+  if (!operator) return res.status(400).json({ error: "Enter your name as the operator." });
+  const managerOnly = ["drawer_movement", "cash_refund", "close_shift"].includes(body.action);
+  if (managerOnly && !hasManagerAccess(req)) return res.status(403).json({ error: "A manager code is required for this." });
+  const shiftId = typeof body.shiftId === "string" && uuid.test(body.shiftId) ? body.shiftId : null;
+
+  switch (body.action) {
+    case "open_shift": {
+      const floatCents = cents(body.floatCents, 500000);
+      const label = typeof body.eventLabel === "string" ? body.eventLabel.trim().slice(0, 80) : "";
+      if (floatCents === null || !label) return res.status(400).json({ error: "Enter the event and the opening float." });
+      return rpc(db, res, "open_cash_shift", { p_drawer: "main", p_event_label: label, p_float_cents: floatCents,
+        p_actor: operator, p_key: "open:" + body.id }, (id) => ({ shiftId: id }));
+    }
+    case "pay_cash": {
+      const total = cents(body.totalCents);
+      const received = cents(body.receivedCents);
+      if (!shiftId || total === null || received === null) return res.status(400).json({ error: "Enter the cash received." });
+      return rpc(db, res, "pay_walkup_cash", { p_id: body.id, p_shift: shiftId, p_expected_total_cents: total,
+        p_received_cents: received, p_actor: operator }, (result) => ({ result }));
+    }
+    case "drawer_movement": {
+      const amount = cents(body.amountCents, 500000);
+      if (!shiftId || !amount || !["paid_in", "payout", "drop"].includes(body.kind)) {
+        return res.status(400).json({ error: "Choose paid in, payout or drop and an amount." });
+      }
+      return rpc(db, res, "record_drawer_movement", { p_shift: shiftId, p_kind: body.kind, p_amount_cents: amount,
+        p_reason: String(body.reason ?? "").slice(0, 200), p_actor: operator, p_key: "move:" + body.id }, () => ({ ok: true }));
+    }
+    case "cash_refund": {
+      const amount = cents(body.amountCents);
+      if (!shiftId || !amount || typeof body.refundId !== "string" || !uuid.test(body.refundId)) {
+        return res.status(400).json({ error: "Enter the refund amount." });
+      }
+      return rpc(db, res, "refund_walkup_cash", { p_id: body.id, p_shift: shiftId, p_amount_cents: amount,
+        p_reason: String(body.reason ?? "").slice(0, 200), p_actor: operator, p_key: "refund:" + body.refundId },
+        (refunded) => ({ refundedCents: refunded }));
+    }
+    case "close_shift": {
+      const denominations = body.denominations;
+      if (!shiftId || typeof denominations !== "object" || denominations === null || Array.isArray(denominations) ||
+          Object.values(denominations).some((count) => cents(count, 10000) === null)) {
+        return res.status(400).json({ error: "Enter a count for each bill and coin." });
+      }
+      return rpc(db, res, "close_cash_shift", { p_shift: shiftId, p_denominations: denominations,
+        p_reason: String(body.reason ?? "").slice(0, 200), p_actor: operator, p_key: "close:" + body.id },
+        (result) => ({ result }));
+    }
+    default:
+      return null;
+  }
+}
+
+async function shiftStatus(db) {
+  const { data: shift, error } = await db.from("cash_shift_summary").select("*")
+    .eq("drawer", "main").is("closed_at", null).maybeSingle();
+  if (error) throw error;
+  if (!shift) {
+    const { data: last, error: lastError } = await db.from("cash_shift_summary").select("*")
+      .eq("drawer", "main").not("closed_at", "is", null).order("closed_at", { ascending: false }).limit(1).maybeSingle();
+    if (lastError) throw lastError;
+    return { shift: null, lastClosed: last };
+  }
+  return { shift, lastClosed: null };
 }
 
 async function squareTenders(location, orderId) {
@@ -84,24 +153,28 @@ export default async function handler(req, res) {
     setSession(res, WALKUP_STAFF_CODE, 0);
     return res.status(200).json({ ok: true });
   }
-  const validCode = hasStaffAccess(req.headers["x-walkup-code"], WALKUP_STAFF_CODE);
-  if (!validCode && !hasSession(req.headers.cookie, WALKUP_STAFF_CODE)) {
-    return res.status(401).json({ error: "Enter the walk-up staff code." });
-  }
+  if (!authorizeStaff(req, res)) return res.status(401).json({ error: "Enter the walk-up staff code." });
 
-  if (validCode) setSession(res, WALKUP_STAFF_CODE, sessionSeconds);
   const db = createClient(dbUrl, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
     if (req.method === "GET") {
       const { data, error } = await db.from("walkup_checkouts").select(fields)
         .is("archived_at", null).in("status", ["waiting", "opened", "paid"]).order("created_at", { ascending: false }).limit(25);
       if (error) throw error;
-      return res.status(200).json({ orders: data });
+      return res.status(200).json({ orders: data, ...(req.query?.drawer ? await shiftStatus(db) : {}) });
     }
     if (req.method !== "POST") return res.status(405).end();
     const body = req.body ?? {};
     if (!isWalkupId(body.id)) return res.status(400).json({ error: "Invalid walk-up order." });
     if (body.action === "create") return await createWalkup(db, body, res);
+    if (body.action === "cash_status") {
+      // Recovery after a dropped connection: did this cash sale already go through?
+      const { data, error } = await db.from("walkup_checkouts").select(fields).eq("id", body.id).maybeSingle();
+      if (error) throw error;
+      return res.status(data ? 200 : 404).json({ order: data });
+    }
+    const cash = await cashAction(db, req, body, res);
+    if (cash !== null) return cash;
     if (body.action === "archive") {
       const { data, error } = await db.from("walkup_checkouts").update({ archived_at: new Date().toISOString() })
         .eq("id", body.id).eq("status", "opened").is("archived_at", null).select("id").maybeSingle();
