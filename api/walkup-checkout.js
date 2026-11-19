@@ -5,6 +5,7 @@ import { squareRequest } from "../src/server/square.js";
 import { isWalkupId, releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
 
 const { drinks } = createRequire(import.meta.url)("../src/order/eventMenu.json");
+const salsaMenu = createRequire(import.meta.url)("../src/order/salsaMenu.json");
 const fields = "id,name,drink,amount_cents,status";
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
 
@@ -36,13 +37,14 @@ function setSession(res, secret, maxAge) {
 }
 
 async function createWalkup(db, body, res) {
-  if (!Array.isArray(body.items) || !body.items.length || body.items.length > drinks.length ||
+  const menu = body.eventMenu === "salsa" ? salsaMenu : drinks;
+  if (!Array.isArray(body.items) || !body.items.length || body.items.length > menu.length ||
       typeof body.name !== "string" || body.name.length > 80) {
     return res.status(400).json({ error: "Choose at least one drink." });
   }
   const selected = new Map();
   for (const item of body.items) {
-    const drink = drinks.find(({ id }) => id === item?.id);
+    const drink = menu.find(({ id }) => id === item?.id);
     if (!drink || selected.has(drink.id) || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10) {
       return res.status(400).json({ error: "Check the selected drinks and quantities." });
     }
@@ -54,6 +56,8 @@ async function createWalkup(db, body, res) {
   const amount = order.reduce((total, item) => total + item.quantity * item.drink.priceCents, 0);
   const { error } = await db.from("walkup_checkouts").upsert({
     id: body.id, name: body.name.trim() || "Walk-up guest", drink, amount_cents: amount,
+    // Structured lines: the database deducts each item's recipe from stock when payment releases the ticket.
+    items: order.map(({ drink, quantity }) => ({ id: drink.id, name: drink.name, quantity, price_cents: drink.priceCents })),
   }, { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;
   return res.status(201).json({ ok: true });
