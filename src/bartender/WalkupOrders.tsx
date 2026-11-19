@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ACTIVE_EVENT, EVENT_DRINK_MENU, EVENT_MENUS, sortCategories } from "../order/eventMenu";
 import { CashPanel, ChangeDue, DrawerPanel, type CashResult, type CashSale, type Shift } from "./cash";
 import { money, parseCents } from "./cashMoney";
+import { shortOrderId } from "../order/orderHandoff";
 
 type Walkup = {
   id: string;
@@ -12,6 +13,7 @@ type Walkup = {
   status: "waiting" | "opened" | "paid";
   tender?: "card" | "cash" | null;
   change_cents?: number | null;
+  order_id?: string | null;
 };
 
 type PosReturn = { state?: string; transaction_id?: string; error_code?: string; status?: string };
@@ -387,7 +389,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
           <ul className="grid gap-2">
             {orders.map((order) => (
               <li key={order.id} className="rounded-xl border border-brand-chrome bg-white p-3">
-                <p className="font-black">{order.name} · {price(order.amount_cents)} subtotal</p>
+                <p className="font-black">{order.order_id && <span className="mr-2 rounded bg-brand-ink px-1.5 text-white">#{shortOrderId(order.order_id)}</span>}{order.name} · {price(order.amount_cents)} subtotal</p>
                 <p className="text-sm">{order.drink}</p>
                 <p className="my-1 text-sm font-bold">{order.status === "paid" ? (order.tender === "cash" ? `Paid cash · change ${money(order.change_cents ?? 0)} · Sent to bar` : "Paid · Sent to bar") : order.status === "opened" ? (posLink?.id === order.id ? "Ready to open Square POS" : "Payment unconfirmed · Check Square POS") : "Waiting for payment"}</p>
                 {!phone && order.status === "waiting" && cashSale?.id !== order.id && (

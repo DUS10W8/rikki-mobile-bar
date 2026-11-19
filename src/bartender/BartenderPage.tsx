@@ -49,6 +49,7 @@ const MAX_DRINK_TICKETS = 2;
 
 export default function BartenderPage() {
   const params = new URLSearchParams(window.location.search);
+  if (params.get("view") === "ready") return <ReadyBoard />;
   if (params.get("walkup") === "phone" || params.has("data")) {
     return <main className="mx-auto max-w-lg p-4"><WalkupOrders phone /></main>;
   }
@@ -620,7 +621,7 @@ function isWalkupOrder(order: BartenderOrder) {
 
 function getOrderActions(order: BartenderOrder): Array<{ label: string; status: NormalizedOrderStatus; tone: "default" | "ready" | "complete" }> {
   const normalizedStatus = normalizeOrderStatus(order.status);
-  const readyLabel = isWalkupOrder(order) ? "Made" : order.handoff === "upstairs" ? "Send upstairs" : order.handoff === "outdoor_pickup" ? "Ready for pickup" : "Ready";
+  const readyLabel = isWalkupOrder(order) ? "Made" : order.handoff === "upstairs" ? "Send upstairs" : order.handoff ? "Made · to pickup table" : "Ready";
   if (normalizedStatus === "new") {
     return [
       { label: "Start", status: "in_progress", tone: "default" },
@@ -633,7 +634,7 @@ function getOrderActions(order: BartenderOrder): Array<{ label: string; status: 
   }
 
   if (normalizedStatus === "ready") {
-    return [{ label: isWalkupOrder(order) ? "Handed to guest" : order.handoff === "outdoor_pickup" ? "Mark picked up" : "Mark delivered", status: "completed", tone: "complete" }];
+    return [{ label: isWalkupOrder(order) ? "Handed to guest" : order.handoff === "upstairs" ? "Mark delivered" : "Picked up · wristband checked", status: "completed", tone: "complete" }];
   }
 
   return [];
@@ -941,4 +942,54 @@ function getPaidDrinkPrice(category: string) {
   if (normalizedCategory.includes("beer")) return 3;
   if (normalizedCategory.includes("wine")) return 4;
   return 5;
+}
+
+// Guest-facing pickup screen for the door table: /bartender?view=ready
+// Uses the same staff session as the board, so unlock /bartender on that device first.
+function ReadyBoard() {
+  const [orders, setOrders] = useState<BartenderOrder[]>([]);
+  const [state, setState] = useState<"loading" | "ok" | "locked" | "offline">("loading");
+
+  useEffect(() => {
+    let ignore = false;
+    const load = async () => {
+      try {
+        const response = await staffFetch(ORDERS_API);
+        if (ignore) return;
+        if (response.status === 401) return setState("locked");
+        const payload = await response.json() as { orders?: BartenderOrder[] };
+        setOrders(payload.orders ?? []);
+        setState("ok");
+      } catch {
+        if (!ignore) setState("offline");
+      }
+    };
+    void load();
+    const id = window.setInterval(load, BARTENDER_POLL_INTERVAL_MS);
+    return () => { ignore = true; window.clearInterval(id); };
+  }, []);
+
+  const ready = orders.filter((order) => normalizeOrderStatus(order.status) === "ready").sort((a, b) => getReadyTime(a) - getReadyTime(b));
+  const making = orders.filter((order) => ["new", "in_progress"].includes(normalizeOrderStatus(order.status))).length;
+
+  return (
+    <main className="min-h-screen bg-brand-ink p-6 text-white">
+      <div className="flex items-baseline justify-between gap-4">
+        <h1 className="font-heading text-4xl font-black">Ready for pickup</h1>
+        <p className="text-xl font-bold text-white/70">{making} being made</p>
+      </div>
+      <p className="mt-1 text-lg text-white/70">Show your order number and wristband.</p>
+      {state === "locked" && <p className="mt-6 rounded-xl bg-rose-900 p-4 text-xl font-bold">Unlock the bartender page on this device first, then reopen this screen.</p>}
+      {state === "offline" && <p className="mt-6 rounded-xl bg-amber-800 p-4 text-xl font-bold">Reconnecting…</p>}
+      <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {ready.map((order) => (
+          <li key={order.id} className="rounded-2xl bg-white p-4 text-center text-brand-ink">
+            <p className="whitespace-nowrap text-[clamp(1.75rem,4.5vw,3rem)] font-black tracking-wide">#{shortOrderId(order.id)}</p>
+            <p className="mt-1 truncate text-2xl font-bold">{getDisplayName(order.name).split(" ")[0]}</p>
+          </li>
+        ))}
+      </ul>
+      {state === "ok" && !ready.length && <p className="mt-10 text-center text-2xl text-white/60">Nothing waiting. Codes appear here when your order is ready.</p>}
+    </main>
+  );
 }
