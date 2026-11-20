@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { squareRequest } from "../src/server/square.js";
-import { isWalkupId, releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
+import { isWalkupId, releaseWalkupPayment, unclaimedReason, walkupNotePrefix } from "../src/server/walkupPayment.js";
 import { authorizeWalkup, hasManagerAccess, setSession } from "../src/server/staffSession.js";
 import { salesTaxBasisPoints, taxCents } from "../src/server/tax.js";
 
@@ -156,27 +156,6 @@ function posUrl(row, env) {
 }
 // Older card attempts are not offered again: they need Find Square payment or Clear failed attempt.
 const chargeWindowMs = 15 * 60 * 1000;
-
-// Square POS does not keep the note we send, so a card payment often arrives without it.
-// A note-less payment may still be matched to this order when it is new (made after the
-// order was rung, within 30 minutes) and not already used: not by another walk-up order,
-// not by a guest QR checkout. releaseWalkupPayment then checks status, location and amount.
-async function unclaimedReason(db, payment, checkout, id) {
-  const madeAt = new Date(payment.created_at).getTime();
-  const rungAt = new Date(checkout.created_at).getTime();
-  if (!Number.isFinite(madeAt) || madeAt < rungAt - 2 * 60000 || madeAt > rungAt + 30 * 60000) {
-    return "payment was not made within 30 minutes of this order";
-  }
-  const { data: used, error } = await db.from("walkup_checkouts").select("id").eq("payment_id", payment.id).neq("id", id).limit(1);
-  if (error) throw error;
-  if (used?.length) return "payment already used by another walk-up order";
-  if (payment.order_id) {
-    const { data: qr, error: qrError } = await db.from("drink_checkouts").select("id").eq("square_order_id", payment.order_id).limit(1);
-    if (qrError) throw qrError;
-    if (qr?.length) return "payment belongs to a guest QR order";
-  }
-  return null;
-}
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");

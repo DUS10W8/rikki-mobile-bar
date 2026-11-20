@@ -626,9 +626,9 @@ function GuestScreen({ charge, waiting, confirming, failed, paid, unconfirmed, o
     return <div className={shell} role="alert">{brand}
       <div className="m-auto px-6 text-center">
         <p className="text-3xl font-black">Almost done</p>
-        <p className="mt-3 text-lg">Please show this screen to the person at the register so they can confirm your payment.</p>
+        <p className="mt-3 text-lg">Square is still confirming your payment. Your drink starts as soon as it clears. No need to pay again.</p>
         {unconfirmed.order && <p className="mt-6 text-lg">{unconfirmed.order.name} · {price(unconfirmed.order.amount_cents)} + tax</p>}
-        <p className="mt-8 text-xs text-brand-ink/40">Staff: on the iPad, tap Find Square payment. ({unconfirmed.message.slice(0, 120)})</p>
+        <p className="mt-8 text-xs text-brand-ink/40">({unconfirmed.message.slice(0, 160)})</p>
       </div>{staff}</div>;
   }
   if (failed) {
