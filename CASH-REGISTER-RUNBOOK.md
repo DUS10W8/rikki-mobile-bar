@@ -9,12 +9,32 @@ Optional: set `WALKUP_MANAGER_CODE` in Vercel. When it's set, refunds, payouts, 
 
 ## A cash sale
 1. Tap items. The ticket is on the right.
-2. Tap **Take cash**. The screen shows the subtotal, the tax and the total due. Tax is the same rate Square adds on card sales, read from Square's tax settings.
+2. Tap **Cash**. The screen shows the subtotal, the tax and the total due. Tax is the same rate Square adds on card sales, read from Square's tax settings.
 3. Tap a shortcut (**Exact**, $30, $40, …) or type the amount handed over. If it's not enough, the screen shows **Short** and won't confirm.
-4. Tap **Confirm cash received**. The ticket goes to the bar and stock comes out. The screen shows **Give $X.XX** until you tap **Start next order**.
+4. Tap **Confirm cash received**. The ticket goes to the bar and stock comes out. The screen shows **Give $X.XX** until you tap **Start next order** or the first item of the next order.
 
 If the connection drops after you've taken the cash, the screen says **"do not collect again"**. Tap **Check this sale**. Confirming again is safe: the same sale ID never records twice, even after a reload.
 If a card attempt is still open in Square for that ticket, cash is blocked. Find or clear the Square payment first.
+
+## Devices
+- **Abe's iPad (register):** /bartender?view=register. Every item is on one screen. The ticket on the right always shows the total with tax and the **Cash** and **Card on iPhone** buttons.
+- **Guest iPhone:** /bartender?walkup=phone. It gets a **payment-only login**: it can show and charge card orders, but it can't open the drink board, see guest phone numbers, ring orders or touch cash. Turn on **Guided Access** (Settings > Accessibility) so guests can't leave Safari. In Square, require a passcode to leave checkout so guests can't browse transactions or refunds.
+- **Rikki's board:** /bartender. Each ticket leads with the pickup code (the same code the guest has). Drinks are listed one per line. The time chip turns amber at 5 minutes and red at 10.
+
+## A card sale (Abe on the iPad, guest on the iPhone)
+Setup: the bar sits back from the window. Abe stands out front with the iPad. The guest-facing iPhone sits on a stand, facing the line. Rikki only makes drinks.
+Before service: on the iPhone, open **/bartender?walkup=phone** in Safari and enter the staff code. The screen turns into the guest screen ("Your order will appear here") and stays awake. Square POS must be signed in on that phone with Tap to Pay turned on.
+1. Abe taps the items on the iPad, then **Card on iPhone**.
+2. Within about 2 seconds the iPhone shows the guest **their items with prices, the subtotal, the tax, the total and a Pay button**.
+3. The guest taps **Pay**. Square opens with the amount filled in, and they tap their card or phone.
+4. The iPhone shows **Thank you** and their order number for 8 seconds. The ticket goes to Rikki.
+
+- If the guest backs out in Square, the Pay screen comes back.
+- If the guest changes their mind before paying, Abe taps **Cancel card charge** on the iPad.
+- Staff controls on the iPhone sit behind the faint **•••** in the top-right corner.
+- If several orders are waiting, they come up oldest first. After 15 minutes an unpaid charge leaves the guest screen. Use **Find Square payment** or **Cancel card charge** on the iPad for it.
+- iOS needs the guest's tap to open Square, so the Square screen can't open by itself.
+- Cash: Abe takes cash on the iPad with **Take cash**, the same as before.
 
 ## Bar board
 Walk-up drinks now show **Made**, then **Handed to guest**. Tickets say "Paid cash" or "Paid card".

@@ -50,6 +50,10 @@ const MAX_DRINK_TICKETS = 2;
 export default function BartenderPage() {
   const params = new URLSearchParams(window.location.search);
   if (params.get("view") === "ready") return <ReadyBoard />;
+  // Order-taker's iPad: the register on its own, without the drink board.
+  if (params.get("view") === "register") {
+    return <main className="min-h-screen bg-[#EADFC6] p-2 sm:p-3"><WalkupOrders /></main>;
+  }
   if (params.get("walkup") === "phone" || params.has("data")) {
     return <main className="mx-auto max-w-lg p-4"><WalkupOrders phone /></main>;
   }
@@ -283,6 +287,9 @@ function BartenderDashboard() {
                 <span className="rounded-full border border-brand-sea/30 bg-brand-sea/10 px-3 py-1 text-xs font-black uppercase tracking-wide text-brand-sea">
                   Station: {getStationLabel(station)}
                 </span>
+                <span className="rounded-full bg-[#fffaf2]/90 px-3 py-1 text-xs font-black text-brand-ink">
+                  {activeQueueCount} in queue
+                </span>
                 <button className="rounded-full border border-brand-chrome bg-[#fffaf2]/90 px-3 py-1 text-xs font-black text-brand-ink" type="button" onClick={changeStation}>
                   Change station
                 </button>
@@ -312,15 +319,15 @@ function BartenderDashboard() {
           onCompletedClick={() => setShowCompletedMobile(true)}
         />
 
-        <QueueSummary activeQueueCount={activeQueueCount} readyCount={readyOrders.length} />
 
         <div className="my-3">
           <button type="button" className="rounded-xl bg-brand-ink px-4 py-2 font-bold text-white" aria-expanded={showWalkup} onClick={() => setShowWalkup((open) => !open)}>
-            {showWalkup ? "Hide walk-up orders" : "Walk-up order"}
+            {showWalkup ? "Hide register" : "Register"}
           </button>
+          <a className="ml-3 text-sm font-bold text-[#fffaf2] underline" href="/bartender?view=register">Open register on its own</a>
           {showWalkup && <div className="mt-3"><WalkupOrders /></div>}
         </div>
-        <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-3 md:grid-cols-3">
           <DashboardColumn id="new-orders" title="New" count={newOrders.length}>
             <div className="grid gap-3">
               {newOrders.map((order) => (
@@ -377,7 +384,7 @@ function BartenderDashboard() {
             title="Completed"
             count={completedOrders.length}
             tone="completed"
-            className={showCompletedMobile ? "" : "hidden md:block"}
+            className={showCompletedMobile ? "md:col-span-3" : "hidden"}
           >
             <div className="grid gap-3">
               {completedOrders.map((order) => (
@@ -397,7 +404,7 @@ function BartenderDashboard() {
         </section>
         {!showCompletedMobile && completedOrders.length > 0 && (
           <button
-            className="mt-4 min-h-11 w-full rounded-2xl border border-brand-chrome bg-[#fffaf2]/90 px-4 text-sm font-black text-brand-ink md:hidden"
+            className="mt-4 min-h-11 w-full rounded-2xl border border-brand-chrome bg-[#fffaf2]/90 px-4 text-sm font-black text-brand-ink"
             type="button"
             onClick={() => setShowCompletedMobile(true)}
           >
@@ -437,25 +444,6 @@ function SectionQuickNav({
         </a>
       ))}
     </nav>
-  );
-}
-
-function QueueSummary({ activeQueueCount, readyCount }: { activeQueueCount: number; readyCount: number }) {
-  return (
-    <section className="mb-3 grid grid-cols-3 gap-2 sm:mb-5 sm:gap-3">
-      <div className="rounded-xl border border-brand-chrome/35 bg-[#fffaf2]/95 px-2 py-2 shadow-[0_14px_36px_rgba(0,0,0,0.22)] sm:rounded-2xl sm:px-5 sm:py-4">
-        <p className="text-[10px] font-black uppercase tracking-wide text-brand-ink/50 sm:text-xs">Queue</p>
-        <p className="mt-0.5 text-lg font-black text-brand-ink sm:mt-1 sm:text-3xl"><span className="sm:hidden">{activeQueueCount}</span><span className="hidden sm:inline">{activeQueueCount} Drinks In Queue</span></p>
-      </div>
-      <div className="rounded-xl border border-[#d6bd7b]/45 bg-[#fff7e6]/95 px-2 py-2 shadow-[0_14px_36px_rgba(0,0,0,0.18)] sm:rounded-2xl sm:px-5 sm:py-4">
-        <p className="text-[10px] font-black uppercase tracking-wide text-brand-ink/50 sm:text-xs">Wait</p>
-        <p className="mt-0.5 text-lg font-black text-brand-ink sm:mt-1 sm:text-3xl">~{activeQueueCount}<span className="sm:hidden"> min</span><span className="hidden sm:inline"> Minute Wait</span></p>
-      </div>
-      <div className="rounded-xl border border-brand-sea/30 bg-[#f4fbf7]/95 px-2 py-2 shadow-[0_14px_36px_rgba(0,0,0,0.18)] sm:rounded-2xl sm:px-5 sm:py-4">
-        <p className="text-[10px] font-black uppercase tracking-wide text-brand-ink/50 sm:text-xs">Ready</p>
-        <p className="mt-0.5 text-lg font-black text-brand-sea sm:mt-1 sm:text-3xl">{readyCount}<span className="hidden sm:inline"> Ready</span></p>
-      </div>
-    </section>
   );
 }
 
@@ -522,55 +510,60 @@ function KitchenOrderCard({
   const normalizedStatus = normalizeOrderStatus(order.status);
   const isCompactCard = normalizedStatus === "ready" || normalizedStatus === "completed";
 
+  const code = shortOrderId(order.id);
+  const guestName = getDisplayName(order.name);
+  const anonymous = !order.name?.trim() || /^walk-?up( guest)?$/i.test(guestName.trim());
+  const lines = (order.drink || "").split(/,\s*/).filter(Boolean);
+  const waiting = normalizedStatus === "new" || normalizedStatus === "in_progress";
+  const minutes = order.created_at ? Math.max(0, Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000)) : null;
+  const ageTone = !waiting || minutes === null ? "bg-black/5 text-brand-ink/55"
+    : minutes >= 10 ? "bg-rose-700 text-white" : minutes >= 5 ? "bg-amber-400 text-brand-ink" : "bg-black/5 text-brand-ink/70";
+  const [primary, ...secondary] = [...actions].reverse();
+
   return (
-    <article className={`flex flex-col overflow-hidden rounded-xl border shadow-sm ${isCompactCard ? "" : "min-h-[330px]"} ${style.card}`}>
-      <div className={`h-2.5 ${style.bar}`} />
+    <article className={`flex flex-col overflow-hidden rounded-xl border shadow-sm ${style.card}`}>
+      <div className={`h-2 ${style.bar}`} />
       <div className={`flex flex-1 flex-col ${isCompactCard ? "p-3" : "p-4"}`}>
-        <div className="grid gap-2">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="min-w-0 flex-1 truncate font-heading text-3xl font-black leading-tight text-brand-ink" title={order.name}>{getDisplayName(order.name)}</h2>
-            <span className="shrink-0 pt-1 text-xs font-black text-brand-ink/45">{order.created_at ? formatOrderTime(order.created_at) : "No time"}</span>
+        {/* The code is what the guest was told and wrote on the cup: make it the headline. */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-mono text-3xl font-black leading-none tracking-wider text-brand-ink">#{code}</p>
+            {!anonymous && <p className="mt-1 truncate text-lg font-black text-brand-ink/75" title={order.name}>{guestName}</p>}
           </div>
-          {(isWalkupOrder(order) || order.handoff || order.table_number) && (
-            <div className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-brand-rust px-2.5 py-1 text-sm font-black uppercase tracking-wide text-white shadow-sm">
-              {isWalkupOrder(order) ? (order.square_order_id?.startsWith("cash:") ? "Paid cash · Walk-up" : "Paid card · Walk-up") : order.handoff ? HANDOFF_LABELS[order.handoff] : "Table " + order.table_number}
-            </div>
-          )}
-          <div className="flex items-start justify-between gap-3">
-            <p className="min-w-0 flex-1 text-xl font-black leading-snug text-brand-ink/78">{order.drink}</p>
-            {loading ? <Loader2 className="h-5 w-5 animate-spin text-brand-ink/55" /> : <StatusBadge status={order.status} />}
-          </div>
-          <p className="text-sm font-black text-brand-ink/62">{getStationStatusLabel(order)}</p>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-bold text-brand-ink/50">
-            {order.phone.trim() && <span>{formatOrderPhone(order.phone)}</span>}
-            {ticketLabel && <span
-              className={
-                ticketLabel.startsWith("NEEDS PAYMENT")
-                  ? "rounded-full border border-brand-sea/25 bg-brand-sea/10 px-2 py-0.5 text-brand-sea"
-                  : ""
-              }
-            >
-              {ticketLabel}
-            </span>}
-          </div>
-          {order.bar_station && <p className="rounded-lg bg-brand-ink px-2.5 py-1.5 text-xs font-black uppercase tracking-wide text-white">Claimed by {getStationLabel(order.bar_station)}</p>}
-          {normalizedStatus === "ready" && <p className="rounded-lg bg-brand-sea/10 px-2.5 py-1.5 text-sm font-black text-brand-sea">Ready {formatReadyAge(order)}</p>}
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-black tabular-nums ${ageTone}`} title={order.created_at ? formatOrderTime(order.created_at) : undefined}>
+            {minutes === null ? "—" : minutes < 1 ? "now" : `${minutes} min`}
+          </span>
+        </div>
+        {(isWalkupOrder(order) || order.handoff || order.table_number) && (
+          <p className="mt-2 w-fit rounded-md bg-brand-rust px-2 py-0.5 text-xs font-black uppercase tracking-wide text-white">
+            {isWalkupOrder(order) ? (order.square_order_id?.startsWith("cash:") ? "Walk-up · cash" : "Walk-up · card") : order.handoff ? HANDOFF_LABELS[order.handoff] : "Table " + order.table_number}
+          </p>
+        )}
+        <ul className={`mt-2 grid gap-0.5 ${normalizedStatus === "completed" ? "text-base" : "text-xl"} font-black leading-snug text-brand-ink`}>
+          {lines.map((line, index) => {
+            const match = line.match(/^(\d+)\s*[×x]\s*(.+)$/);
+            return <li key={index} className="flex gap-2">
+              <span className={`w-8 shrink-0 text-right ${match && Number(match[1]) > 1 ? "text-brand-rust" : "text-brand-ink/45"}`}>{match ? match[1] + "×" : ""}</span>
+              <span className="min-w-0">{match ? match[2] : line}</span>
+            </li>;
+          })}
+        </ul>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-brand-ink/55">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <StatusBadge status={order.status} />}
+          {order.bar_station && <span>{getStationLabel(order.bar_station)}</span>}
+          {normalizedStatus === "ready" && <span className="text-brand-sea">Ready {formatReadyAge(order)}</span>}
+          {order.phone.trim() && <span>{formatOrderPhone(order.phone)}</span>}
+          {ticketLabel && <span className={ticketLabel.startsWith("NEEDS PAYMENT") ? "rounded-full border border-brand-sea/25 bg-brand-sea/10 px-2 py-0.5 text-brand-sea" : ""}>{ticketLabel}</span>}
         </div>
 
-        <div className="mt-4 rounded-xl border border-brand-chrome/60 bg-[#fffaf2]/70 px-3 py-2 text-sm font-black uppercase tracking-wide text-brand-ink/45">
-          #{shortOrderId(order.id)}
-        </div>
-
-        {actions.length > 0 && (
-          <div className={`grid gap-2 ${isCompactCard ? "pt-3" : "mt-auto pt-4"}`}>
-            {actions.map((action) => (
-              <ActionButton
-                key={action.status}
-                label={action.label}
-                tone={action.tone}
-                disabled={disabled || order.status === action.status}
-                onClick={() => onStatusChange(action.status)}
-              />
+        {primary && (
+          <div className="mt-auto grid gap-2 pt-3">
+            <ActionButton label={primary.label} tone={primary.tone} disabled={disabled || order.status === primary.status}
+              onClick={() => onStatusChange(primary.status)} />
+            {secondary.map((action) => (
+              <button key={action.status} type="button" disabled={disabled}
+                className="min-h-11 rounded-xl border border-brand-chrome text-sm font-black text-brand-ink/70 disabled:opacity-40"
+                onClick={() => onStatusChange(action.status)}>{action.label}</button>
             ))}
           </div>
         )}
@@ -813,16 +806,6 @@ function getStationLabel(station?: BarStation | null) {
   if (station === "white_bar") return "White Bar";
   if (station === "brown_bar") return "Brown Bar";
   return "";
-}
-
-function getStationStatusLabel(order: BartenderOrder) {
-  const stationName = getStationLabel(order.bar_station);
-  const normalizedStatus = normalizeOrderStatus(order.status);
-  if (normalizedStatus === "in_progress" && stationName) return `Making at ${stationName}`;
-  if (normalizedStatus === "ready" && stationName) return `Ready at ${stationName}`;
-  if (normalizedStatus === "new") return "Waiting to be started";
-  if (normalizedStatus === "completed" && stationName) return `Completed at ${stationName}`;
-  return stationName ? `Station: ${stationName}` : "No station yet";
 }
 
 function getDisplayName(value: string) {

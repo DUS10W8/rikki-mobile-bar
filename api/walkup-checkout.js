@@ -1,11 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { squareRequest } from "../src/server/square.js";
 import { isWalkupId, releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
-import { authorizeStaff, hasManagerAccess, setSession } from "../src/server/staffSession.js";
+import { authorizeWalkup, hasManagerAccess, setSession } from "../src/server/staffSession.js";
 import { salesTaxBasisPoints, taxCents } from "../src/server/tax.js";
 
 import { activeMenuId, menus } from "../src/server/menus.js";
-const fields = "id,name,drink,amount_cents,tax_cents,status,tender,cash_received_cents,change_cents,order_id,created_at";
+const fields = "id,name,drink,items,amount_cents,tax_cents,status,tender,cash_received_cents,change_cents,order_id,created_at";
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
 
 async function createWalkup(db, body, res) {
@@ -139,6 +139,24 @@ async function squareTenders(location, orderId) {
   return [...(order?.tenders ?? []), ...(transaction?.tenders ?? [])];
 }
 
+// Square POS launch link for a card attempt. The iPhone shows it as a one-tap "Charge" screen,
+// because iOS only opens another app from a tap.
+function posUrl(row, env) {
+  const request = {
+    amount_money: { amount: row.amount_cents, currency_code: "USD" },
+    callback_url: new URL("/bartender", env.ORDER_SITE_URL).href,
+    client_id: env.SQUARE_POS_APPLICATION_ID,
+    location_id: env.SQUARE_LOCATION_ID,
+    version: "1.3",
+    state: row.id,
+    notes: walkupNotePrefix + row.id,
+    options: { supported_tender_types: ["CREDIT_CARD"], auto_return: true },
+  };
+  return "square-commerce-v1://payment/create?data=" + encodeURIComponent(JSON.stringify(request));
+}
+// Older card attempts are not offered again: they need Find Square payment or Clear failed attempt.
+const chargeWindowMs = 15 * 60 * 1000;
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   const { WALKUP_STAFF_CODE, SQUARE_POS_APPLICATION_ID, SQUARE_LOCATION_ID, SQUARE_ACCESS_TOKEN,
@@ -153,7 +171,16 @@ export default async function handler(req, res) {
     setSession(res, WALKUP_STAFF_CODE, 0);
     return res.status(200).json({ ok: true });
   }
-  if (!authorizeStaff(req, res)) return res.status(401).json({ error: "Enter the walk-up staff code." });
+  const scope = authorizeWalkup(req, res);
+  if (!scope) return res.status(401).json({ error: "Enter the walk-up staff code." });
+  // The guest-facing iPhone can only list card charges, launch them and confirm them.
+  if (scope === "phone" && req.method === "POST" && !["open", "verify", "reconcile"].includes(req.body?.action)) {
+    return res.status(403).json({ error: "The payment phone can't do this. Use the register iPad." });
+  }
+  if (req.method === "POST" && req.body?.action === "phone_session") {
+    setSession(res, WALKUP_STAFF_CODE, undefined, "phone");
+    return res.status(200).json({ ok: true, scope: "phone" });
+  }
 
   const db = createClient(dbUrl, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
@@ -161,7 +188,12 @@ export default async function handler(req, res) {
       const { data, error } = await db.from("walkup_checkouts").select(fields)
         .is("archived_at", null).in("status", ["waiting", "opened", "paid"]).order("created_at", { ascending: false }).limit(25);
       if (error) throw error;
-      return res.status(200).json({ orders: data, ...(req.query?.drawer ? await shiftStatus(db) : {}) });
+      const now = Date.now();
+      const orders = data.map((row) => row.status === "opened" && now - new Date(row.created_at).getTime() < chargeWindowMs
+        ? { ...row, pos_url: posUrl(row, process.env) } : row);
+      if (scope === "phone") return res.status(200).json({ orders, scope });
+      const taxBasisPoints = await salesTaxBasisPoints().catch(() => null);
+      return res.status(200).json({ orders, scope, taxBasisPoints, ...(req.query?.drawer ? await shiftStatus(db) : {}) });
     }
     if (req.method !== "POST") return res.status(405).end();
     const body = req.body ?? {};
@@ -189,17 +221,7 @@ export default async function handler(req, res) {
       if (error) throw error;
       if (!data) return res.status(409).json({ error: "This order is already being handled." });
       if (body.action === "cancel") return res.status(200).json({ ok: true });
-      const request = {
-        amount_money: { amount: data.amount_cents, currency_code: "USD" },
-        callback_url: new URL("/bartender", ORDER_SITE_URL).href,
-        client_id: SQUARE_POS_APPLICATION_ID,
-        location_id: SQUARE_LOCATION_ID,
-        version: "1.3",
-        state: data.id,
-        notes: walkupNotePrefix + data.id,
-        options: { supported_tender_types: ["CREDIT_CARD"], auto_return: true },
-      };
-      return res.status(200).json({ url: "square-commerce-v1://payment/create?data=" + encodeURIComponent(JSON.stringify(request)) });
+      return res.status(200).json({ url: posUrl(data, process.env) });
     }
     if (body.action === "reconcile") {
       const { data: checkout, error } = await db.from("walkup_checkouts")
