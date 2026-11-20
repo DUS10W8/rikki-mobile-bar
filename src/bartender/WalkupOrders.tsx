@@ -127,6 +127,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     setLaunched(next);
   };
   const [thanks, setThanks] = useState<string | null>(null);
+  const [unconfirmed, setUnconfirmed] = useState<{ id: string; message: string } | null>(null);
   const [showStaff, setShowStaff] = useState(false);
   const [taxBasisPoints, setTaxBasisPoints] = useState<number | null>(null);
 
@@ -149,7 +150,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       if (!code && !body) return { orders: [], locked: true };
       throw new Error("The server did not accept that staff passphrase. Re-enter the Production WALKUP_STAFF_CODE.");
     }
-    if (!response.ok) throw new Error(data.error || "Walk-up checkout is unavailable.");
+    if (!response.ok) throw new Error((data.error || "Walk-up checkout is unavailable.") + (data.detail ? " " + data.detail : ""));
     return data;
   }, [code, managerCode, phone]);
 
@@ -267,31 +268,62 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     const controller = new AbortController();
     const id = posReturn.state;
     const reconcile = () => request({ action: "reconcile", id }, controller.signal);
-    const verification = posReturn.transaction_id
+    const once = () => posReturn.transaction_id
       ? request({ action: "verify", id, transactionId: posReturn.transaction_id }, controller.signal)
         .catch((error) => {
           if (controller.signal.aborted) throw error;
           return reconcile();
         })
       : reconcile();
+    // Square can take a few seconds to list a new payment, so keep checking for about 30 s.
+    const verification = (async () => {
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          return await once();
+        } catch (error) {
+          if (controller.signal.aborted || attempt >= 7) throw error;
+          await new Promise((resolve) => window.setTimeout(resolve, 4000));
+        }
+      }
+    })();
     void verification
       .then(() => {
         if (controller.signal.aborted) return;
-        window.history.replaceState(null, "", "/bartender?walkup=phone");
+        window.history.replaceState(null, "", "/pay");
         setPosReturn(null);
         setThanks(id);
       })
       .catch((error) => {
-        if (!controller.signal.aborted) setError(error.message);
+        if (controller.signal.aborted) return;
+        // Never leave the guest on "Confirming…": hand over to staff, who can match it on the iPad.
+        window.history.replaceState(null, "", "/pay");
+        setPosReturn(null);
+        setUnconfirmed({ id, message: (error as Error).message });
       });
     return () => controller.abort();
   }, [unlocked, phone, posReturn, request]);
+
+  // If the register matches the payment first (Find Square payment), finish here too.
+  useEffect(() => {
+    const id = posReturn?.state ?? unconfirmed?.id;
+    if (!phone || !id || !orders.some((order) => order.id === id && order.status === "paid")) return;
+    window.history.replaceState(null, "", "/pay");
+    setPosReturn(null);
+    setUnconfirmed(null);
+    setThanks(id);
+  }, [phone, orders, posReturn, unconfirmed]);
+
+  useEffect(() => {
+    if (!unconfirmed) return;
+    const timer = window.setTimeout(() => setUnconfirmed(null), 45000);
+    return () => window.clearTimeout(timer);
+  }, [unconfirmed]);
 
   // Guest backed out in Square without paying: offer the same Pay screen again.
   useEffect(() => {
     if (!phone || posReturn?.error_code !== "payment_canceled" || !posReturn.state) return;
     unmarkLaunched(posReturn.state);
-    window.history.replaceState(null, "", "/bartender?walkup=phone");
+    window.history.replaceState(null, "", "/pay");
     setPosReturn(null);
   }, [phone, posReturn]);
 
@@ -336,6 +368,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
           confirming={!!posReturn?.state && !posReturn.error_code}
           failed={!!posReturn && (posReturn.status === "error" || !!posReturn.error_code)}
           paid={thanks ? orders.find((order) => order.id === thanks) ?? { id: thanks } : null}
+          unconfirmed={unconfirmed && !charge ? { ...unconfirmed, order: orders.find((order) => order.id === unconfirmed.id) } : null}
           onStaff={() => setShowStaff(true)} />
       )}
       {phone && unlocked && showStaff && (
@@ -496,7 +529,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
             <button type="button" className={button} disabled={busy} onClick={() => void act({
               action: "verify", id: posReturn.state, transactionId: posReturn.transaction_id,
             }, () => {
-              window.history.replaceState(null, "", "/bartender?walkup=phone");
+              window.history.replaceState(null, "", "/pay");
               setPosReturn(null);
             })}>Check payment again</button>
           )}
@@ -564,12 +597,13 @@ type GuestScreenProps = {
   confirming: boolean;
   failed: boolean;
   paid: Partial<Walkup> | null;
+  unconfirmed: { id: string; message: string; order?: Walkup } | null;
   onPay: (id: string) => void;
   onStaff: () => void;
 };
 
 // What the guest sees on the bar iPhone: their items, the total and one Pay button. Nothing else.
-function GuestScreen({ charge, waiting, confirming, failed, paid, onPay, onStaff }: GuestScreenProps) {
+function GuestScreen({ charge, waiting, confirming, failed, paid, unconfirmed, onPay, onStaff }: GuestScreenProps) {
   const shell = "fixed inset-0 z-50 flex flex-col bg-[#F4ECD9] text-brand-ink";
   const brand = <p className="pt-8 text-center font-heading text-3xl font-bold italic">Rikki&rsquo;s Mobile</p>;
   const staff = <button type="button" aria-label="Staff controls" onClick={onStaff}
@@ -586,6 +620,15 @@ function GuestScreen({ charge, waiting, confirming, failed, paid, onPay, onStaff
         <p className="mt-2 text-3xl font-black">Thank you!</p>
         {paid.order_id && <p className="mt-6 text-lg">Your order number<span className="mt-1 block text-5xl font-black tracking-widest">{shortOrderId(paid.order_id)}</span></p>}
         <p className="mt-6 text-lg">We&rsquo;ll call your number when your drink is ready.</p>
+      </div>{staff}</div>;
+  }
+  if (unconfirmed) {
+    return <div className={shell} role="alert">{brand}
+      <div className="m-auto px-6 text-center">
+        <p className="text-3xl font-black">Almost done</p>
+        <p className="mt-3 text-lg">Please show this screen to the person at the register so they can confirm your payment.</p>
+        {unconfirmed.order && <p className="mt-6 text-lg">{unconfirmed.order.name} · {price(unconfirmed.order.amount_cents)} + tax</p>}
+        <p className="mt-8 text-xs text-brand-ink/40">Staff: on the iPad, tap Find Square payment. ({unconfirmed.message.slice(0, 120)})</p>
       </div>{staff}</div>;
   }
   if (failed) {

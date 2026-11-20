@@ -233,34 +233,46 @@ export default async function handler(req, res) {
         location_id: SQUARE_LOCATION_ID, begin_time: new Date(checkout.created_at).toISOString(), limit: "100",
       });
       const note = walkupNotePrefix + body.id;
+      const seen = [];   // what Square listed, so a failed match says why
+      const why = [];
       for (let page = 0; page < 5; page += 1) {
         const { payments, cursor } = await squareRequest("payments?" + query);
         for (const payment of payments ?? []) {
+          seen.push(`${payment.status}/${payment.source_type} $${((payment.amount_money?.amount ?? 0) / 100).toFixed(2)}` +
+            (payment.note ? ` note:${payment.note === note ? "match" : "other"}` : " no-note") + (payment.order_id ? " order" : ""));
           if (payment.status !== "COMPLETED" || payment.source_type !== "CARD" ||
               payment.amount_money?.amount < checkout.amount_cents) continue;
           const matched = payment.note === note || (payment.order_id &&
             (await squareTenders(SQUARE_LOCATION_ID, payment.order_id)).some((tender) =>
               (tender.payment_id || tender.id) === payment.id && tender.note === note));
-          if (matched && await releaseWalkupPayment(db, { ...payment, note })) {
+          if (matched && await releaseWalkupPayment(db, { ...payment, note }, why)) {
             return res.status(200).json({ ok: true });
           }
         }
         if (!cursor) break;
         query.set("cursor", cursor);
       }
-      return res.status(409).json({ error: "No completed Square payment could be matched to this order. If Square shows a charge, keep the receipt and do not pay again." });
+      console.error("Walk-up reconcile found no match", body.id, checkout.amount_cents, why, seen.slice(0, 10));
+      return res.status(409).json({ error: "No completed Square payment could be matched to this order. If Square shows a charge, keep the receipt and do not pay again.",
+        detail: (why.length ? `Rejected: ${why.join("; ")}. ` : "") +
+          `Subtotal $${(checkout.amount_cents / 100).toFixed(2)}. Square listed ${seen.length} payment(s) since this order: ${seen.slice(0, 5).join("; ") || "none"}` });
     }
     if (body.action === "verify" && typeof body.transactionId === "string" && squareId.test(body.transactionId)) {
-      for (const tender of await squareTenders(SQUARE_LOCATION_ID, body.transactionId)) {
+      const why = [];
+      const tenders = await squareTenders(SQUARE_LOCATION_ID, body.transactionId);
+      if (!tenders.length) why.push("Square returned no tenders for this transaction");
+      for (const tender of tenders) {
         const paymentId = tender.payment_id || tender.id;
         if (!paymentId) continue;
         const { payment } = await squareRequest(`payments/${encodeURIComponent(paymentId)}`);
         const note = walkupNotePrefix + body.id;
-        if (payment && (payment.note === note || tender.note === note) && await releaseWalkupPayment(db, { ...payment, note })) {
+        if (payment && payment.note !== note && tender.note !== note) why.push("payment note is for a different order");
+        if (payment && (payment.note === note || tender.note === note) && await releaseWalkupPayment(db, { ...payment, note }, why)) {
           return res.status(200).json({ ok: true });
         }
       }
-      return res.status(409).json({ error: "Square has not confirmed this payment. Check the Square transaction before retrying." });
+      console.error("Walk-up verify refused", body.id, why);
+      return res.status(409).json({ error: "Square has not confirmed this payment. Check the Square transaction before retrying.", detail: why.join("; ") });
     }
     return res.status(400).json({ error: "Invalid walk-up action." });
   } catch (error) {
