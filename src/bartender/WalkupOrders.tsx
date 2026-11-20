@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ACTIVE_EVENT, EVENT_DRINK_MENU, EVENT_MENUS, sortCategories } from "../order/eventMenu";
 import { CashPanel, ChangeDue, DrawerPanel, type CashResult, type CashSale, type Shift } from "./cash";
 import { money, parseCents } from "./cashMoney";
@@ -15,6 +15,7 @@ type Walkup = {
   change_cents?: number | null;
   order_id?: string | null;
   pos_url?: string;
+  created_at?: string;
   items?: { id: string; name: string; quantity: number; price_cents: number }[] | null;
 };
 
@@ -333,6 +334,49 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     return () => window.clearTimeout(timer);
   }, [thanks]);
 
+  // Register iPad: tell Abe the moment a card charge is paid, cancelled, or stalled.
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [now, setNow] = useState(() => Date.now());
+  const lastSeen = useRef<Map<string, Walkup> | null>(null);
+  useEffect(() => {
+    if (phone || !unlocked) return;
+    const previous = lastSeen.current;
+    lastSeen.current = new Map(orders.map((order) => [order.id, order]));
+    if (!previous) return;   // first load: don't announce old orders
+    const fresh: Notice[] = [];
+    for (const [id, before] of previous) {
+      const after = lastSeen.current.get(id);
+      if (before.status !== "opened") continue;
+      if (after?.status === "paid" && after.tender !== "cash") fresh.push({ id, kind: "paid", order: after, at: Date.now() });
+      else if (!after) fresh.push({ id, kind: "cancelled", order: before, at: Date.now() });
+    }
+    if (!fresh.length) return;
+    setNotices((current) => [...fresh, ...current.filter((notice) => !fresh.some((item) => item.id === notice.id))].slice(0, 4));
+    chime(fresh.some((notice) => notice.kind !== "paid") ? "problem" : "paid");
+  }, [orders, phone, unlocked]);
+  useEffect(() => {
+    if (phone || !orders.some((order) => order.status === "opened") && !notices.length) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [phone, orders, notices.length]);
+  useEffect(() => {
+    // Paid banners clear after 8 s; problems stay until tapped.
+    const paid = notices.filter((notice) => notice.kind === "paid");
+    if (!paid.length) return;
+    const timer = window.setTimeout(() => setNotices((current) => current.filter((notice) => notice.kind !== "paid" || Date.now() - notice.at < 8000)), 8200);
+    return () => window.clearTimeout(timer);
+  }, [notices]);
+  const waitingCards = useMemo(() => phone ? [] : orders.filter((order) => order.status === "opened"), [phone, orders]);
+  const stalledAlerted = useRef(new Set<string>());
+  useEffect(() => {
+    for (const order of waitingCards) {
+      if (now - new Date(order.created_at ?? now).getTime() >= stallMs && !stalledAlerted.current.has(order.id)) {
+        stalledAlerted.current.add(order.id);
+        chime("problem");
+      }
+    }
+  }, [now, waitingCards]);
+
   // Keep the bar iPhone awake on this screen so new charges appear without anyone touching it.
   useEffect(() => {
     if (!phone || !unlocked) return;
@@ -449,7 +493,14 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                   {!matches.length && <p role="status">No items match “{search}”.</p>}
                 </fieldset>
               </div>
-              <aside className="self-start lg:sticky lg:top-2">
+              <aside className="min-w-0 self-start lg:sticky lg:top-2">
+                <PaymentAlerts notices={notices} waiting={waitingCards} now={now} busy={busy}
+                  onDismiss={(id) => setNotices((current) => current.filter((notice) => notice.id !== id))}
+                  onCancel={(order) => {
+                    if (window.confirm(`Cancel the card charge for ${order.name}? Only do this if the guest has not paid on the iPhone.`)) {
+                      void act({ action: "archive", id: order.id });
+                    }
+                  }} />
                 {cashResult ? (
                   <>
                     <ChangeDue result={cashResult} onNext={() => { setCashResult(null); setCashSale(null); }} />
@@ -673,4 +724,94 @@ function GuestScreen({ charge, waiting, confirming, failed, paid, unconfirmed, o
     </div>
     {staff}
   </div>;
+}
+
+type Notice = { id: string; kind: "paid" | "cancelled"; order: Walkup; at: number };
+const stallMs = 2 * 60 * 1000;
+
+// Short tones so Abe hears the result without looking. Safe to call anytime: the iPad has
+// already been tapped, which lets the page play sound.
+function chime(kind: "paid" | "problem") {
+  try {
+    const Audio = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Audio) return;
+    const context = new Audio();
+    const notes = kind === "paid" ? [880, 1320] : [330, 220];
+    notes.forEach((frequency, index) => {
+      const tone = context.createOscillator();
+      const gain = context.createGain();
+      tone.frequency.value = frequency;
+      tone.connect(gain).connect(context.destination);
+      const start = context.currentTime + index * 0.16;
+      gain.gain.setValueAtTime(0.25, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
+      tone.start(start);
+      tone.stop(start + 0.16);
+    });
+    window.setTimeout(() => void context.close(), 800);
+  } catch {
+    // Sound is a bonus; the banner is the signal.
+  }
+}
+
+function PaymentAlerts({ notices, waiting, now, busy, onDismiss, onCancel }: {
+  notices: Notice[]; waiting: Walkup[]; now: number; busy: boolean;
+  onDismiss: (id: string) => void; onCancel: (order: Walkup) => void;
+}) {
+  if (!notices.length && !waiting.length) return null;
+  const total = (order: Walkup) => price(order.amount_cents + (order.tax_cents ?? 0));
+  return (
+    <div className="mb-3 grid min-w-0 gap-2" aria-live="assertive">
+      {notices.map((notice) => notice.kind === "paid" ? (
+        <button key={notice.id} type="button" onClick={() => onDismiss(notice.id)}
+          className="w-full rounded-2xl bg-emerald-700 p-4 text-left text-white shadow-lg" role="status">
+          <span className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-3xl font-black text-emerald-700" aria-hidden="true">✓</span>
+            <span className="min-w-0">
+              <span className="block text-2xl font-black">Paid {total(notice.order)}</span>
+              <span className="block truncate font-bold">
+                {notice.order.order_id ? `#${shortOrderId(notice.order.order_id)} · ` : ""}{notice.order.name} · sent to Rikki
+              </span>
+            </span>
+          </span>
+        </button>
+      ) : (
+        <div key={notice.id} className="rounded-2xl bg-rose-700 p-4 text-white shadow-lg" role="alert">
+          <p className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-3xl font-black text-rose-700" aria-hidden="true">✕</span>
+            <span className="min-w-0">
+              <span className="block text-2xl font-black">Card not completed</span>
+              <span className="block font-bold">{notice.order.name} · {total(notice.order)}</span>
+              <span className="block text-sm">Charge cancelled. Nothing was sent to the bar.</span>
+            </span>
+          </p>
+          <button type="button" className="mt-3 w-full rounded-xl bg-white/15 py-2 font-black" onClick={() => onDismiss(notice.id)}>OK</button>
+        </div>
+      ))}
+      {waiting.map((order) => {
+        const waited = Math.max(0, now - new Date(order.created_at ?? now).getTime());
+        const stalled = waited >= stallMs;
+        const clock = `${Math.floor(waited / 60000)}:${String(Math.floor(waited / 1000) % 60).padStart(2, "0")}`;
+        return (
+          <div key={order.id} role={stalled ? "alert" : "status"}
+            className={`rounded-2xl border-2 p-3 ${stalled ? "border-rose-700 bg-rose-50 text-rose-950" : "border-amber-500 bg-amber-50 text-amber-950"}`}>
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0">
+                <span className="block text-lg font-black">{stalled ? "No payment yet" : "Waiting for card on iPhone"}</span>
+                <span className="block truncate text-sm font-bold">{order.name} · {total(order)}</span>
+              </span>
+              <span className="text-2xl font-black tabular-nums">{clock}</span>
+            </div>
+            {stalled && (
+              <div className="mt-2 grid gap-1 text-sm">
+                <p>Check the guest&rsquo;s phone. If they didn&rsquo;t pay, cancel and ring it again.</p>
+                <button type="button" disabled={busy} className="rounded-xl bg-rose-700 py-2 font-black text-white disabled:opacity-50"
+                  onClick={() => onCancel(order)}>Cancel card charge</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
