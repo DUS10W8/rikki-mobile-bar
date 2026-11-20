@@ -9,12 +9,17 @@ Optional: set `WALKUP_MANAGER_CODE` in Vercel. When it's set, refunds, payouts, 
 
 ## A cash sale
 1. Tap items. The ticket is on the right.
-2. Tap **Take cash**. The screen shows the subtotal, the tax and the total due. Tax is the same rate Square adds on card sales, read from Square's tax settings.
+2. Tap **Cash**. The screen shows the subtotal, the tax and the total due. Tax is the same rate Square adds on card sales, read from Square's tax settings.
 3. Tap a shortcut (**Exact**, $30, $40, …) or type the amount handed over. If it's not enough, the screen shows **Short** and won't confirm.
-4. Tap **Confirm cash received**. The ticket goes to the bar and stock comes out. The screen shows **Give $X.XX** until you tap **Start next order**.
+4. Tap **Confirm cash received**. The ticket goes to the bar and stock comes out. The screen shows **Give $X.XX** until you tap **Start next order** or the first item of the next order.
 
 If the connection drops after you've taken the cash, the screen says **"do not collect again"**. Tap **Check this sale**. Confirming again is safe: the same sale ID never records twice, even after a reload.
 If a card attempt is still open in Square for that ticket, cash is blocked. Find or clear the Square payment first.
+
+## Devices
+- **Abe's iPad (register):** /bartender?view=register. Every item is on one screen. The ticket on the right always shows the total with tax and the **Cash** and **Card on iPhone** buttons.
+- **Guest iPhone:** /bartender?walkup=phone. It gets a **payment-only login**: it can show and charge card orders, but it can't open the drink board, see guest phone numbers, ring orders or touch cash. Turn on **Guided Access** (Settings > Accessibility) so guests can't leave Safari. In Square, require a passcode to leave checkout so guests can't browse transactions or refunds.
+- **Rikki's board:** /bartender. Each ticket leads with the pickup code (the same code the guest has). Drinks are listed one per line. The time chip turns amber at 5 minutes and red at 10.
 
 ## A card sale (Abe on the iPad, guest on the iPhone)
 Setup: the bar sits back from the window. Abe stands out front with the iPad. The guest-facing iPhone sits on a stand, facing the line. Rikki only makes drinks.

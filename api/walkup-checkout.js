@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { squareRequest } from "../src/server/square.js";
 import { isWalkupId, releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
-import { authorizeStaff, hasManagerAccess, setSession } from "../src/server/staffSession.js";
+import { authorizeWalkup, hasManagerAccess, setSession } from "../src/server/staffSession.js";
 import { salesTaxBasisPoints, taxCents } from "../src/server/tax.js";
 
 import { activeMenuId, menus } from "../src/server/menus.js";
@@ -171,7 +171,16 @@ export default async function handler(req, res) {
     setSession(res, WALKUP_STAFF_CODE, 0);
     return res.status(200).json({ ok: true });
   }
-  if (!authorizeStaff(req, res)) return res.status(401).json({ error: "Enter the walk-up staff code." });
+  const scope = authorizeWalkup(req, res);
+  if (!scope) return res.status(401).json({ error: "Enter the walk-up staff code." });
+  // The guest-facing iPhone can only list card charges, launch them and confirm them.
+  if (scope === "phone" && req.method === "POST" && !["open", "verify", "reconcile"].includes(req.body?.action)) {
+    return res.status(403).json({ error: "The payment phone can't do this. Use the register iPad." });
+  }
+  if (req.method === "POST" && req.body?.action === "phone_session") {
+    setSession(res, WALKUP_STAFF_CODE, undefined, "phone");
+    return res.status(200).json({ ok: true, scope: "phone" });
+  }
 
   const db = createClient(dbUrl, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
@@ -182,7 +191,9 @@ export default async function handler(req, res) {
       const now = Date.now();
       const orders = data.map((row) => row.status === "opened" && now - new Date(row.created_at).getTime() < chargeWindowMs
         ? { ...row, pos_url: posUrl(row, process.env) } : row);
-      return res.status(200).json({ orders, ...(req.query?.drawer ? await shiftStatus(db) : {}) });
+      if (scope === "phone") return res.status(200).json({ orders, scope });
+      const taxBasisPoints = await salesTaxBasisPoints().catch(() => null);
+      return res.status(200).json({ orders, scope, taxBasisPoints, ...(req.query?.drawer ? await shiftStatus(db) : {}) });
     }
     if (req.method !== "POST") return res.status(405).end();
     const body = req.body ?? {};

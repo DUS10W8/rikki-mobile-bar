@@ -100,7 +100,7 @@ export function CashPanel({ sale, shift, operator, request, onDone, onCancel }: 
           onChange={(event) => setEntry(event.target.value)} placeholder="0.00" />
       </label>
       {short && <p className="mt-2 font-black text-rose-800" role="alert">Short {money(sale.totalCents - (received ?? 0))} — collect more before confirming.</p>}
-      {change !== null && <p className="mt-2 text-2xl font-black">Change {money(change)}</p>}
+      {change !== null && <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-1 text-4xl font-black text-emerald-900" aria-live="polite">Change {money(change)}</p>}
       {uncertain ? (
         <div className="mt-3 rounded-xl bg-amber-50 p-3 text-amber-950" role="alert">
           <p className="font-black">Connection dropped — do not collect again.</p>

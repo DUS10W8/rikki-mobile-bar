@@ -91,7 +91,6 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const menu = EVENT_MENUS[eventMenu] ?? EVENT_DRINK_MENU;
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const query = normalize(search.trim());
   const categories = sortCategories([...new Set(menu.map(item => item.category))]);
@@ -129,10 +128,12 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   };
   const [thanks, setThanks] = useState<string | null>(null);
   const [showStaff, setShowStaff] = useState(false);
+  const [taxBasisPoints, setTaxBasisPoints] = useState<number | null>(null);
 
   const request = useCallback(async (body?: object, signal?: AbortSignal) => {
     const headers: Record<string, string> = { "Content-Type": "application/json", "X-Walkup-Code": code, "X-Walkup-Request": "1" };
     if (managerCode) headers["X-Manager-Code"] = managerCode;
+    if (phone) headers["X-Walkup-Scope"] = "phone";   // guest-facing phone: card charges only
     const response = await fetch(body || phone ? apiPath : apiPath + "?drawer=1", {
       method: body ? "POST" : "GET",
       signal,
@@ -160,6 +161,9 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
         if (!controller.signal.aborted) {
           setOrders(data.orders);
           setUnlocked(!data.locked);
+          // An older full staff login on the guest phone steps down to a payment-only login.
+          if (phone && data.scope === "staff") void request({ action: "phone_session" }).catch(() => {});
+          if (!phone && typeof data.taxBasisPoints === "number") setTaxBasisPoints(data.taxBasisPoints);
           if (!phone) {
             setShift(data.shift ?? null);
             setLastClosed(data.lastClosed ?? null);
@@ -233,6 +237,8 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const items = menu.filter((drink) => quantities[drink.id])
     .map((drink) => ({ id: drink.id, quantity: quantities[drink.id], priceCents: drink.priceCents }));
   const total = items.reduce((sum, item) => sum + item.quantity * item.priceCents, 0);
+  // Same rounding as the server (src/server/tax.js); the server's figure is what's charged.
+  const ticketTax = taxBasisPoints === null ? null : Math.floor((total * taxBasisPoints + 5000) / 10000);
 
   const act = async (body: object, onSuccess?: (data: { url?: string; order?: Walkup }) => void | Promise<void>) => {
     if (submitted.current) return;
@@ -335,8 +341,10 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       {phone && unlocked && showStaff && (
         <button type="button" className={`${button} mb-2`} onClick={() => setShowStaff(false)}>Back to guest screen</button>
       )}
-      <h2 className="text-xl font-black">{phone ? "Walk-up payments" : "Walk-up orders"}</h2>
-      {!phone && <p className="my-2 text-sm">Open <a className="underline" href="/bartender?walkup=phone">the payment screen</a> in Safari on the bar iPhone and enter the same staff code.</p>}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+        <h2 className="text-xl font-black">{phone ? "Walk-up payments" : "Register"}</h2>
+        {!phone && <p className="text-xs text-brand-ink/60">Guest iPhone: open <a className="underline" href="/bartender?walkup=phone">/bartender?walkup=phone</a> in Safari and enter the staff code.</p>}
+      </div>
       {error && <p className="my-2 rounded-lg bg-rose-50 p-2 text-sm text-rose-900" role="alert">{error}</p>}
       {checkingSession ? (
         <p className="my-2 text-sm" role="status">Checking staff access…</p>
@@ -369,95 +377,113 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
             setPosLink(null);
             sessionStorage.removeItem(pendingLinkKey);
           }}>Lock payment screen</button>
-          {unlocked && !phone && cashResult && (
-            <div className="mb-4"><ChangeDue result={cashResult} onNext={() => { setCashResult(null); setCashSale(null); }} /></div>
-          )}
-          {unlocked && !phone && cashSale && !cashResult && (
-            <div className="mb-4">
-              <CashPanel sale={cashSale} shift={shift} operator={operator} request={request}
-                onDone={(result) => { setCashResult(result); void refresh(); }}
-                onCancel={() => setCashSale(null)} />
-            </div>
-          )}
-          {unlocked && !phone && !cashSale && !cashResult && (
-            <form className="mb-4 grid gap-3" onSubmit={(event) => {
-              event.preventDefault();
-              requestId.current ??= crypto.randomUUID();
-              void act({ action: "create", id: requestId.current, eventMenu, name, items }, async (data) => {
-                requestId.current = null;
-                setSearch(""); setName("");
-                setQuantities({});
-                // Card was chosen: open the attempt now, so the iPhone shows the Charge screen without a tap.
-                const created = data.order;
-                if (created?.status === "waiting") {
-                  await request({ action: "open", id: created.id }).catch(() => {
-                    setError("Sent to the list, but the iPhone needs a tap on Prepare payment for this one.");
-                  });
-                }
-              });
-            }}>
-              <label>Event menu <select className={input} value={eventMenu} disabled={busy || total > 0} onChange={event => { setSearch(""); setEventMenu(event.target.value); requestId.current = null; }}>
-                <option value="hamilton">Hamilton</option>
-                <option value="salsa">Salsa Night</option>
-              </select></label>
-              <fieldset disabled={busy} className="grid gap-4 md:grid-cols-[2fr_1fr]">
-                <div>
-                  <label className="grid gap-1">Find an item
-                    <input className={input} type="search" value={search} onChange={event => setSearch(event.target.value)} />
-                  </label>
-                  <div className="mt-3 grid gap-2">
-                    {categories.map((category, index) => {
-                      const entries = matches.filter(item => item.category === category);
-                      if (!entries.length) return null;
-                      const open = query.length > 0 || (expanded[category] ?? index === 0);
-                      return <section key={category} className="rounded-xl border border-brand-chrome bg-white">
-                        <button type="button" aria-expanded={open} disabled={!!query}
-                          className="flex min-h-12 w-full items-center justify-between px-4 text-left font-bold"
-                          onClick={() => setExpanded(current => ({ ...current, [category]: !open }))}>
-                          {category}<span aria-hidden="true">{open ? "▴" : "▾"}</span>
-                        </button>
-                        {open && <div className="grid grid-cols-2 gap-2 px-2 pb-2">
-                          {entries.map(item => <button key={item.id} type="button"
-                            className="rounded-lg border border-brand-chrome p-3 text-left disabled:opacity-50"
-                            disabled={quantities[item.id] >= 10} onClick={() => changeQuantity(item.id, 1)}>
-                            <strong className="block">{item.name}</strong>{price(item.priceCents)}
-                            {!!quantities[item.id] && <span className="ml-2 text-sm">{quantities[item.id]} on ticket</span>}
-                          </button>)}
-                        </div>}
-                      </section>;
-                    })}
-                    {!matches.length && <p role="status">No items match “{search}”.</p>}
-                  </div>
+          {unlocked && !phone && (
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
+              <div className="min-w-0">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <input className={`${input} min-w-0 flex-1`} type="search" aria-label="Find an item" placeholder="Find an item"
+                    value={search} disabled={!!cashSale} onChange={event => setSearch(event.target.value)} />
+                  <select className={input} aria-label="Event menu" value={eventMenu} disabled={busy || total > 0}
+                    onChange={event => { setSearch(""); setEventMenu(event.target.value); requestId.current = null; }}>
+                    <option value="hamilton">Hamilton</option>
+                    <option value="salsa">Salsa Night</option>
+                  </select>
                 </div>
-                <section aria-label="Current ticket" className="self-start rounded-xl border border-brand-chrome p-3 md:sticky md:top-3">
-                  <h3 className="font-bold">Current ticket · {price(total)}</h3>
-                  {!items.length && <p>Tap an item to add it.</p>}
-                  {items.map(line => {
-                    const label = menu.find(item => item.id === line.id)!.name;
-                    return <div key={line.id} className="border-b py-2">
-                      <strong>{label}</strong> · {price(line.quantity * line.priceCents)}
-                      <div className="flex items-center gap-3">
-                        <button type="button" className={input} aria-label={'Remove one ' + label} onClick={() => changeQuantity(line.id, -1)}>−</button>
-                        {line.quantity}
-                        <button type="button" className={input} disabled={line.quantity >= 10} aria-label={'Add one ' + label} onClick={() => changeQuantity(line.id, 1)}>+</button>
+                {/* Every item on one screen: no folders to open during a rush. */}
+                <fieldset disabled={busy || (!!cashSale && !cashResult)} className="grid gap-3 disabled:opacity-60">
+                  {categories.map(category => {
+                    const entries = matches.filter(item => item.category === category);
+                    if (!entries.length) return null;
+                    return <section key={category} aria-label={category}>
+                      <h3 className="mb-1 text-xs font-black uppercase tracking-wide text-brand-ink/55">{category}</h3>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {entries.map(item => {
+                          const count = quantities[item.id] || 0;
+                          return <button key={item.id} type="button" disabled={count >= 10}
+                            className={`relative min-h-[60px] rounded-xl border px-3 py-2 text-left leading-tight active:scale-[0.98] ${count ? "border-brand-ink bg-brand-ink text-white" : "border-brand-chrome bg-white"}`}
+                            onClick={() => {
+                              if (cashResult) { setCashResult(null); setCashSale(null); }   // first tap starts the next order
+                              changeQuantity(item.id, 1);
+                            }}>
+                            <strong className="block pr-6">{item.name}</strong>
+                            <span className={count ? "text-white/80" : "text-brand-ink/70"}>{price(item.priceCents)}</span>
+                            {count > 0 && <span className="absolute right-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-[#2E9B8A] px-1.5 text-sm font-black text-white">{count}</span>}
+                          </button>;
+                        })}
                       </div>
-                    </div>;
+                    </section>;
                   })}
-                </section>
-              </fieldset>
-              <input className={input} aria-label="Guest name" disabled={busy} placeholder="Guest name (optional)" value={name} maxLength={80} onChange={(event) => {
-                requestId.current = null;
-                setName(event.target.value);
-              }} />
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" className="min-h-14 rounded-2xl bg-emerald-800 px-3 text-lg font-black text-white disabled:opacity-40" disabled={!total || busy} onClick={takeCash}>
-                  Take cash · {price(total)}+tax
-                </button>
-                <button className="min-h-14 rounded-2xl bg-brand-ink px-3 text-lg font-black text-white disabled:opacity-40" disabled={!total || busy}>
-                  Card on iPhone · {price(total)}+tax
-                </button>
+                  {!matches.length && <p role="status">No items match “{search}”.</p>}
+                </fieldset>
               </div>
-            </form>
+              <aside className="self-start lg:sticky lg:top-2">
+                {cashResult ? (
+                  <>
+                    <ChangeDue result={cashResult} onNext={() => { setCashResult(null); setCashSale(null); }} />
+                    <p className="mt-2 text-center text-sm text-brand-ink/60">Or tap an item to start the next order.</p>
+                  </>
+                ) : cashSale ? (
+                  <CashPanel sale={cashSale} shift={shift} operator={operator} request={request}
+                    onDone={(result) => { setCashResult(result); void refresh(); }}
+                    onCancel={() => setCashSale(null)} />
+                ) : (
+                  <form aria-label="Current ticket" className="rounded-2xl border-2 border-brand-ink bg-white p-4" onSubmit={(event) => {
+                    event.preventDefault();
+                    requestId.current ??= crypto.randomUUID();
+                    void act({ action: "create", id: requestId.current, eventMenu, name, items }, async (data) => {
+                      requestId.current = null;
+                      setSearch(""); setName("");
+                      setQuantities({});
+                      // Card was chosen: open the attempt now, so the guest iPhone shows the Pay screen without a tap.
+                      const created = data.order;
+                      if (created?.status === "waiting") {
+                        await request({ action: "open", id: created.id }).catch(() => {
+                          setError("Sent to the list, but the iPhone needs a tap on Prepare payment for this one.");
+                        });
+                      }
+                    });
+                  }}>
+                    <div className="flex items-baseline justify-between">
+                      <h3 className="text-lg font-black">Ticket</h3>
+                      {!!items.length && <button type="button" className="text-sm font-bold underline" disabled={busy}
+                        onClick={() => { setQuantities({}); requestId.current = null; }}>Clear</button>}
+                    </div>
+                    {!items.length && <p className="py-6 text-center text-brand-ink/55">Tap items to add them.</p>}
+                    <ul className="divide-y divide-brand-ink/10">
+                      {items.map(line => {
+                        const label = menu.find(item => item.id === line.id)!.name;
+                        return <li key={line.id} className="flex items-center gap-2 py-2">
+                          <button type="button" className="h-10 w-10 rounded-lg border border-brand-chrome text-xl font-black" aria-label={"Remove one " + label} disabled={busy} onClick={() => changeQuantity(line.id, -1)}>−</button>
+                          <span className="w-6 text-center text-lg font-black">{line.quantity}</span>
+                          <span className="min-w-0 flex-1 truncate font-bold">{label}</span>
+                          <span className="tabular-nums">{price(line.quantity * line.priceCents)}</span>
+                        </li>;
+                      })}
+                    </ul>
+                    {!!items.length && <input className={`${input} mt-2 w-full`} aria-label="Guest name" disabled={busy} placeholder="Guest name (optional)" value={name} maxLength={80} onChange={(event) => {
+                      requestId.current = null;
+                      setName(event.target.value);
+                    }} />}
+                    <dl className="mt-3 grid grid-cols-[1fr_auto] border-t-2 border-brand-ink pt-2 tabular-nums">
+                      <dt>Subtotal</dt><dd className="text-right">{price(total)}</dd>
+                      <dt>Tax</dt><dd className="text-right">{ticketTax === null ? "added at payment" : price(ticketTax)}</dd>
+                      <dt className="text-3xl font-black">Total</dt>
+                      <dd className="text-right text-3xl font-black" aria-live="polite">{price(total + (ticketTax ?? 0))}{ticketTax === null && <span className="text-base"> +tax</span>}</dd>
+                    </dl>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button type="button" className="min-h-16 rounded-2xl bg-emerald-800 px-3 text-xl font-black text-white disabled:opacity-40" disabled={!total || busy} onClick={takeCash}>
+                        Cash
+                      </button>
+                      <button className="min-h-16 rounded-2xl bg-brand-ink px-3 text-xl font-black text-white disabled:opacity-40" disabled={!total || busy}>
+                        Card on iPhone
+                      </button>
+                    </div>
+                    {!shift && <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm font-bold text-amber-950">Cash drawer is closed. <a className="underline" href="#cash-drawer">Open it</a> before taking cash.</p>}
+                    {shift && !operator.trim() && <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm font-bold text-amber-950"><a className="underline" href="#cash-drawer">Enter your name</a> before taking cash.</p>}
+                  </form>
+                )}
+              </aside>
+            </div>
           )}
           {phone && posReturn && (posReturn.status === "error" || posReturn.error_code) && (
             <div className="my-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-900" role="alert">
@@ -504,13 +530,13 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                     <button type="button" className="text-sm font-bold underline" disabled={busy} onClick={() => {
                       void act({ action: "reconcile", id: order.id });
                     }}>Find Square payment</button>
-                  <button type="button" className="text-sm font-bold underline" disabled={busy} onClick={() => {
+                  {!phone && <button type="button" className="text-sm font-bold underline" disabled={busy} onClick={() => {
                     if (window.confirm(order.pos_url
                       ? "Cancel this card charge? Only do this if the guest has not paid on the iPhone."
                       : "Clear this attempt only after checking that no charge appears in Square Transactions.")) {
                       void act({ action: "archive", id: order.id });
                     }
-                  }}>{order.pos_url ? "Cancel card charge" : "Clear failed attempt"}</button>
+                  }}>{order.pos_url ? "Cancel card charge" : "Clear failed attempt"}</button>}
                   </div>
                 )}
                 {phone && order.status === "opened" && posLink?.id === order.id && (
@@ -523,6 +549,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
             ))}
           </ul>
           {!orders.length && <p className="text-sm text-brand-ink/65">No walk-up orders yet.</p>}
+          {!phone && <div id="cash-drawer" className="scroll-mt-4" />}
           {!phone && <DrawerPanel shift={shift} lastClosed={lastClosed} operator={operator} setOperator={setOperator}
             managerCode={managerCode} setManagerCode={setManagerCode} request={request} onChanged={() => void refresh()} />}
         </>

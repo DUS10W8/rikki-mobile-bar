@@ -23,7 +23,7 @@ window.fetch = async (url, options = {}) => {
   const b = options.body ? JSON.parse(options.body) : null;
   S.calls.push(b?.action || 'GET');
   try {
-    if (!b) return Response.json({ orders: Object.values(S.tickets).reverse(), shift: summary(), lastClosed: null });
+    if (!b) return Response.json({ orders: Object.values(S.tickets).reverse(), shift: summary(), lastClosed: null, scope: 'staff', taxBasisPoints: 0 });
     if (b.action === 'create') {
       const lines = b.items.map(l => ({ ...salsa.find(i => i.id === l.id), quantity: l.quantity }));
       S.tickets[b.id] ??= { id: b.id, name: b.name || 'Walk-up guest', status: 'waiting', tax_cents: 0,
