@@ -34,7 +34,7 @@ for (const route of routes) {
   }
   console.log(`PASS ${url}: HTML content, metadata, schema, local links/assets`);
 }
-for (const route of ["tip", "order", "bartender"]) {
+for (const route of ["tip", "order", "bartender", "pay", "register"]) {
   check((await htmlFor(route)).includes('content="noindex,follow"'), `${route}: noindex`);
   check(!sitemap.includes(`<loc>${origin}/${route}</loc>`), `${route}: excluded from sitemap`);
 }

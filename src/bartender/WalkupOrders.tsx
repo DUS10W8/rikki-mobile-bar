@@ -343,7 +343,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       )}
       <div className="flex flex-wrap items-baseline justify-between gap-x-4">
         <h2 className="text-xl font-black">{phone ? "Walk-up payments" : "Register"}</h2>
-        {!phone && <p className="text-xs text-brand-ink/60">Guest iPhone: open <a className="underline" href="/bartender?walkup=phone">/bartender?walkup=phone</a> in Safari and enter the staff code.</p>}
+        {!phone && <p className="text-xs text-brand-ink/60">Guest iPhone: open <a className="underline" href="/pay">rikkismobile.com/pay</a> in Safari and enter the staff code.</p>}
       </div>
       {error && <p className="my-2 rounded-lg bg-rose-50 p-2 text-sm text-rose-900" role="alert">{error}</p>}
       {checkingSession ? (

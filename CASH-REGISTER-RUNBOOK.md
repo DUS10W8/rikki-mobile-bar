@@ -17,13 +17,13 @@ If the connection drops after you've taken the cash, the screen says **"do not c
 If a card attempt is still open in Square for that ticket, cash is blocked. Find or clear the Square payment first.
 
 ## Devices
-- **Abe's iPad (register):** /bartender?view=register. Every item is on one screen. The ticket on the right always shows the total with tax and the **Cash** and **Card on iPhone** buttons.
-- **Guest iPhone:** /bartender?walkup=phone. It gets a **payment-only login**: it can show and charge card orders, but it can't open the drink board, see guest phone numbers, ring orders or touch cash. Turn on **Guided Access** (Settings > Accessibility) so guests can't leave Safari. In Square, require a passcode to leave checkout so guests can't browse transactions or refunds.
+- **Abe's iPad (register):** rikkismobile.com/register. Every item is on one screen. The ticket on the right always shows the total with tax and the **Cash** and **Card on iPhone** buttons.
+- **Guest iPhone:** rikkismobile.com/pay. It gets a **payment-only login**: it can show and charge card orders, but it can't open the drink board, see guest phone numbers, ring orders or touch cash. Turn on **Guided Access** (Settings > Accessibility) so guests can't leave Safari. In Square, require a passcode to leave checkout so guests can't browse transactions or refunds.
 - **Rikki's board:** /bartender. Each ticket leads with the pickup code (the same code the guest has). Drinks are listed one per line. The time chip turns amber at 5 minutes and red at 10.
 
 ## A card sale (Abe on the iPad, guest on the iPhone)
 Setup: the bar sits back from the window. Abe stands out front with the iPad. The guest-facing iPhone sits on a stand, facing the line. Rikki only makes drinks.
-Before service: on the iPhone, open **/bartender?walkup=phone** in Safari and enter the staff code. The screen turns into the guest screen ("Your order will appear here") and stays awake. Square POS must be signed in on that phone with Tap to Pay turned on.
+Before service: on the iPhone, open **rikkismobile.com/pay** in Safari and enter the staff code. The screen turns into the guest screen ("Your order will appear here") and stays awake. Square POS must be signed in on that phone with Tap to Pay turned on.
 1. Abe taps the items on the iPad, then **Card on iPhone**.
 2. Within about 2 seconds the iPhone shows the guest **their items with prices, the subtotal, the tax, the total and a Pay button**.
 3. The guest taps **Pay**. Square opens with the amount filled in, and they tap their card or phone.

@@ -11,5 +11,37 @@
     "api/walkup-checkout.js": {
       "includeFiles": "src/order/eventMenu.json"
     }
-  }
+  },
+  "redirects": [
+    {
+      "source": "/Pay",
+      "destination": "/pay",
+      "permanent": false
+    },
+    {
+      "source": "/PAY",
+      "destination": "/pay",
+      "permanent": false
+    },
+    {
+      "source": "/Register",
+      "destination": "/register",
+      "permanent": false
+    },
+    {
+      "source": "/REGISTER",
+      "destination": "/register",
+      "permanent": false
+    },
+    {
+      "source": "/Bartender",
+      "destination": "/bartender",
+      "permanent": false
+    },
+    {
+      "source": "/BARTENDER",
+      "destination": "/bartender",
+      "permanent": false
+    }
+  ]
 }
