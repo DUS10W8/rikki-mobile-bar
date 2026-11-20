@@ -545,7 +545,11 @@ function KitchenOrderCard({
             const match = line.match(/^(\d+)\s*[×x]\s*(.+)$/);
             return <li key={index} className="flex gap-2">
               <span className={`w-8 shrink-0 text-right ${match && Number(match[1]) > 1 ? "text-brand-rust" : "text-brand-ink/45"}`}>{match ? match[1] + "×" : ""}</span>
-              <span className="min-w-0">{match ? match[2] : line}</span>
+              {(() => {
+                // Register drinks carry their options after " — " (e.g. "Lunazul margarita — Double · No rim").
+                const [drink, options] = (match ? match[2] : line).split(" — ");
+                return <span className="min-w-0">{drink}{options && <span className="block text-base font-black leading-snug text-brand-rust">{options}</span>}</span>;
+              })()}
             </li>;
           })}
         </ul>

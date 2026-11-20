@@ -4,13 +4,27 @@ import { isWalkupId, releaseWalkupPayment, unclaimedReason, walkupNotePrefix } f
 import { authorizeWalkup, hasManagerAccess, setSession } from "../src/server/staffSession.js";
 import { salesTaxBasisPoints, taxCents } from "../src/server/tax.js";
 
-import { activeMenuId, menus } from "../src/server/menus.js";
-const fields = "id,name,drink,items,amount_cents,tax_cents,status,tender,cash_received_cents,change_cents,order_id,created_at";
+import { activeMenuId, drinkBuilder, menus } from "../src/server/menus.js";
+import { priceTicket } from "../src/order/drinkBuilder.js";
+const fields = "id,name,drink,items,display_lines,amount_cents,tax_cents,status,tender,cash_received_cents,change_cents,order_id,created_at";
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
 
 async function createWalkup(db, body, res) {
   const menu = menus[body.eventMenu ?? activeMenuId];
   if (!menu) return res.status(400).json({ error: "Choose an event menu." });
+  if (typeof body.name !== "string" || body.name.length > 80) return res.status(400).json({ error: "Check the guest name." });
+  // Register tickets: built drinks and menu items with options, priced here from the same files.
+  let ticket = null;
+  if (Array.isArray(body.lines)) {
+    try {
+      ticket = priceTicket(drinkBuilder, menu, body.lines);
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  }
+  if (ticket) return saveWalkup(db, body, res, {
+    drink: ticket.drink, amount: ticket.amountCents, items: ticket.items, displayLines: ticket.displayLines,
+  });
   if (!Array.isArray(body.items) || !body.items.length || body.items.length > menu.length ||
       typeof body.name !== "string" || body.name.length > 80) {
     return res.status(400).json({ error: "Choose at least one drink." });
@@ -27,6 +41,12 @@ async function createWalkup(db, body, res) {
   const drink = order.map(({ drink, quantity }) => `${quantity} × ${drink.name}`).join(", ");
   if (drink.length > 250) return res.status(400).json({ error: "Split this order into smaller groups of drinks." });
   const amount = order.reduce((total, item) => total + item.quantity * item.drink.priceCents, 0);
+  // Structured lines: the database deducts each item's recipe from stock when payment releases the ticket.
+  const items = order.map(({ drink, quantity }) => ({ id: drink.id, name: drink.name, quantity, price_cents: drink.priceCents }));
+  return saveWalkup(db, body, res, { drink, amount, items, displayLines: null });
+}
+
+async function saveWalkup(db, body, res, { drink, amount, items, displayLines }) {
   // Tax is fixed when the order is rung, from the server's rule. Null = rule unavailable:
   // card still works (Square adds tax), cash is refused until the order is rung again.
   const basisPoints = await salesTaxBasisPoints().catch((error) => {
@@ -36,8 +56,7 @@ async function createWalkup(db, body, res) {
   const { error } = await db.from("walkup_checkouts").upsert({
     id: body.id, name: body.name.trim() || "Walk-up guest", drink, amount_cents: amount,
     tax_basis_points: basisPoints, tax_cents: basisPoints === null ? null : taxCents(amount, basisPoints),
-    // Structured lines: the database deducts each item's recipe from stock when payment releases the ticket.
-    items: order.map(({ drink, quantity }) => ({ id: drink.id, name: drink.name, quantity, price_cents: drink.priceCents })),
+    items, ...(displayLines ? { display_lines: displayLines } : {}),
   }, { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;
   // Return what is stored, so a retried create reports the original totals.

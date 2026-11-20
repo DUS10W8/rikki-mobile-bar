@@ -1,0 +1,103 @@
+{
+  "_about": "Register drink builder (Abe's iPad only; the guest QR menu does not use this). Prices in cents. Recipes are [inventory sku, amount in that sku's unit]; scripts/build-drink-recipes.mjs turns them into recipe_lines. Pour = 1.5 fl oz, double adds another 1.5 fl oz.",
+  "pourOz": 1.5,
+  "tiers": {
+    "well": { "name": "Well", "priceCents": 999, "doubleCents": 400 },
+    "call": { "name": "Call", "priceCents": 1199, "doubleCents": 500 },
+    "top": { "name": "Top shelf", "priceCents": 1499, "doubleCents": 700 }
+  },
+  "liquorTypes": ["Tequila", "Vodka", "Rum", "Whiskey", "Gin", "Liqueur"],
+  "liquors": [
+    { "id": "lunazul-blanco", "name": "Lunazul", "type": "Tequila", "tier": "call" },
+    { "id": "don-julio-blanco", "name": "Don Julio Blanco", "type": "Tequila", "tier": "top" },
+    { "id": "don-julio-reposado", "name": "Don Julio Reposado", "type": "Tequila", "tier": "top" },
+    { "id": "vodka-house", "name": "House vodka", "type": "Vodka", "tier": "well" },
+    { "id": "rum-captain-white", "name": "Captain white", "type": "Rum", "tier": "call" },
+    { "id": "rum-diplomatico", "name": "Diplomático dark", "type": "Rum", "tier": "top" },
+    { "id": "whiskey-makers", "name": "Maker's Mark", "type": "Whiskey", "tier": "call" },
+    { "id": "whiskey-weller-107", "name": "Weller 107", "type": "Whiskey", "tier": "top" },
+    { "id": "gin-botanist", "name": "The Botanist", "type": "Gin", "tier": "call" },
+    { "id": "aperol", "name": "Aperol", "type": "Liqueur", "tier": "call" },
+    { "id": "st-germain", "name": "St-Germain", "type": "Liqueur", "tier": "call" },
+    { "id": "kahlua", "name": "Kahlúa", "type": "Liqueur", "tier": "call" },
+    { "id": "baileys", "name": "Baileys", "type": "Liqueur", "tier": "call" },
+    { "id": "grand-marnier", "name": "Grand Marnier", "type": "Liqueur", "tier": "top" },
+    { "id": "triple-sec-dekuyper", "name": "DeKuyper triple sec", "type": "Liqueur", "tier": "well" },
+    { "id": "vermouth-dry-martini", "name": "Dry vermouth", "type": "Liqueur", "tier": "well" }
+  ],
+  "styleSections": ["Mixer", "Cocktail", "Straight"],
+  "styles": [
+    { "id": "soda", "section": "Mixer", "name": "Soda", "label": "{liquor} soda", "iced": true, "recipe": [["club-soda", 4]] },
+    { "id": "coke", "section": "Mixer", "name": "Coke", "label": "{liquor} & Coke", "iced": true, "recipe": [["coke", 4]] },
+    { "id": "sprite", "section": "Mixer", "name": "Sprite", "label": "{liquor} Sprite", "iced": true, "recipe": [["sprite", 4]] },
+    { "id": "cranberry", "section": "Mixer", "name": "Cranberry", "label": "{liquor} cran", "iced": true, "recipe": [["cranberry-juice", 4]] },
+    { "id": "pineapple", "section": "Mixer", "name": "Pineapple", "label": "{liquor} pineapple", "iced": true, "recipe": [["pineapple-juice", 4]] },
+    { "id": "grapefruit", "section": "Mixer", "name": "Grapefruit soda", "label": "{liquor} grapefruit", "iced": true, "recipe": [["grapefruit-soda", 5]] },
+    { "id": "ginger-beer", "section": "Mixer", "name": "Ginger beer", "label": "{liquor} ginger beer", "iced": true, "recipe": [["ginger-beer", 4]] },
+    { "id": "lemonade", "section": "Mixer", "name": "Strawberry lemonade", "label": "{liquor} strawberry lemonade", "iced": true, "recipe": [["strawberry-lemonade", 4]] },
+    { "id": "red-bull", "section": "Mixer", "name": "Red Bull", "label": "{liquor} Red Bull", "priceCents": 300, "iced": true, "recipe": [["red-bull", 1]] },
+    { "id": "margarita", "section": "Cocktail", "name": "Margarita", "label": "{liquor} margarita", "priceCents": 100, "iced": true,
+      "recipe": [["triple-sec-dekuyper", 0.5], ["lime-juice", 0.75], ["agave", 0.25], ["rim-salt", 0.1], ["lime", 0.125]],
+      "defaults": { "rim": "salt", "lime": ["wedge"] } },
+    { "id": "paloma", "section": "Cocktail", "name": "Paloma", "label": "{liquor} paloma", "priceCents": 100, "iced": true,
+      "recipe": [["grapefruit-soda", 5], ["lime-juice", 0.5], ["lime", 0.125]], "defaults": { "lime": ["wedge"] } },
+    { "id": "mule", "section": "Cocktail", "name": "Mule", "label": "{liquor} mule", "priceCents": 200, "iced": true,
+      "recipe": [["ginger-beer", 4], ["lime-juice", 0.5], ["lime", 0.125]], "defaults": { "lime": ["wedge"] } },
+    { "id": "bloody-mary", "section": "Cocktail", "name": "Bloody Mary", "label": "{liquor} Bloody Mary", "priceCents": 100, "iced": true,
+      "recipe": [["zing-zang", 4], ["lime", 0.125]], "defaults": { "lime": ["wedge"] } },
+    { "id": "rocks", "section": "Straight", "name": "On the rocks", "label": "{liquor} on the rocks", "iced": true, "recipe": [] },
+    { "id": "neat", "section": "Straight", "name": "Neat", "label": "{liquor} neat", "iced": false, "recipe": [] },
+    { "id": "shot", "section": "Straight", "name": "Shot", "label": "{liquor} shot", "iced": false, "recipe": [] }
+  ],
+  "signatures": {
+    "salsa-lunazul-margarita": { "style": "margarita", "liquor": "lunazul-blanco" },
+    "salsa-lunazul-paloma": { "style": "paloma", "liquor": "lunazul-blanco" }
+  },
+  "groups": [
+    { "id": "pour", "name": "Pour", "select": "one", "default": "single",
+      "options": [
+        { "id": "single", "name": "Single" },
+        { "id": "double", "name": "Double", "double": true }
+      ] },
+    { "id": "ice", "name": "Ice", "select": "one", "default": "regular", "exceptStyles": ["neat", "shot"],
+      "options": [
+        { "id": "regular", "name": "Regular ice" },
+        { "id": "light", "name": "Light ice" },
+        { "id": "extra", "name": "Extra ice" },
+        { "id": "none", "name": "No ice" }
+      ] },
+    { "id": "mixer", "name": "Mixer", "select": "one", "default": "regular",
+      "styles": ["soda", "coke", "sprite", "cranberry", "pineapple", "grapefruit", "ginger-beer", "lemonade", "red-bull", "paloma", "mule", "bloody-mary"],
+      "options": [
+        { "id": "regular", "name": "Regular mixer" },
+        { "id": "light", "name": "Light mixer" },
+        { "id": "extra", "name": "Extra mixer" },
+        { "id": "splash", "name": "Splash of mixer" }
+      ] },
+    { "id": "rim", "name": "Rim", "select": "one", "default": "none", "styles": ["margarita", "paloma", "mule", "bloody-mary", "rocks"],
+      "options": [
+        { "id": "none", "name": "No rim" },
+        { "id": "salt", "name": "Salt rim", "recipe": [["rim-salt", 0.1]] },
+        { "id": "half-salt", "name": "Half salt rim", "recipe": [["rim-salt", 0.05]] },
+        { "id": "tajin", "name": "Tajín rim" },
+        { "id": "sugar", "name": "Sugar rim" }
+      ] },
+    { "id": "lime", "name": "Lime", "select": "many",
+      "options": [
+        { "id": "wedge", "name": "Lime wedge", "recipe": [["lime", 0.125]] },
+        { "id": "extra-wedge", "name": "Extra lime", "recipe": [["lime", 0.125]] },
+        { "id": "no-garnish", "name": "No lime" },
+        { "id": "light-juice", "name": "Light lime juice", "styles": ["margarita", "paloma", "mule"] },
+        { "id": "extra-juice", "name": "Extra lime juice", "recipe": [["lime-juice", 0.25]] }
+      ] },
+    { "id": "extras", "name": "Extras", "select": "many",
+      "options": [
+        { "id": "splash-cran", "name": "Splash cranberry", "recipe": [["cranberry-juice", 0.5]] },
+        { "id": "splash-pineapple", "name": "Splash pineapple", "recipe": [["pineapple-juice", 0.5]] },
+        { "id": "splash-sprite", "name": "Splash Sprite", "recipe": [["sprite", 1]] },
+        { "id": "splash-soda", "name": "Splash soda", "recipe": [["club-soda", 1]] },
+        { "id": "extra-agave", "name": "Sweeter (extra agave)", "recipe": [["agave", 0.25]], "styles": ["margarita", "paloma"] },
+        { "id": "chamoy-straw", "name": "Chamoy straw", "priceCents": 100, "recipe": [["chamoy-straw", 1]] }
+      ] }
+  ]
+}

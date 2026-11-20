@@ -6,6 +6,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import WalkupOrders from '/src/bartender/WalkupOrders.tsx';
 import salsa from '/src/order/salsaMenu.json';
+import builder from '/src/order/drinkBuilder.json';
+import { priceTicket } from '/src/order/drinkBuilder.js';
 import '/src/index.css';
 // Mock server with the database's rules: tax 0, idempotent cash, one open shift, append-only drawer.
 const S = window.__state = JSON.parse(sessionStorage.getItem('mock') || 'null') || { tickets: {}, shift: null, entries: [], closes: [], dropNext: false, calls: [] };
@@ -25,9 +27,9 @@ window.fetch = async (url, options = {}) => {
   try {
     if (!b) return Response.json({ orders: Object.values(S.tickets).reverse(), shift: summary(), lastClosed: null, scope: 'staff', taxBasisPoints: 0 });
     if (b.action === 'create') {
-      const lines = b.items.map(l => ({ ...salsa.find(i => i.id === l.id), quantity: l.quantity }));
+      let t; try { t = priceTicket(builder, salsa, b.lines); } catch (e) { return Response.json({ error: e.message }, { status: 400 }); }
       S.tickets[b.id] ??= { id: b.id, name: b.name || 'Walk-up guest', status: 'waiting', tax_cents: 0,
-        drink: lines.map(l => l.quantity + ' × ' + l.name).join(', '), amount_cents: lines.reduce((a, l) => a + l.priceCents * l.quantity, 0) };
+        drink: t.drink, amount_cents: t.amountCents, display_lines: t.displayLines, items: t.items, created_at: new Date().toISOString() };
       return Response.json({ ok: true, order: S.tickets[b.id] }, { status: 201 });
     }
     if (b.action === 'open_shift') { S.shift = { id: crypto.randomUUID(), label: b.eventLabel, by: b.operator, float: b.floatCents }; S.entries.push({ kind: 'float', amount: b.floatCents }); return Response.json({ shiftId: S.shift.id }); }
