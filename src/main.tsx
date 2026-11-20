@@ -10,7 +10,8 @@ captureAttribution();
 const modules = import.meta.glob<{ default: React.ComponentType }>([
   "./App.tsx", "./pages/**/*.tsx", "!./pages/MobileBarSite.tsx", "./bartender/BartenderPage.tsx", "./order/OrderPage.tsx",
 ]);
-const routePath = window.location.pathname.replace(/\/+$/, "");
+// Case-insensitive, so "/Pay" typed on a phone still works.
+const routePath = window.location.pathname.replace(/\/+$/, "").toLowerCase();
 const modulePath = routeModules[routePath] ?? "./pages/NotFoundPage.tsx";
 
 async function start() {

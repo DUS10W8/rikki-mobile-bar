@@ -49,12 +49,13 @@ const MAX_DRINK_TICKETS = 2;
 
 export default function BartenderPage() {
   const params = new URLSearchParams(window.location.search);
+  const path = window.location.pathname.replace(/\/+$/, "").toLowerCase();
   if (params.get("view") === "ready") return <ReadyBoard />;
   // Order-taker's iPad: the register on its own, without the drink board.
-  if (params.get("view") === "register") {
+  if (path === "/register" || params.get("view") === "register") {
     return <main className="min-h-screen bg-[#EADFC6] p-2 sm:p-3"><WalkupOrders /></main>;
   }
-  if (params.get("walkup") === "phone" || params.has("data")) {
+  if (path === "/pay" || params.get("walkup") === "phone" || params.has("data")) {
     return <main className="mx-auto max-w-lg p-4"><WalkupOrders phone /></main>;
   }
   return <BartenderDashboard />;
