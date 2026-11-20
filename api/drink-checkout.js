@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { squareRequest as square } from "../src/server/square.js";
-import { releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
+import { releaseNotelessWalkup, releaseWalkupPayment, walkupNotePrefix } from "../src/server/walkupPayment.js";
 
 import { activeHandoffs, activeMenu as drinks } from "../src/server/menus.js";
 
@@ -132,15 +132,20 @@ async function paymentNotification(db, body, res) {
     if (!await releaseWalkupPayment(db, payment, why)) console.error("Walk-up payment notification not released", reported.id, why);
     return res.status(204).end();
   }
-  if (typeof reported?.id !== "string" || !squareId.test(reported.id) ||
-      typeof reported.order_id !== "string" || !squareId.test(reported.order_id)) return res.status(204).end();
-  const { data: checkout, error } = await db.from("drink_checkouts").select("square_order_id,amount_cents")
-    .eq("square_order_id", reported.order_id).maybeSingle();
+  if (typeof reported?.id !== "string" || !squareId.test(reported.id)) return res.status(204).end();
+  const hasOrder = typeof reported.order_id === "string" && squareId.test(reported.order_id);
+  const { data: checkout, error } = hasOrder ? await db.from("drink_checkouts").select("square_order_id,amount_cents")
+    .eq("square_order_id", reported.order_id).maybeSingle() : { data: null, error: null };
   if (error) throw error;
+  // The notification is a lookup hint. Only Square's authenticated API response can release a ticket.
   if (checkout) {
-    // The notification is a lookup hint. Only Square's authenticated API response can release a ticket.
     const { payment } = await square(`payments/${encodeURIComponent(reported.id)}`);
     await releaseIfPaid(db, checkout, payment);
+  } else if (!reported.note && reported.status === "COMPLETED") {
+    // Square POS walk-up charge without our note: confirm it here so nobody has to approve it.
+    const { payment } = await square(`payments/${encodeURIComponent(reported.id)}`);
+    const why = [];
+    if (!await releaseNotelessWalkup(db, payment, why)) console.error("Note-less payment not matched to a walk-up order", reported.id, why);
   }
   return res.status(204).end();
 }

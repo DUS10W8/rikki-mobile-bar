@@ -47,3 +47,45 @@ export async function releaseWalkupPayment(db, payment, why = []) {
   if (error) throw error;
   return data === true || no("database refused the release (order not waiting for card, or amount changed)");
 }
+
+// Square POS does not keep the note we send, so a card payment often arrives without it.
+// A note-less payment may still be matched to this order when it is new (made after the
+// order was rung, within 30 minutes) and not already used: not by another walk-up order,
+// not by a guest QR checkout. releaseWalkupPayment then checks status, location and amount.
+export async function unclaimedReason(db, payment, checkout, id) {
+  const madeAt = new Date(payment.created_at).getTime();
+  const rungAt = new Date(checkout.created_at).getTime();
+  if (!Number.isFinite(madeAt) || madeAt < rungAt - 2 * 60000 || madeAt > rungAt + 30 * 60000) {
+    return "payment was not made within 30 minutes of this order";
+  }
+  const { data: used, error } = await db.from("walkup_checkouts").select("id").eq("payment_id", payment.id).neq("id", id).limit(1);
+  if (error) throw error;
+  if (used?.length) return "payment already used by another walk-up order";
+  if (payment.order_id) {
+    const { data: qr, error: qrError } = await db.from("drink_checkouts").select("id").eq("square_order_id", payment.order_id).limit(1);
+    if (qrError) throw qrError;
+    if (qr?.length) return "payment belongs to a guest QR order";
+  }
+  return null;
+}
+
+// Square's payment notification for a note-less Square POS payment: release the one
+// card-waiting walk-up order it fits, with no staff step. Ambiguous cases are left to the
+// phone, which knows the exact transaction.
+export async function releaseNotelessWalkup(db, payment, why = []) {
+  if (!payment || payment.note) return false;
+  if (payment.status !== "COMPLETED" || payment.source_type !== "CARD" || payment.location_id !== process.env.SQUARE_LOCATION_ID) return false;
+  const madeAt = new Date(payment.created_at).getTime();
+  if (!Number.isFinite(madeAt)) return false;
+  const { data: waiting, error } = await db.from("walkup_checkouts")
+    .select("id,created_at,amount_cents,tax_cents").eq("status", "opened").is("archived_at", null)
+    .gte("created_at", new Date(madeAt - 30 * 60000).toISOString()).lte("created_at", new Date(madeAt + 2 * 60000).toISOString());
+  if (error) throw error;
+  const amount = payment.amount_money?.amount;
+  const fits = (waiting ?? []).filter((row) => amount === row.amount_cents ||
+    (row.tax_cents !== null && Math.abs(amount - row.amount_cents - row.tax_cents) <= 1));
+  if (fits.length !== 1) { why.push(fits.length ? `${fits.length} waiting orders fit this payment` : "no waiting order fits this payment"); return false; }
+  const reason = await unclaimedReason(db, payment, fits[0], fits[0].id);
+  if (reason) { why.push(reason); return false; }
+  return releaseWalkupPayment(db, { ...payment, note: walkupNotePrefix + fits[0].id }, why);
+}
