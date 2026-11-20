@@ -157,6 +157,27 @@ function posUrl(row, env) {
 // Older card attempts are not offered again: they need Find Square payment or Clear failed attempt.
 const chargeWindowMs = 15 * 60 * 1000;
 
+// Square POS does not keep the note we send, so a card payment often arrives without it.
+// A note-less payment may still be matched to this order when it is new (made after the
+// order was rung, within 30 minutes) and not already used: not by another walk-up order,
+// not by a guest QR checkout. releaseWalkupPayment then checks status, location and amount.
+async function unclaimedReason(db, payment, checkout, id) {
+  const madeAt = new Date(payment.created_at).getTime();
+  const rungAt = new Date(checkout.created_at).getTime();
+  if (!Number.isFinite(madeAt) || madeAt < rungAt - 2 * 60000 || madeAt > rungAt + 30 * 60000) {
+    return "payment was not made within 30 minutes of this order";
+  }
+  const { data: used, error } = await db.from("walkup_checkouts").select("id").eq("payment_id", payment.id).neq("id", id).limit(1);
+  if (error) throw error;
+  if (used?.length) return "payment already used by another walk-up order";
+  if (payment.order_id) {
+    const { data: qr, error: qrError } = await db.from("drink_checkouts").select("id").eq("square_order_id", payment.order_id).limit(1);
+    if (qrError) throw qrError;
+    if (qr?.length) return "payment belongs to a guest QR order";
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   const { WALKUP_STAFF_CODE, SQUARE_POS_APPLICATION_ID, SQUARE_LOCATION_ID, SQUARE_ACCESS_TOKEN,
@@ -225,7 +246,7 @@ export default async function handler(req, res) {
     }
     if (body.action === "reconcile") {
       const { data: checkout, error } = await db.from("walkup_checkouts")
-        .select("created_at,status,amount_cents").eq("id", body.id).maybeSingle();
+        .select("created_at,status,amount_cents,tax_cents").eq("id", body.id).maybeSingle();
       if (error) throw error;
       if (checkout?.status === "paid") return res.status(200).json({ ok: true });
       if (checkout?.status !== "opened") return res.status(409).json({ error: "Open checkout before checking for a payment." });
@@ -235,6 +256,7 @@ export default async function handler(req, res) {
       const note = walkupNotePrefix + body.id;
       const seen = [];   // what Square listed, so a failed match says why
       const why = [];
+      const noteless = [];
       for (let page = 0; page < 5; page += 1) {
         const { payments, cursor } = await squareRequest("payments?" + query);
         for (const payment of payments ?? []) {
@@ -248,10 +270,21 @@ export default async function handler(req, res) {
           if (matched && await releaseWalkupPayment(db, { ...payment, note }, why)) {
             return res.status(200).json({ ok: true });
           }
+          if (!matched && !payment.note) noteless.push(payment);
         }
         if (!cursor) break;
         query.set("cursor", cursor);
       }
+      // No note match: accept a note-less payment only if exactly one unused one fits this order's total.
+      const fits = [];
+      for (const payment of noteless) {
+        const amount = payment.amount_money?.amount;
+        if (amount !== checkout.amount_cents && (checkout.tax_cents === null || Math.abs(amount - checkout.amount_cents - checkout.tax_cents) > 1)) continue;
+        const reason = await unclaimedReason(db, payment, checkout, body.id);
+        if (reason) why.push(reason); else fits.push(payment);
+      }
+      if (fits.length === 1 && await releaseWalkupPayment(db, { ...fits[0], note }, why)) return res.status(200).json({ ok: true });
+      if (fits.length > 1) why.push(`${fits.length} unused payments fit this total; use the transaction on the phone, or check Square`);
       console.error("Walk-up reconcile found no match", body.id, checkout.amount_cents, why, seen.slice(0, 10));
       return res.status(409).json({ error: "No completed Square payment could be matched to this order. If Square shows a charge, keep the receipt and do not pay again.",
         detail: (why.length ? `Rejected: ${why.join("; ")}. ` : "") +
@@ -259,6 +292,10 @@ export default async function handler(req, res) {
     }
     if (body.action === "verify" && typeof body.transactionId === "string" && squareId.test(body.transactionId)) {
       const why = [];
+      const { data: checkout, error: checkoutError } = await db.from("walkup_checkouts")
+        .select("created_at,status").eq("id", body.id).maybeSingle();
+      if (checkoutError) throw checkoutError;
+      if (checkout?.status === "paid") return res.status(200).json({ ok: true });
       const tenders = await squareTenders(SQUARE_LOCATION_ID, body.transactionId);
       if (!tenders.length) why.push("Square returned no tenders for this transaction");
       for (const tender of tenders) {
@@ -266,10 +303,13 @@ export default async function handler(req, res) {
         if (!paymentId) continue;
         const { payment } = await squareRequest(`payments/${encodeURIComponent(paymentId)}`);
         const note = walkupNotePrefix + body.id;
-        if (payment && payment.note !== note && tender.note !== note) why.push("payment note is for a different order");
-        if (payment && (payment.note === note || tender.note === note) && await releaseWalkupPayment(db, { ...payment, note }, why)) {
-          return res.status(200).json({ ok: true });
-        }
+        if (!payment) continue;
+        const noted = payment.note === note || tender.note === note;
+        if (!noted && (payment.note || tender.note)) { why.push("payment note is for a different order"); continue; }
+        // No note (Square POS drops it): Square returned this transaction to this order's own checkout.
+        const reason = !noted && checkout ? await unclaimedReason(db, payment, checkout, body.id) : null;
+        if (reason) { why.push(reason); continue; }
+        if (await releaseWalkupPayment(db, { ...payment, note }, why)) return res.status(200).json({ ok: true });
       }
       console.error("Walk-up verify refused", body.id, why);
       return res.status(409).json({ error: "Square has not confirmed this payment. Check the Square transaction before retrying.", detail: why.join("; ") });
