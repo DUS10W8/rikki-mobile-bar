@@ -16,6 +16,14 @@ Optional: set `WALKUP_MANAGER_CODE` in Vercel. When it's set, refunds, payouts, 
 If the connection drops after you've taken the cash, the screen says **"do not collect again"**. Tap **Check this sale**. Confirming again is safe: the same sale ID never records twice, even after a reload.
 If a card attempt is still open in Square for that ticket, cash is blocked. Find or clear the Square payment first.
 
+## A card sale (iPad → bar iPhone)
+Before service: on the bar iPhone, open **/bartender?walkup=phone** in Safari, enter the staff code and leave that screen open. The screen stays awake while it's open. Square POS must be signed in on the same phone with Tap to Pay turned on.
+1. On the iPad, tap items, then **Card on iPhone**.
+2. Within about 2 seconds the iPhone turns into a full-screen **Tap to pay $X + tax** button. Hand it to the guest, or tap it yourself. Square POS opens with the amount already filled in. The guest taps their card or phone.
+3. Square returns to the payment screen and the ticket goes to the bar.
+
+iOS needs that one tap to open the Square app, so the charge can't open by itself. **Cancel this charge** on the iPhone clears an attempt that was never opened in Square. If several orders are waiting, they come up oldest first. After 15 minutes an unopened charge drops off the full-screen view. Use **Find Square payment** or **Clear failed attempt** for it instead.
+
 ## Bar board
 Walk-up drinks now show **Made**, then **Handed to guest**. Tickets say "Paid cash" or "Paid card".
 

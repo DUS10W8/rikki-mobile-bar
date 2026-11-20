@@ -14,12 +14,23 @@ type Walkup = {
   tender?: "card" | "cash" | null;
   change_cents?: number | null;
   order_id?: string | null;
+  pos_url?: string;
 };
 
 type PosReturn = { state?: string; transaction_id?: string; error_code?: string; status?: string };
 const apiPath = "/api/walkup-checkout";
 const storageKey = "rikki-walkup-staff";
 const pendingLinkKey = "rikki-walkup-square-link";
+const launchedKey = "rikki-walkup-launched";   // card attempts this iPhone already sent to Square POS
+
+function readLaunched(): Record<string, number> {
+  try {
+    const saved = JSON.parse(localStorage.getItem(launchedKey) || "{}");
+    return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+  } catch {
+    return {};
+  }
+}
 const pendingCashKey = "rikki-walkup-cash-pending";   // survives reload: the sale being paid in cash
 const operatorKey = "rikki-walkup-operator";
 const managerKey = "rikki-walkup-manager";
@@ -101,6 +112,14 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   });
   const requestId = useRef<string | null>(null);
   const submitted = useRef(false);
+  const [launched, setLaunched] = useState(readLaunched);
+  const markLaunched = (id: string) => {
+    // Keep a day of history so a reload never offers the same charge twice.
+    const next = Object.fromEntries(Object.entries({ ...readLaunched(), [id]: Date.now() })
+      .filter(([, at]) => Date.now() - at < 86400000));
+    localStorage.setItem(launchedKey, JSON.stringify(next));
+    setLaunched(next);
+  };
 
   const request = useCallback(async (body?: object, signal?: AbortSignal) => {
     const headers: Record<string, string> = { "Content-Type": "application/json", "X-Walkup-Code": code, "X-Walkup-Request": "1" };
@@ -148,7 +167,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       }
     };
     void update();
-    const timer = window.setInterval(update, 3000);
+    const timer = window.setInterval(update, phone ? 2000 : 3000);
     return () => {
       controller.abort();
       window.clearInterval(timer);
@@ -206,14 +225,14 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     .map((drink) => ({ id: drink.id, quantity: quantities[drink.id], priceCents: drink.priceCents }));
   const total = items.reduce((sum, item) => sum + item.quantity * item.priceCents, 0);
 
-  const act = async (body: object, onSuccess?: (data: { url?: string; order?: Walkup }) => void) => {
+  const act = async (body: object, onSuccess?: (data: { url?: string; order?: Walkup }) => void | Promise<void>) => {
     if (submitted.current) return;
     submitted.current = true;
     setBusy(true);
     setError("");
     try {
       const data = await request(body);
-      onSuccess?.(data);
+      await onSuccess?.(data);
       const updated = await request();
       setOrders(updated.orders);
       if (!phone) {
@@ -252,8 +271,52 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     return () => controller.abort();
   }, [unlocked, phone, posReturn, request]);
 
+  // Keep the bar iPhone awake on this screen so new charges appear without anyone touching it.
+  useEffect(() => {
+    if (!phone || !unlocked) return;
+    type Lock = { release: () => Promise<void> };
+    const wake = (navigator as Navigator & { wakeLock?: { request: (type: "screen") => Promise<Lock> } }).wakeLock;
+    if (!wake) return;
+    let lock: Lock | null = null;
+    let active = true;
+    const acquire = () => {
+      if (document.visibilityState !== "visible") return;
+      wake.request("screen").then((next) => {
+        if (active) lock = next; else void next.release();
+      }).catch(() => {});
+    };
+    acquire();
+    document.addEventListener("visibilitychange", acquire);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", acquire);
+      void lock?.release().catch(() => {});
+    };
+  }, [phone, unlocked]);
+
+  // Oldest card order the iPad sent that this iPhone has not opened in Square yet.
+  const pending = phone && unlocked && !posReturn
+    ? orders.filter((order) => order.status === "opened" && order.pos_url && !launched[order.id]) : [];
+  const charge = pending[pending.length - 1];
+
   return (
     <section className="rounded-2xl border border-brand-chrome bg-[#fffaf2] p-4 text-brand-ink">
+      {charge && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-brand-ink p-6 text-center text-white" role="dialog" aria-modal="true" aria-label="Card payment">
+          <p className="text-lg font-bold opacity-80">{charge.name}</p>
+          <p className="max-w-sm text-base opacity-80">{charge.drink}</p>
+          <a href={charge.pos_url} onClick={() => markLaunched(charge.id)}
+            className="w-full max-w-sm rounded-3xl bg-[#2E9B8A] px-6 py-10 text-4xl font-black text-white shadow-xl active:scale-[0.98]">
+            Tap to pay<span className="mt-2 block text-2xl">{price(charge.amount_cents)} + tax</span>
+          </a>
+          {pending.length > 1 && <p className="text-sm font-bold">{pending.length - 1} more waiting after this one</p>}
+          <button type="button" className="text-sm underline opacity-80" disabled={busy} onClick={() => {
+            if (window.confirm(`Cancel the card charge for ${charge.name}? Rikki will need to ring it again.`)) {
+              void act({ action: "archive", id: charge.id }, () => markLaunched(charge.id));
+            }
+          }}>Cancel this charge</button>
+        </div>
+      )}
       <h2 className="text-xl font-black">{phone ? "Walk-up payments" : "Walk-up orders"}</h2>
       {!phone && <p className="my-2 text-sm">Open <a className="underline" href="/bartender?walkup=phone">the payment screen</a> in Safari on the bar iPhone and enter the same staff code.</p>}
       {error && <p className="my-2 rounded-lg bg-rose-50 p-2 text-sm text-rose-900" role="alert">{error}</p>}
@@ -302,10 +365,17 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
             <form className="mb-4 grid gap-3" onSubmit={(event) => {
               event.preventDefault();
               requestId.current ??= crypto.randomUUID();
-              void act({ action: "create", id: requestId.current, eventMenu, name, items }, () => {
+              void act({ action: "create", id: requestId.current, eventMenu, name, items }, async (data) => {
                 requestId.current = null;
                 setSearch(""); setName("");
                 setQuantities({});
+                // Card was chosen: open the attempt now, so the iPhone shows the Charge screen without a tap.
+                const created = data.order;
+                if (created?.status === "waiting") {
+                  await request({ action: "open", id: created.id }).catch(() => {
+                    setError("Sent to the list, but the iPhone needs a tap on Prepare payment for this one.");
+                  });
+                }
               });
             }}>
               <label>Event menu <select className={input} value={eventMenu} disabled={busy || total > 0} onChange={event => { setSearch(""); setEventMenu(event.target.value); requestId.current = null; }}>
@@ -391,13 +461,13 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
               <li key={order.id} className="rounded-xl border border-brand-chrome bg-white p-3">
                 <p className="font-black">{order.order_id && <span className="mr-2 rounded bg-brand-ink px-1.5 text-white">#{shortOrderId(order.order_id)}</span>}{order.name} · {price(order.amount_cents)} subtotal</p>
                 <p className="text-sm">{order.drink}</p>
-                <p className="my-1 text-sm font-bold">{order.status === "paid" ? (order.tender === "cash" ? `Paid cash · change ${money(order.change_cents ?? 0)} · Sent to bar` : "Paid · Sent to bar") : order.status === "opened" ? (posLink?.id === order.id ? "Ready to open Square POS" : "Payment unconfirmed · Check Square POS") : "Waiting for payment"}</p>
+                <p className="my-1 text-sm font-bold">{order.status === "paid" ? (order.tender === "cash" ? `Paid cash · change ${money(order.change_cents ?? 0)} · Sent to bar` : "Paid · Sent to bar") : order.status === "opened" ? (posLink?.id === order.id ? "Ready to open Square POS" : order.pos_url && !launched[order.id] ? (phone ? "Ready to charge" : "On the iPhone · waiting for card") : "Payment unconfirmed · Check Square POS") : "Waiting for payment"}</p>
                 {!phone && order.status === "waiting" && cashSale?.id !== order.id && (
                   <button type="button" className={`${button} mr-2 bg-emerald-800`} disabled={busy || order.tax_cents === null} onClick={() => startCash(order)}>
                     Take cash · {money(order.amount_cents + (order.tax_cents ?? 0))}
                   </button>
                 )}
-                {!phone && order.status === "opened" && <p className="text-xs font-bold text-rose-900">Card attempt open — find or clear it in Square before taking cash.</p>}
+                {!phone && order.status === "opened" && !order.pos_url && <p className="text-xs font-bold text-rose-900">Card attempt open — find or clear it in Square before taking cash.</p>}
                 {!phone && order.status === "paid" && order.tender === "cash" && (
                   <button type="button" className="text-sm font-bold underline" disabled={busy} onClick={() => refundCash(order)}>Cash refund</button>
                 )}
@@ -411,7 +481,7 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                     setPosLink(link);
                   })}>{phone ? "Prepare payment" : "Cancel before payment"}</button>
                 )}
-                {order.status === "opened" && posLink?.id !== order.id && (
+                {order.status === "opened" && posLink?.id !== order.id && !(phone && order.pos_url && !launched[order.id]) && (
                   <div className="flex flex-wrap gap-3">
                     <button type="button" className="text-sm font-bold underline" disabled={busy} onClick={() => {
                       void act({ action: "reconcile", id: order.id });
