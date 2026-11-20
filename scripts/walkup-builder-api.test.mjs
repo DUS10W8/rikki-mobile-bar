@@ -32,8 +32,8 @@ let res = await create([
 assert.equal(res.code, 201);
 assert.equal(stored.amount_cents, 1199 + 1299 + 2 * 699);
 assert.equal(stored.tax_cents, Math.floor((stored.amount_cents * 870 + 5000) / 10000));
-assert.equal(stored.drink, "1 × Lunazul & Coke — Light mixer · Lime wedge, 1 × Lunazul Margarita — No rim, 2 × Modelo draft");
-assert.deepEqual(stored.display_lines.map((line) => line.name), ["Lunazul & Coke", "Lunazul Margarita", "Modelo draft"]);
+assert.equal(stored.drink, "1 × Lunazul & Coke — Light mixer · Lime wedge, 1 × Margarita — No rim, 2 × Modelo draft");
+assert.deepEqual(stored.display_lines.map((line) => line.name), ["Lunazul & Coke", "Margarita", "Modelo draft"]);
 assert.deepEqual(stored.items.map((item) => item.id).sort(),
   ["b-mod-lime-wedge", "b-pour-lunazul-blanco", "b-style-coke", "salsa-lunazul-margarita", "salsa-modelo-draft"]);
 

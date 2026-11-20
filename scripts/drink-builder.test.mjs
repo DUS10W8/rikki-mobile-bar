@@ -31,7 +31,7 @@ assert.equal(ticket.drink, "1 × Don Julio Blanco margarita — No rim · No lim
 // Signature button with options keeps its menu price and recipe id.
 ticket = priceTicket(config, menu, [{ kind: "item", id: "salsa-lunazul-margarita", quantity: 1, mods: { rim: "half-salt" }, note: "spicy, please" }]);
 assert.equal(ticket.amountCents, 1299);
-assert.equal(ticket.drink, '1 × Lunazul Margarita — Half salt rim · "spicy please"');
+assert.equal(ticket.drink, '1 × Margarita — Half salt rim · "spicy please"');
 assert.ok(ticket.items.some((item) => item.id === "salsa-lunazul-margarita"));
 
 // Plain menu items (beer, food) still work and keep their price on the inventory line.

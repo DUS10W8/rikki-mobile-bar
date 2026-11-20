@@ -60,8 +60,8 @@ assert.equal((await call("POST", { ...details, drinkId: "atlas-na-cranberry-spri
 assert.equal((await call("POST", { ...details, drinkId: "salsa-corona", amountCents: 600 })).code, 409);
 assert.equal((await call("POST", { ...details, drinkId: "atlas-aperol-spritz", amountCents: 1200 })).code, 409);
 for (const [drinkId, amountCents, name] of [
-  ["salsa-lunazul-margarita", 1299, "Lunazul Margarita"],
-  ["salsa-lunazul-paloma", 1299, "Lunazul Paloma"],
+  ["salsa-lunazul-margarita", 1299, "Margarita"],
+  ["salsa-lunazul-paloma", 1299, "Paloma"],
   ["salsa-pulled-pork-sandwich", 1399, "Pulled pork sandwich"],
   ["salsa-corona", 699, "Corona"],
 ]) {
