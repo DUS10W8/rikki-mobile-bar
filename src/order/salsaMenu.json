@@ -2,13 +2,7 @@
   {
     "id": "salsa-pulled-pork-sandwich",
     "name": "Pulled pork sandwich",
-    "priceCents": 1299,
-    "category": "Food"
-  },
-  {
-    "id": "salsa-rice-and-bean-bowl",
-    "name": "Rice-and-bean bowl",
-    "priceCents": 899,
+    "priceCents": 1399,
     "category": "Food"
   },
   {

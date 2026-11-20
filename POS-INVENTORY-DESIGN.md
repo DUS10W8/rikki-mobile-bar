@@ -30,8 +30,8 @@ Working sticker prices in USD, pending pack size, costs, and tax display decisio
 
 | Item | Issue per order | Planned prep | Service rule | Guest figure supplied | Proposed USD |
 | --- | --- | --- | --- | ---: | ---: |
-| Pulled pork sandwich | 1 sandwich | 50 hot | Flag last 5 | 90 | 12.99 |
-| Rice-and-bean bowl | 1 bowl | 10 hot | Offer after sandwiches sell out | 110 | 8.99 |
+| Pulled pork sandwich | 1 sandwich | 50 hot | Flag last 5 | 90 | 13.99 |
+| ~~Rice-and-bean bowl~~ | Removed from the menu Nov 20, 2026 | | | | |
 | Esquites | 1 lidded 8 oz cup | 25 cold | Flag last 5 | 90 | 5.99 |
 | Paleta | 1 pop | 30 frozen | Flag last 5 | 110 | 3.99 |
 | Chips and salsa | 2 oz chips + 2 oz salsa | 55 portions | Hold 5 from opening, leaving 50 freely sellable | 170 | 4.99 |
