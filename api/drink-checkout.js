@@ -128,7 +128,8 @@ async function paymentNotification(db, body, res) {
   if (typeof reported?.id === "string" && squareId.test(reported.id) &&
       typeof reported.note === "string" && reported.note.startsWith(walkupNotePrefix)) {
     const { payment } = await square(`payments/${encodeURIComponent(reported.id)}`);
-    await releaseWalkupPayment(db, payment);
+    const why = [];
+    if (!await releaseWalkupPayment(db, payment, why)) console.error("Walk-up payment notification not released", reported.id, why);
     return res.status(204).end();
   }
   if (typeof reported?.id !== "string" || !squareId.test(reported.id) ||
