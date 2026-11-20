@@ -16,13 +16,20 @@ Optional: set `WALKUP_MANAGER_CODE` in Vercel. When it's set, refunds, payouts, 
 If the connection drops after you've taken the cash, the screen says **"do not collect again"**. Tap **Check this sale**. Confirming again is safe: the same sale ID never records twice, even after a reload.
 If a card attempt is still open in Square for that ticket, cash is blocked. Find or clear the Square payment first.
 
-## A card sale (iPad → bar iPhone)
-Before service: on the bar iPhone, open **/bartender?walkup=phone** in Safari, enter the staff code and leave that screen open. The screen stays awake while it's open. Square POS must be signed in on the same phone with Tap to Pay turned on.
-1. On the iPad, tap items, then **Card on iPhone**.
-2. Within about 2 seconds the iPhone turns into a full-screen **Tap to pay $X + tax** button. Hand it to the guest, or tap it yourself. Square POS opens with the amount already filled in. The guest taps their card or phone.
-3. Square returns to the payment screen and the ticket goes to the bar.
+## A card sale (Abe on the iPad, guest on the iPhone)
+Setup: the bar sits back from the window. Abe stands out front with the iPad. The guest-facing iPhone sits on a stand, facing the line. Rikki only makes drinks.
+Before service: on the iPhone, open **/bartender?walkup=phone** in Safari and enter the staff code. The screen turns into the guest screen ("Your order will appear here") and stays awake. Square POS must be signed in on that phone with Tap to Pay turned on.
+1. Abe taps the items on the iPad, then **Card on iPhone**.
+2. Within about 2 seconds the iPhone shows the guest **their items with prices, the subtotal, the tax, the total and a Pay button**.
+3. The guest taps **Pay**. Square opens with the amount filled in, and they tap their card or phone.
+4. The iPhone shows **Thank you** and their order number for 8 seconds. The ticket goes to Rikki.
 
-iOS needs that one tap to open the Square app, so the charge can't open by itself. **Cancel this charge** on the iPhone clears an attempt that was never opened in Square. If several orders are waiting, they come up oldest first. After 15 minutes an unopened charge drops off the full-screen view. Use **Find Square payment** or **Clear failed attempt** for it instead.
+- If the guest backs out in Square, the Pay screen comes back.
+- If the guest changes their mind before paying, Abe taps **Cancel card charge** on the iPad.
+- Staff controls on the iPhone sit behind the faint **•••** in the top-right corner.
+- If several orders are waiting, they come up oldest first. After 15 minutes an unpaid charge leaves the guest screen. Use **Find Square payment** or **Cancel card charge** on the iPad for it.
+- iOS needs the guest's tap to open Square, so the Square screen can't open by itself.
+- Cash: Abe takes cash on the iPad with **Take cash**, the same as before.
 
 ## Bar board
 Walk-up drinks now show **Made**, then **Handed to guest**. Tickets say "Paid cash" or "Paid card".

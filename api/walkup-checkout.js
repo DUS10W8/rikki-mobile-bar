@@ -5,7 +5,7 @@ import { authorizeStaff, hasManagerAccess, setSession } from "../src/server/staf
 import { salesTaxBasisPoints, taxCents } from "../src/server/tax.js";
 
 import { activeMenuId, menus } from "../src/server/menus.js";
-const fields = "id,name,drink,amount_cents,tax_cents,status,tender,cash_received_cents,change_cents,order_id,created_at";
+const fields = "id,name,drink,items,amount_cents,tax_cents,status,tender,cash_received_cents,change_cents,order_id,created_at";
 const squareId = /^[a-zA-Z0-9_-]{1,192}$/;
 
 async function createWalkup(db, body, res) {

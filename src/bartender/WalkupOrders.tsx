@@ -15,6 +15,7 @@ type Walkup = {
   change_cents?: number | null;
   order_id?: string | null;
   pos_url?: string;
+  items?: { id: string; name: string; quantity: number; price_cents: number }[] | null;
 };
 
 type PosReturn = { state?: string; transaction_id?: string; error_code?: string; status?: string };
@@ -120,6 +121,14 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     localStorage.setItem(launchedKey, JSON.stringify(next));
     setLaunched(next);
   };
+  const unmarkLaunched = (id: string) => {
+    const next = { ...readLaunched() };
+    delete next[id];
+    localStorage.setItem(launchedKey, JSON.stringify(next));
+    setLaunched(next);
+  };
+  const [thanks, setThanks] = useState<string | null>(null);
+  const [showStaff, setShowStaff] = useState(false);
 
   const request = useCallback(async (body?: object, signal?: AbortSignal) => {
     const headers: Record<string, string> = { "Content-Type": "application/json", "X-Walkup-Code": code, "X-Walkup-Request": "1" };
@@ -264,12 +273,27 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
         if (controller.signal.aborted) return;
         window.history.replaceState(null, "", "/bartender?walkup=phone");
         setPosReturn(null);
+        setThanks(id);
       })
       .catch((error) => {
         if (!controller.signal.aborted) setError(error.message);
       });
     return () => controller.abort();
   }, [unlocked, phone, posReturn, request]);
+
+  // Guest backed out in Square without paying: offer the same Pay screen again.
+  useEffect(() => {
+    if (!phone || posReturn?.error_code !== "payment_canceled" || !posReturn.state) return;
+    unmarkLaunched(posReturn.state);
+    window.history.replaceState(null, "", "/bartender?walkup=phone");
+    setPosReturn(null);
+  }, [phone, posReturn]);
+
+  useEffect(() => {
+    if (!thanks) return;
+    const timer = window.setTimeout(() => setThanks(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [thanks]);
 
   // Keep the bar iPhone awake on this screen so new charges appear without anyone touching it.
   useEffect(() => {
@@ -301,21 +325,15 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
 
   return (
     <section className="rounded-2xl border border-brand-chrome bg-[#fffaf2] p-4 text-brand-ink">
-      {charge && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-brand-ink p-6 text-center text-white" role="dialog" aria-modal="true" aria-label="Card payment">
-          <p className="text-lg font-bold opacity-80">{charge.name}</p>
-          <p className="max-w-sm text-base opacity-80">{charge.drink}</p>
-          <a href={charge.pos_url} onClick={() => markLaunched(charge.id)}
-            className="w-full max-w-sm rounded-3xl bg-[#2E9B8A] px-6 py-10 text-4xl font-black text-white shadow-xl active:scale-[0.98]">
-            Tap to pay<span className="mt-2 block text-2xl">{price(charge.amount_cents)} + tax</span>
-          </a>
-          {pending.length > 1 && <p className="text-sm font-bold">{pending.length - 1} more waiting after this one</p>}
-          <button type="button" className="text-sm underline opacity-80" disabled={busy} onClick={() => {
-            if (window.confirm(`Cancel the card charge for ${charge.name}? Rikki will need to ring it again.`)) {
-              void act({ action: "archive", id: charge.id }, () => markLaunched(charge.id));
-            }
-          }}>Cancel this charge</button>
-        </div>
+      {phone && unlocked && !showStaff && (
+        <GuestScreen charge={charge} waiting={pending.length - 1} onPay={markLaunched}
+          confirming={!!posReturn?.state && !posReturn.error_code}
+          failed={!!posReturn && (posReturn.status === "error" || !!posReturn.error_code)}
+          paid={thanks ? orders.find((order) => order.id === thanks) ?? { id: thanks } : null}
+          onStaff={() => setShowStaff(true)} />
+      )}
+      {phone && unlocked && showStaff && (
+        <button type="button" className={`${button} mb-2`} onClick={() => setShowStaff(false)}>Back to guest screen</button>
       )}
       <h2 className="text-xl font-black">{phone ? "Walk-up payments" : "Walk-up orders"}</h2>
       {!phone && <p className="my-2 text-sm">Open <a className="underline" href="/bartender?walkup=phone">the payment screen</a> in Safari on the bar iPhone and enter the same staff code.</p>}
@@ -487,10 +505,12 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                       void act({ action: "reconcile", id: order.id });
                     }}>Find Square payment</button>
                   <button type="button" className="text-sm font-bold underline" disabled={busy} onClick={() => {
-                    if (window.confirm("Clear this attempt only after checking that no charge appears in Square Transactions.")) {
+                    if (window.confirm(order.pos_url
+                      ? "Cancel this card charge? Only do this if the guest has not paid on the iPhone."
+                      : "Clear this attempt only after checking that no charge appears in Square Transactions.")) {
                       void act({ action: "archive", id: order.id });
                     }
-                  }}>Clear failed attempt</button>
+                  }}>{order.pos_url ? "Cancel card charge" : "Clear failed attempt"}</button>
                   </div>
                 )}
                 {phone && order.status === "opened" && posLink?.id === order.id && (
@@ -509,4 +529,78 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       )}
     </section>
   );
+}
+
+type GuestScreenProps = {
+  charge?: Walkup;
+  waiting: number;
+  confirming: boolean;
+  failed: boolean;
+  paid: Partial<Walkup> | null;
+  onPay: (id: string) => void;
+  onStaff: () => void;
+};
+
+// What the guest sees on the bar iPhone: their items, the total and one Pay button. Nothing else.
+function GuestScreen({ charge, waiting, confirming, failed, paid, onPay, onStaff }: GuestScreenProps) {
+  const shell = "fixed inset-0 z-50 flex flex-col bg-[#F4ECD9] text-brand-ink";
+  const brand = <p className="pt-8 text-center font-heading text-3xl font-bold italic">Rikki&rsquo;s Mobile</p>;
+  const staff = <button type="button" aria-label="Staff controls" onClick={onStaff}
+    className="absolute right-2 top-2 h-10 w-10 rounded-full text-xs text-brand-ink/20">•••</button>;
+
+  if (confirming) {
+    return <div className={shell} role="status">{brand}
+      <p className="m-auto text-2xl font-black">Confirming your payment…</p>{staff}</div>;
+  }
+  if (paid) {
+    return <div className={shell} role="status">{brand}
+      <div className="m-auto px-6 text-center">
+        <p className="text-6xl" aria-hidden="true">✓</p>
+        <p className="mt-2 text-3xl font-black">Thank you!</p>
+        {paid.order_id && <p className="mt-6 text-lg">Your order number<span className="mt-1 block text-5xl font-black tracking-widest">{shortOrderId(paid.order_id)}</span></p>}
+        <p className="mt-6 text-lg">We&rsquo;ll call your number when your drink is ready.</p>
+      </div>{staff}</div>;
+  }
+  if (failed) {
+    return <div className={shell} role="alert">{brand}
+      <div className="m-auto px-6 text-center">
+        <p className="text-3xl font-black">Payment didn&rsquo;t go through</p>
+        <p className="mt-3 text-lg">Please let the person at the register know.</p>
+      </div>{staff}</div>;
+  }
+  if (!charge?.pos_url) {
+    return <div className={shell}>{brand}
+      <p className="m-auto px-8 text-center text-2xl font-bold text-brand-ink/60">Your order will appear here.</p>{staff}</div>;
+  }
+
+  const lines = charge.items?.length ? charge.items : null;
+  const tax = charge.tax_cents;
+  return <div className={shell} role="dialog" aria-modal="true" aria-label="Your order">
+    {brand}
+    <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-6">
+      <h2 className="mt-6 text-xl font-black">Your order</h2>
+      <ul className="mt-3 flex-1 divide-y divide-brand-ink/10 overflow-y-auto">
+        {lines ? lines.map((line) => (
+          <li key={line.id} className="flex justify-between gap-4 py-3 text-lg">
+            <span>{line.quantity > 1 && <strong>{line.quantity} × </strong>}{line.name}</span>
+            <span className="tabular-nums">{price(line.quantity * line.price_cents)}</span>
+          </li>
+        )) : <li className="py-3 text-lg">{charge.drink}</li>}
+      </ul>
+      <dl className="mt-4 grid grid-cols-[1fr_auto] gap-y-1 border-t-2 border-brand-ink pt-3 text-lg tabular-nums">
+        <dt>Subtotal</dt><dd className="text-right">{price(charge.amount_cents)}</dd>
+        {tax === null || tax === undefined
+          ? <><dt>Tax</dt><dd className="text-right">added at payment</dd></>
+          : <><dt>Tax</dt><dd className="text-right">{price(tax)}</dd>
+            <dt className="text-2xl font-black">Total</dt><dd className="text-right text-2xl font-black">{price(charge.amount_cents + tax)}</dd></>}
+      </dl>
+      <a href={charge.pos_url} onClick={() => onPay(charge.id)}
+        style={{ color: "#fff", textDecoration: "none" }}
+        className="mt-6 block rounded-3xl bg-[#2E9B8A] py-6 text-center text-3xl font-black shadow-lg active:scale-[0.98]">
+        Pay{tax === null || tax === undefined ? "" : " " + price(charge.amount_cents + tax)}
+      </a>
+      {waiting > 0 && <p className="mt-3 text-center text-sm text-brand-ink/50">{waiting} more order{waiting > 1 ? "s" : ""} after this one</p>}
+    </div>
+    {staff}
+  </div>;
 }
