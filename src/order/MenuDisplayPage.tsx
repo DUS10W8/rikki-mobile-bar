@@ -77,7 +77,8 @@ export default function MenuDisplayPage() {
       >
         <div className="menu-display__text">
           <img className="menu-display__logo" src="/rikkis-logo.png" alt="Rikki's Mobile" />
-          <h1>{title}</h1>
+          <p className="menu-display__eyebrow">{title}</p>
+          <h1>¡Pide sin hacer fila!</h1>
           <p className="menu-display__kicker">Escanea para ver el menú y pedir desde tu lugar</p>
           <p className="menu-display__scan-hint">Paga con tu teléfono. Te avisamos cuando esté lista.</p>
           <p className="menu-display__fine">Mayores de 21 con pulsera</p>
