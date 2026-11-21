@@ -6,6 +6,7 @@
     "Tequila · Cocteles",
     "Cerveza y micheladas",
     "Vodka, ron y whiskey",
+    "Shots",
     "Sin alcohol",
     "Comida"
   ],
@@ -34,6 +35,10 @@
     "Comida": {
       "en": "Food",
       "es": "Comida"
+    },
+    "Shots": {
+      "en": "Shots",
+      "es": "Shots / Caballitos"
     }
   }
 }

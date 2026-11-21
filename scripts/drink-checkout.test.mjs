@@ -62,7 +62,7 @@ assert.equal((await call("POST", { ...details, drinkId: "atlas-aperol-spritz", a
 for (const [drinkId, amountCents, name] of [
   ["salsa-lunazul-margarita", 1299, "Margarita"],
   ["salsa-lunazul-paloma", 1299, "Paloma"],
-  ["salsa-pulled-pork-sandwich", 1399, "Pulled pork sandwich"],
+  ["salsa-pulled-pork-sandwich", 1499, "Pulled pork sandwich"],
   ["salsa-corona", 699, "Corona"],
 ]) {
   assert.equal((await call("POST", { ...details, drinkId, amountCents })).code, 200);

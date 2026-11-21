@@ -408,9 +408,21 @@
       "style": "paloma",
       "liquor": "lunazul-blanco"
     },
-    "salsa-don-julio-margarita": {
-      "style": "margarita",
-      "liquor": "don-julio-blanco"
+    "salsa-batanga": {
+      "style": "coke",
+      "liquor": "lunazul-blanco"
+    },
+    "salsa-ranch-water": {
+      "style": "soda",
+      "liquor": "lunazul-blanco"
+    },
+    "salsa-tequila-fresa": {
+      "style": "lemonade",
+      "liquor": "lunazul-blanco"
+    },
+    "salsa-lunazul-mule": {
+      "style": "mule",
+      "liquor": "lunazul-blanco"
     }
   },
   "groups": [
@@ -668,5 +680,32 @@
         }
       ]
     }
-  ]
+  ],
+  "upgrades": {
+    "tequila": {
+      "name": "Tequila",
+      "from": "lunazul-blanco",
+      "house": "Lunazul",
+      "options": [
+        {
+          "id": "dj-blanco",
+          "name": "Don Julio Blanco",
+          "liquor": "don-julio-blanco",
+          "priceCents": 500
+        },
+        {
+          "id": "dj-reposado",
+          "name": "Don Julio Reposado",
+          "liquor": "don-julio-reposado",
+          "priceCents": 500
+        }
+      ]
+    }
+  },
+  "shotPrices": {
+    "_about": "Price of a single shot, by liquor (owner, Nov 20). Anything not listed uses default.",
+    "default": 899,
+    "don-julio-blanco": 1599,
+    "don-julio-reposado": 1599
+  }
 }
