@@ -404,6 +404,10 @@
       "style": "margarita",
       "liquor": "lunazul-blanco"
     },
+    "salsa-don-julio-margarita": {
+      "style": "margarita",
+      "liquor": "don-julio-blanco"
+    },
     "salsa-lunazul-paloma": {
       "style": "paloma",
       "liquor": "lunazul-blanco"
