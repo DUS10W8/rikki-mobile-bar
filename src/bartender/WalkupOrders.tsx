@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ACTIVE_EVENT, EVENT_DRINK_MENU, EVENT_MENUS, sortCategories } from "../order/eventMenu";
 import { CashPanel, ChangeDue, DrawerPanel, type CashResult, type CashSale, type Shift } from "./cash";
 import { money, parseCents } from "./cashMoney";
@@ -718,22 +718,22 @@ function GuestScreen({ charge, waiting, confirming, failed, paid, unconfirmed, o
 
   if (confirming) {
     return <div className={shell} role="status">{brand}
-      <p className="m-auto text-2xl font-black">Confirming your payment…</p>{staff}</div>;
+      <p className="m-auto px-6 text-center text-2xl font-black">Confirming your payment…<Es>Confirmando tu pago…</Es></p>{staff}</div>;
   }
   if (paid) {
     return <div className={shell} role="status">{brand}
       <div className="m-auto px-6 text-center">
         <p className="text-6xl" aria-hidden="true">✓</p>
-        <p className="mt-2 text-3xl font-black">Thank you!</p>
-        {paid.order_id && <p className="mt-6 text-lg">Your order number<span className="mt-1 block text-5xl font-black tracking-widest">{shortOrderId(paid.order_id)}</span></p>}
-        <p className="mt-6 text-lg">We&rsquo;ll call your number when your drink is ready.</p>
+        <p className="mt-2 text-3xl font-black">Thank you! <span lang="es">¡Gracias!</span></p>
+        {paid.order_id && <p className="mt-6 text-lg">Your order number<Es>Tu número de pedido</Es><span className="mt-1 block text-5xl font-black tracking-widest">{shortOrderId(paid.order_id)}</span></p>}
+        <p className="mt-6 text-lg">We&rsquo;ll call your number when your drink is ready.<Es>Te llamamos por tu número cuando tu bebida esté lista.</Es></p>
       </div>{staff}</div>;
   }
   if (unconfirmed) {
     return <div className={shell} role="alert">{brand}
       <div className="m-auto px-6 text-center">
-        <p className="text-3xl font-black">Almost done</p>
-        <p className="mt-3 text-lg">Square is still confirming your payment. Your drink starts as soon as it clears. No need to pay again.</p>
+        <p className="text-3xl font-black">Almost done <span lang="es">· Casi listo</span></p>
+        <p className="mt-3 text-lg">Square is still confirming your payment. Your drink starts as soon as it clears. No need to pay again.<Es>Square sigue confirmando tu pago. Tu bebida empieza en cuanto se confirme. No pagues otra vez.</Es></p>
         {unconfirmed.order && <p className="mt-6 text-lg">{unconfirmed.order.name} · {price(unconfirmed.order.amount_cents)} + tax</p>}
         <p className="mt-8 text-xs text-brand-ink/40">({unconfirmed.message.slice(0, 160)})</p>
       </div>{staff}</div>;
@@ -741,13 +741,13 @@ function GuestScreen({ charge, waiting, confirming, failed, paid, unconfirmed, o
   if (failed) {
     return <div className={shell} role="alert">{brand}
       <div className="m-auto px-6 text-center">
-        <p className="text-3xl font-black">Payment didn&rsquo;t go through</p>
-        <p className="mt-3 text-lg">Please let the person at the register know.</p>
+        <p className="text-3xl font-black">Payment didn&rsquo;t go through<Es>El pago no se completó</Es></p>
+        <p className="mt-3 text-lg">Please let the person at the register know.<Es>Avísale a la persona de la caja.</Es></p>
       </div>{staff}</div>;
   }
   if (!charge?.pos_url) {
     return <div className={shell}>{brand}
-      <p className="m-auto px-8 text-center text-2xl font-bold text-brand-ink/60">Your order will appear here.</p>{staff}</div>;
+      <p className="m-auto px-8 text-center text-2xl font-bold text-brand-ink/60">Your order will appear here.<Es>Tu pedido aparecerá aquí.</Es></p>{staff}</div>;
   }
 
   const lines = charge.display_lines?.length
@@ -758,7 +758,7 @@ function GuestScreen({ charge, waiting, confirming, failed, paid, unconfirmed, o
   return <div className={shell} role="dialog" aria-modal="true" aria-label="Your order">
     {brand}
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-6">
-      <h2 className="mt-6 text-xl font-black">Your order</h2>
+      <h2 className="mt-6 text-xl font-black">Your order <span lang="es" className="font-bold text-brand-ink/60">· Tu pedido</span></h2>
       <ul className="mt-3 flex-1 divide-y divide-brand-ink/10 overflow-y-auto">
         {lines ? lines.map((line) => (
           <li key={line.id} className="flex justify-between gap-4 py-3 text-lg">
@@ -770,14 +770,14 @@ function GuestScreen({ charge, waiting, confirming, failed, paid, unconfirmed, o
       <dl className="mt-4 grid grid-cols-[1fr_auto] gap-y-1 border-t-2 border-brand-ink pt-3 text-lg tabular-nums">
         <dt>Subtotal</dt><dd className="text-right">{price(charge.amount_cents)}</dd>
         {tax === null || tax === undefined
-          ? <><dt>Tax</dt><dd className="text-right">added at payment</dd></>
-          : <><dt>Tax</dt><dd className="text-right">{price(tax)}</dd>
+          ? <><dt>Tax <span lang="es" className="text-brand-ink/60">· Impuesto</span></dt><dd className="text-right">added at payment</dd></>
+          : <><dt>Tax <span lang="es" className="text-brand-ink/60">· Impuesto</span></dt><dd className="text-right">{price(tax)}</dd>
             <dt className="text-2xl font-black">Total</dt><dd className="text-right text-2xl font-black">{price(charge.amount_cents + tax)}</dd></>}
       </dl>
       <a href={charge.pos_url} onClick={() => onPay(charge.id)}
         style={{ color: "#fff", textDecoration: "none" }}
         className="mt-6 block rounded-3xl bg-[#2E9B8A] py-6 text-center text-3xl font-black shadow-lg active:scale-[0.98]">
-        Pay{tax === null || tax === undefined ? "" : " " + price(charge.amount_cents + tax)}
+        Pay <span lang="es">· Pagar</span>{tax === null || tax === undefined ? "" : <span className="mt-1 block">{price(charge.amount_cents + tax)}</span>}
       </a>
       {waiting > 0 && <p className="mt-3 text-center text-sm text-brand-ink/50">{waiting} more order{waiting > 1 ? "s" : ""} after this one</p>}
     </div>
@@ -986,4 +986,9 @@ function DrinkSheet({ line, menu, editing, onClose, onSave }: {
       </div>
     </div>
   );
+}
+
+// The guest phone is shared by everyone in line, so it shows English with Spanish underneath.
+function Es({ children }: { children: ReactNode }) {
+  return <span lang="es" className="mt-1 block text-[0.8em] font-bold text-brand-ink/60">{children}</span>;
 }

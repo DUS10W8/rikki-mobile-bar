@@ -5,6 +5,7 @@ import { HANDOFF_DETAILS, HANDOFF_LABELS, handoffReadyMessage, isDelivered, shor
 import type { OrderHandoff } from "./orderHandoff";
 import { ACTIVE_EVENT, EVENT_DRINK_MENU, sortCategories } from "./eventMenu";
 import "./OrderPage.css";
+import { getLang, pick, setLang, t, type Lang } from "./i18n";
 
 const BAR_NAME = "Rikki's Mobile Bar";
 const BASE = import.meta.env.BASE_URL;
@@ -41,6 +42,8 @@ type StoredActiveOrder = Pick<Order, "id" | "name" | "drink" | "status" | "bar_s
 
 
 export default function OrderPage() {
+  const [lang, setLangState] = useState<Lang>(getLang);
+  const chooseLang = (next: Lang) => { setLang(next); setLangState(next); };
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const cart = EVENT_DRINK_MENU.filter(({ id }) => quantities[id] > 0)
@@ -121,7 +124,7 @@ export default function OrderPage() {
         if (controller.signal.aborted) return;
         if (!order) {
           if (++checks < 6) retry = window.setTimeout(checkPayment, ORDER_POLL_INTERVAL_MS);
-          else setCheckoutMessage("Payment is taking longer to confirm. Check again here before paying for another drink.");
+          else setCheckoutMessage(t("Payment is taking longer to confirm. Check again here before paying for another drink."));
           return;
         }
         persistActiveOrder(order);
@@ -131,7 +134,7 @@ export default function OrderPage() {
         window.history.replaceState(null, "", orderUrl);
         setCheckout(null);
       } catch {
-        if (!controller.signal.aborted) setCheckoutMessage("We couldn't confirm your payment yet. Check again before paying for another drink.");
+        if (!controller.signal.aborted) setCheckoutMessage(t("We couldn't confirm your payment yet. Check again before paying for another drink."));
       }
     };
 
@@ -227,11 +230,11 @@ export default function OrderPage() {
         body: JSON.stringify({ ...JSON.parse(details), id: checkoutRequest.current.id }),
       });
       const { url, error } = await response.json();
-      if (!response.ok || !url) throw new Error(error || "Checkout is temporarily unavailable.");
+      if (!response.ok || !url) throw new Error(t(error || "Checkout is temporarily unavailable."));
       window.location.assign(url);
     } catch (error) {
       setSubmitting(false);
-      setError(error instanceof Error ? error.message : "Checkout is temporarily unavailable.");
+      setError(error instanceof Error ? error.message : t("Checkout is temporarily unavailable."));
     }
   };
 
@@ -247,17 +250,18 @@ export default function OrderPage() {
   if (checkout) {
     return (
       <OrderShell>
+        <LanguageSwitch lang={lang} onChange={chooseLang} />
         <main className="mx-auto max-w-md px-5 py-12">
           <section className="rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2] p-6">
-            <h1 className="mb-4 text-2xl font-black">Confirming your payment</h1>
+            <h1 className="mb-4 text-2xl font-black">{t("Confirming your payment")}</h1>
             <div aria-live="polite">
-              {checkoutMessage ? <p>{checkoutMessage}</p> : <Loading label="Waiting for Square to confirm your payment" />}
+              {checkoutMessage ? <p>{checkoutMessage}</p> : <Loading label={t("Waiting for Square to confirm your payment")} />}
             </div>
             {checkoutMessage && (
               <button className="mt-4 rounded-2xl bg-brand-ink px-5 py-3 font-bold text-white" onClick={() => {
                 setCheckoutMessage("");
                 setCheckoutAttempt((attempt) => attempt + 1);
-              }}>Check payment again</button>
+              }}>{t("Check payment again")}</button>
             )}
           </section>
         </main>
@@ -268,26 +272,27 @@ export default function OrderPage() {
   if (confirmation) {
     return (
       <OrderShell>
+        <LanguageSwitch lang={lang} onChange={chooseLang} />
         <section className="mx-auto flex min-h-screen max-w-md flex-col px-5 py-6">
           <div className="flex flex-1 flex-col justify-center">
             <div className="rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/90 p-6 text-center shadow-[0_28px_80px_rgba(46,46,46,0.14)] backdrop-blur">
               <CheckCircle2 className="mx-auto h-14 w-14 text-brand-sea" />
-              <h1 className="mt-4 text-3xl font-bold text-brand-ink">{confirmation.square_order_id ? "Payment confirmed" : "Your order is in"}</h1>
+              <h1 className="mt-4 text-3xl font-bold text-brand-ink">{confirmation.square_order_id ? t("Payment confirmed") : t("Your order is in")}</h1>
               <p className="mt-3 text-brand-ink/70">
-                {confirmation.name}, your {confirmation.drink} has been sent to the bar.
+                {t("{name}, your {drink} has been sent to the bar.", { name: confirmation.name, drink: confirmation.drink })}
               </p>
               <div className="mt-5 rounded-2xl bg-brand-ink px-4 py-5 text-white">
-                <p className="text-sm uppercase tracking-wide text-white/70">Order</p>
+                <p className="text-sm uppercase tracking-wide text-white/70">{t("Order")}</p>
                 <p className="mt-1 text-4xl font-black">#{shortOrderId(confirmation.id)}</p>
                 {(confirmation.handoff || confirmation.table_number) && (
                   <p className="mt-2 text-sm font-bold uppercase tracking-wide text-white/80">
-                    {confirmation.handoff ? HANDOFF_LABELS[confirmation.handoff] : "Table " + confirmation.table_number}
+                    {confirmation.handoff ? t(HANDOFF_LABELS[confirmation.handoff]) : t("Table {number}", { number: confirmation.table_number ?? "" })}
                   </p>
                 )}
               </div>
               <p className="mt-4 text-base font-bold text-brand-ink">{getConfirmationStatusMessage(confirmation)}</p>
               {confirmation.handoff && normalizeStatus(confirmation.status) === "new" && (
-                <p className="mt-2 text-sm text-brand-ink/70">Keep this page open for handoff updates.</p>
+                <p className="mt-2 text-sm text-brand-ink/70">{t("Keep this page open for handoff updates.")}</p>
               )}
               <LiveOrderTracker order={confirmation} liveUpdateError={liveUpdateError} />
               <button
@@ -302,26 +307,26 @@ export default function OrderPage() {
                   playCustomerChime();
                 }}
               >
-                {soundAlertEnabled ? "Sound alert enabled" : "Enable sound alert"}
+                {soundAlertEnabled ? t("Sound alert enabled") : t("Enable sound alert")}
               </button>
-              <p className="mt-4 text-sm font-bold text-brand-sea">Want another drink later? Save this page.</p>
+              <p className="mt-4 text-sm font-bold text-brand-sea">{t("Want another drink later? Save this page.")}</p>
               <div className="mt-6 grid gap-3">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-ink/45">Loved the service?</p>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-brand-ink/45">{t("Loved the service?")}</p>
                 <a
                   className="tip-primary-cta"
                   href={TIP_URL}
                 >
-                  Tip the Bar Team
+                  {t("Tip the Bar Team")}
                 </a>
                 <a
                   className="flex min-h-12 items-center justify-center rounded-2xl border border-brand-chrome bg-[#fffaf2] px-5 py-3 font-black text-brand-ink shadow-sm"
                   href={CONNECT_URL}
                 >
-                  Connect With Rikki's
+                  {t("Connect With Rikki's")}
                 </a>
               </div>
               <button className="mt-6 w-full rounded-2xl bg-brand-sea px-5 py-4 font-bold text-white shadow-[0_14px_32px_rgba(46,155,138,0.25)]" onClick={placeAnotherOrder}>
-                Place another order
+                {t("Place another order")}
               </button>
             </div>
           </div>
@@ -332,6 +337,7 @@ export default function OrderPage() {
 
   return (
     <OrderShell>
+        <LanguageSwitch lang={lang} onChange={chooseLang} />
       <main className="mx-auto max-w-md px-4 pb-44 pt-5">
         <header className="mb-6 overflow-hidden rounded-[1.75rem] border border-brand-chrome bg-[#fffaf2]/88 shadow-[0_24px_70px_rgba(46,46,46,0.12)] backdrop-blur">
           <div className="bg-[#fffaf2] px-4 pb-3 pt-4">
@@ -348,10 +354,10 @@ export default function OrderPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-sea">{BAR_NAME}</p>
-              <h1 className="text-3xl font-black text-brand-ink">{ACTIVE_EVENT.title}</h1>
+              <h1 className="text-3xl font-black text-brand-ink">{pick(ACTIVE_EVENT.title, ACTIVE_EVENT.title_es)}</h1>
             </div>
           </div>
-          <p className="mt-3 text-sm text-brand-ink/70">{ACTIVE_EVENT.intro}</p>
+          <p className="mt-3 text-sm text-brand-ink/70">{pick(ACTIVE_EVENT.intro, ACTIVE_EVENT.intro_es)}</p>
           </div>
         </header>
 
@@ -379,8 +385,8 @@ export default function OrderPage() {
                         }
                       }}
                     >
-                      <span className="flex-1 font-black">{category}</span>
-                      <span className="shrink-0 text-sm text-brand-ink/65">{items.length} {items.length === 1 ? "item" : "items"}</span>
+                      <span className="flex-1 font-black">{pick(ACTIVE_EVENT.categoryLabels?.[category]?.en ?? category, ACTIVE_EVENT.categoryLabels?.[category]?.es)}</span>
+                      <span className="shrink-0 text-sm text-brand-ink/65">{items.length} {items.length === 1 ? t("item") : t("items")}</span>
                       <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 transition-transform motion-reduce:transition-none ${isOpen ? "rotate-180" : ""}`} />
                     </button>
                   </h2>
@@ -389,12 +395,12 @@ export default function OrderPage() {
                       {items.map((drink) => (
                         <div key={drink.id} className="flex items-center justify-between gap-3 rounded-2xl border border-brand-chrome bg-[#fffaf2] p-4">
                           <div>
-                            <span className="block text-lg font-bold">{drink.name}</span>
-                            {drink.description && <span className="block text-sm text-brand-ink/70">{drink.description}</span>}
+                            <span className="block text-lg font-bold">{pick(drink.name, drink.name_es)}</span>
+                            {drink.description && <span className="block text-sm text-brand-ink/70">{pick(drink.description, drink.description_es)}</span>}
                             <span className="font-bold">{formatDrinkPrice(drink.priceCents)}</span>
                           </div>
-                          <div className="order-quantity" role="group" aria-label={`Quantity for ${drink.name}`}>
-                            <button type="button" aria-label={`Remove one ${drink.name}`}
+                          <div className="order-quantity" role="group" aria-label={t("Quantity for {name}", { name: pick(drink.name, drink.name_es) })}>
+                            <button type="button" aria-label={t("Remove one {name}", { name: pick(drink.name, drink.name_es) })}
                               disabled={!quantities[drink.id]}
                               onClick={() => setQuantities((current) => ({
                                 ...current, [drink.id]: Math.max(0, (current[drink.id] ?? 0) - 1),
@@ -404,7 +410,7 @@ export default function OrderPage() {
                             <output className="order-quantity-value" aria-live="polite">
                               <span key={quantities[drink.id] ?? 0}>{quantities[drink.id] ?? 0}</span>
                             </output>
-                            <button type="button" aria-label={`Add one ${drink.name}`}
+                            <button type="button" aria-label={t("Add one {name}", { name: pick(drink.name, drink.name_es) })}
                               disabled={quantities[drink.id] >= 10}
                               onClick={() => setQuantities((current) => ({
                                 ...current, [drink.id]: Math.min(10, (current[drink.id] ?? 0) + 1),
@@ -425,29 +431,29 @@ export default function OrderPage() {
             <div className="grid gap-3">
               {handoffOptions.length === 1 ? (
                 <div className="rounded-xl border border-brand-sea/40 bg-brand-sea/10 px-3 py-2">
-                  <p className="text-sm font-bold text-brand-ink/75">Pickup</p>
-                  <strong className="block">{HANDOFF_LABELS[handoff]}</strong>
-                  <span className="text-sm text-brand-ink/70">{HANDOFF_DETAILS[handoff]}</span>
+                  <p className="text-sm font-bold text-brand-ink/75">{t("Pickup")}</p>
+                  <strong className="block">{t(HANDOFF_LABELS[handoff])}</strong>
+                  <span className="text-sm text-brand-ink/70">{t(HANDOFF_DETAILS[handoff])}</span>
                 </div>
               ) : (
                 <fieldset className="grid gap-2">
-                  <legend className="mb-2 text-sm font-bold text-brand-ink/75">Where should we meet you?</legend>
+                  <legend className="mb-2 text-sm font-bold text-brand-ink/75">{t("Where should we meet you?")}</legend>
                   {handoffOptions.map((option) => (
                     <label key={option} className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-brand-chrome px-3 py-2 has-[:checked]:border-brand-sea has-[:checked]:bg-brand-sea/10">
                       <input type="radio" name="handoff" checked={handoff === option} onChange={() => setHandoff(option)} />
-                      <span><strong className="block">{HANDOFF_LABELS[option]}</strong>
-                        <span className="text-sm text-brand-ink/70">{HANDOFF_DETAILS[option]}</span>
+                      <span><strong className="block">{t(HANDOFF_LABELS[option])}</strong>
+                        <span className="text-sm text-brand-ink/70">{t(HANDOFF_DETAILS[option])}</span>
                       </span>
                     </label>
                   ))}
                 </fieldset>
               )}
               <label className="grid gap-1">
-                <span className="text-sm font-bold text-brand-ink/75">Name</span>
+                <span className="text-sm font-bold text-brand-ink/75">{t("Name")}</span>
                 <input className="order-input" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder="Alex" autoComplete="name" />
               </label>
               <label className="grid gap-1">
-                <span className="text-sm font-bold text-brand-ink/75">Phone <span className="font-medium text-brand-ink/45">(optional)</span></span>
+                <span className="text-sm font-bold text-brand-ink/75">{t("Phone")} <span className="font-medium text-brand-ink/45">{t("(optional)")}</span></span>
                 <input
                   className="order-input"
                   value={phone}
@@ -463,14 +469,14 @@ export default function OrderPage() {
           <div className="order-checkout-bar fixed inset-x-0 bottom-0 z-10 border-t border-brand-chrome bg-[#fffaf2]/92 p-4 shadow-[0_-18px_45px_rgba(46,46,46,0.10)] backdrop-blur">
             <div className="mx-auto max-w-md">
               {cart.length > 0 && (
-                <ul aria-label="Your order" className="mb-2 text-sm font-bold text-brand-ink/75">
-                  {cart.map((drink) => <li key={drink.id}>{drink.quantity} × {drink.name}</li>)}
-                  <li>{HANDOFF_LABELS[handoff]}</li>
+                <ul aria-label={t("Your order")} className="mb-2 text-sm font-bold text-brand-ink/75">
+                  {cart.map((drink) => <li key={drink.id}>{drink.quantity} × {pick(drink.name, drink.name_es)}</li>)}
+                  <li>{t(HANDOFF_LABELS[handoff])}</li>
                 </ul>
               )}
               <button disabled={!canSubmit} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand-ink px-5 py-4 text-lg font-black text-white shadow-[0_16px_34px_rgba(20,20,20,0.22)] disabled:cursor-not-allowed disabled:bg-brand-chrome disabled:text-brand-ink/50 disabled:shadow-none">
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Martini className="h-5 w-5" />}
-                {submitting ? "Opening Square checkout…" : cart.length ? `Pay ${formatDrinkPrice(total)}` : "Choose your drinks"}
+                {submitting ? t("Opening Square checkout…") : cart.length ? t("Pay {amount}", { amount: formatDrinkPrice(total) }) : t("Choose your drinks")}
               </button>
             </div>
           </div>
@@ -482,6 +488,21 @@ export default function OrderPage() {
 
 function OrderShell({ children }: { children: ReactNode }) {
   return <div className="order-page min-h-screen text-brand-ink">{children}</div>;
+}
+
+function LanguageSwitch({ lang, onChange }: { lang: Lang; onChange: (lang: Lang) => void }) {
+  return (
+    <div className="mx-auto flex max-w-md justify-end px-4 pt-3" role="group" aria-label="Language / Idioma">
+      <div className="inline-flex rounded-full border border-brand-chrome bg-[#fffaf2] p-1 text-sm font-black shadow-sm">
+        {([["en", "English"], ["es", "Español"]] as const).map(([code, label]) => (
+          <button key={code} type="button" lang={code} aria-pressed={lang === code} onClick={() => onChange(code)}
+            className={`min-h-9 rounded-full px-4 ${lang === code ? "bg-brand-ink text-white" : "text-brand-ink/70"}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Alert({ children }: { children: ReactNode }) {
@@ -500,9 +521,9 @@ function Loading({ label }: { label: string }) {
 function RestoreOrderAlert({ onClear }: { onClear: () => void }) {
   return (
     <div className="my-3 rounded-2xl border border-brand-rust/30 bg-[#fff4eb] px-4 py-3 text-sm font-semibold text-brand-rust">
-      <p>We couldn't restore your last order. Please check with a staff member.</p>
+      <p>{t("We couldn't restore your last order. Please check with a staff member.")}</p>
       <button className="mt-3 rounded-xl bg-brand-rust px-4 py-2 font-black text-white" type="button" onClick={onClear}>
-        Place another order
+        {t("Place another order")}
       </button>
     </div>
   );
@@ -606,17 +627,17 @@ function getConfirmationStatusMessage(order: OrderConfirmation) {
   const normalizedStatus = normalizeStatus(order.status);
   const stationName = getStationLabel(order.bar_station);
 
-  if (normalizedStatus === "in_progress" && stationName) return `Your drink is being made at the ${stationName}.`;
-  if (normalizedStatus === "in_progress") return "Your drink is being made now.";
-  if (normalizedStatus === "ready" && order.handoff) return handoffReadyMessage(order.handoff);
-  if (normalizedStatus === "ready" && order.table_number) return `Your drink is ready. We’ll bring it to Table ${order.table_number}.`;
-  if (normalizedStatus === "ready" && stationName) return `Your drink is ready at the ${stationName}!`;
-  if (normalizedStatus === "ready") return "Your drink is ready for pickup.";
-  if (normalizedStatus === "completed") return "Enjoy your drink!";
+  if (normalizedStatus === "in_progress" && stationName) return t("Your drink is being made at the {station}.", { station: stationName });
+  if (normalizedStatus === "in_progress") return t("Your drink is being made now.");
+  if (normalizedStatus === "ready" && order.handoff) return t(handoffReadyMessage(order.handoff));
+  if (normalizedStatus === "ready" && order.table_number) return t("Your drink is ready. We’ll bring it to Table {number}.", { number: order.table_number });
+  if (normalizedStatus === "ready" && stationName) return t("Your drink is ready at the {station}!", { station: stationName });
+  if (normalizedStatus === "ready") return t("Your drink is ready for pickup.");
+  if (normalizedStatus === "completed") return t("Enjoy your drink!");
 
   const minutes = order.estimatedWaitMinutes;
-  if (minutes === null) return "Your drink should be ready soon.";
-  return `Your drink should be ready in about ${minutes} ${minutes === 1 ? "minute" : "minutes"}.`;
+  if (minutes === null) return t("Your drink should be ready soon.");
+  return t(minutes === 1 ? "Your drink should be ready in about {minutes} minute." : "Your drink should be ready in about {minutes} minutes.", { minutes });
 }
 
 function LiveOrderTracker({ order, liveUpdateError }: { order: OrderConfirmation; liveUpdateError: boolean }) {
@@ -625,13 +646,13 @@ function LiveOrderTracker({ order, liveUpdateError }: { order: OrderConfirmation
 
   return (
     <section className="mt-5 rounded-2xl border border-brand-chrome/80 bg-white/55 p-4 text-left">
-      <p className="text-xs font-black uppercase tracking-wide text-brand-ink/45">Live status</p>
+      <p className="text-xs font-black uppercase tracking-wide text-brand-ink/45">{t("Live status")}</p>
       <div className="mt-3 grid gap-2">
         {[
-          { id: "received", label: "Order received", active: true },
-          { id: "queue", label: "In the queue", active: ["new", "in_progress", "ready", "completed"].includes(normalizedStatus) },
-          { id: "making", label: "Being made", active: ["in_progress", "ready", "completed"].includes(normalizedStatus) },
-          { id: "ready", label: normalizedStatus === "completed" ? (isDelivered(order.handoff) ? "Delivered" : "Picked up") : (order.handoff === "upstairs" ? "On the way upstairs" : "Ready for pickup"), active: ["ready", "completed"].includes(normalizedStatus) },
+          { id: "received", label: t("Order received"), active: true },
+          { id: "queue", label: t("In the queue"), active: ["new", "in_progress", "ready", "completed"].includes(normalizedStatus) },
+          { id: "making", label: t("Being made"), active: ["in_progress", "ready", "completed"].includes(normalizedStatus) },
+          { id: "ready", label: t(normalizedStatus === "completed" ? (isDelivered(order.handoff) ? "Delivered" : "Picked up") : (order.handoff === "upstairs" ? "On the way upstairs" : "Ready for pickup")), active: ["ready", "completed"].includes(normalizedStatus) },
         ].map((step) => (
           <div key={step.id} className={`flex items-center gap-2 text-sm font-bold ${step.active ? "text-brand-ink" : "text-brand-ink/35"}`}>
             <span className={`h-3 w-3 rounded-full ${step.active ? "bg-brand-sea" : "bg-brand-chrome"}`} />
@@ -642,7 +663,7 @@ function LiveOrderTracker({ order, liveUpdateError }: { order: OrderConfirmation
       <p className="mt-4 text-base font-black text-brand-ink">{getLiveStatusMessage(normalizedStatus, stationName, order.table_number, order.handoff)}</p>
       {liveUpdateError && (
         <p className="mt-3 rounded-xl border border-brand-rust/30 bg-[#fff4eb] px-3 py-2 text-sm font-bold text-brand-rust">
-          Live updates are having trouble. Please check with a staff member.
+          {t("Live updates are having trouble. Please check with a staff member.")}
         </p>
       )}
     </section>
@@ -654,19 +675,19 @@ function normalizeStatus(status: string) {
 }
 
 function getStationLabel(station?: BarStation | null) {
-  if (station === "white_bar") return "White Bar";
-  if (station === "brown_bar") return "Brown Bar";
+  if (station === "white_bar") return t("White Bar");
+  if (station === "brown_bar") return t("Brown Bar");
   return "";
 }
 
 function getLiveStatusMessage(status: string, stationName: string, table?: number | null, handoff?: OrderHandoff | null) {
-  if (status === "in_progress" && stationName) return `Your drink is being made at the ${stationName}.`;
-  if (status === "ready" && handoff) return handoffReadyMessage(handoff);
-  if (status === "ready" && table) return `We’ll bring your drink to Table ${table} shortly.`;
-  if (status === "ready" && stationName) return `Your drink is ready at the ${stationName}!`;
-  if (status === "ready") return "Your drink is ready! Please head to the pickup area.";
-  if (status === "completed") return isDelivered(handoff) ? "Your drink has been delivered. Cheers!" : "Your order has been picked up. Cheers!";
-  return "Your drink is in the queue.";
+  if (status === "in_progress" && stationName) return t("Your drink is being made at the {station}.", { station: stationName });
+  if (status === "ready" && handoff) return t(handoffReadyMessage(handoff));
+  if (status === "ready" && table) return t("We’ll bring your drink to Table {number} shortly.", { number: table });
+  if (status === "ready" && stationName) return t("Your drink is ready at the {station}!", { station: stationName });
+  if (status === "ready") return t("Your drink is ready! Please head to the pickup area.");
+  if (status === "completed") return t(isDelivered(handoff) ? "Your drink has been delivered. Cheers!" : "Your order has been picked up. Cheers!");
+  return t("Your drink is in the queue.");
 }
 
 function playCustomerChime() {

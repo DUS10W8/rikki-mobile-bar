@@ -11,5 +11,29 @@
   ],
   "handoffs": [
     "doorway_pickup"
-  ]
+  ],
+  "title_es": "Menú de Noche de Salsa",
+  "intro_es": "Pide desde tu lugar y paga con Square. Te avisamos cuando esté lista en la mesa de entrega junto a la puerta de la barra. Mayores de 21 con pulsera.",
+  "categoryLabels": {
+    "Tequila · Cocteles": {
+      "en": "Tequila cocktails",
+      "es": "Cocteles de tequila"
+    },
+    "Cerveza y micheladas": {
+      "en": "Beer & micheladas",
+      "es": "Cerveza y micheladas"
+    },
+    "Vodka, ron y whiskey": {
+      "en": "Vodka, rum & whiskey",
+      "es": "Vodka, ron y whiskey"
+    },
+    "Sin alcohol": {
+      "en": "Non-alcoholic",
+      "es": "Sin alcohol"
+    },
+    "Comida": {
+      "en": "Food",
+      "es": "Comida"
+    }
+  }
 }
