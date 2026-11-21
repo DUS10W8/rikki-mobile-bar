@@ -691,13 +691,13 @@
           "id": "dj-blanco",
           "name": "Don Julio Blanco",
           "liquor": "don-julio-blanco",
-          "priceCents": 300
+          "priceCents": 500
         },
         {
           "id": "dj-reposado",
           "name": "Don Julio Reposado",
           "liquor": "don-julio-reposado",
-          "priceCents": 300
+          "priceCents": 500
         }
       ]
     }

@@ -15,6 +15,7 @@ export type EventMenuItem = {
   upgrade?: string;
   variantOf?: string;
   upgradeOption?: string;
+  shot?: string;
 };
 
 // To switch the guest QR menu, change "menu" in activeEvent.json. The server reads the same file.

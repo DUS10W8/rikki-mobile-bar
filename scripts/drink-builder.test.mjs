@@ -67,12 +67,12 @@ assert.deepEqual(recipes.find(([id]) => id === "b-double-lunazul-blanco"), ["b-d
 assert.ok(recipes.some(([id, sku]) => id === "b-style-neat" && sku === "cup"));
 assert.ok(!recipes.some(([id, sku]) => id === "b-style-neat" && sku === "ice"));
 
-// ── Don Julio upgrade (owner, Nov 20): every Lunazul tequila drink, +$3 ─────────
+// ── Don Julio upgrade (owner, Nov 20): every Lunazul tequila drink, +$5 ─────────
 import { expandMenu } from "../src/order/drinkBuilder.js";
 const full = expandMenu(config, menu);
 const variant = full.find((item) => item.id === "salsa-lunazul-margarita--dj-blanco");
 assert.equal(variant.name, "Margarita · Don Julio Blanco");
-assert.equal(variant.priceCents, 1299 + 300);
+assert.equal(variant.priceCents, 1299 + 500);
 assert.equal(variant.description, "Don Julio Blanco tequila, triple sec, fresh lime, agave, salt rim");
 assert.equal(variant.description_es, "Tequila Don Julio Blanco, triple sec, limón fresco, agave, escarchado de sal");
 const upgradable = menu.filter((item) => item.upgrade === "tequila").map((item) => item.id);
@@ -83,7 +83,7 @@ assert.ok(!menu.some((item) => item.id === "salsa-don-julio-margarita"), "folded
 
 // Register: upgrade a Batanga to Reposado, make it a double (top-shelf double +$7).
 ticket = priceTicket(config, full, [{ kind: "item", id: "salsa-batanga", quantity: 1, mods: { upgrade: "dj-reposado", pour: "double" } }]);
-assert.equal(ticket.amountCents, 1199 + 300 + 700);
+assert.equal(ticket.amountCents, 1199 + 500 + 700);
 assert.equal(ticket.drink, "1 × Batanga · Don Julio Reposado — Double");
 assert.deepEqual(ticket.items.map((item) => item.id).sort(), ["b-double-don-julio-reposado", "salsa-batanga--dj-reposado"]);
 // "house" keeps the Lunazul drink; an unknown upgrade or one on a beer is refused.
@@ -93,8 +93,16 @@ assert.throws(() => priceTicket(config, full, [{ kind: "item", id: "salsa-lunazu
 assert.throws(() => priceTicket(config, full, [{ kind: "item", id: "salsa-corona", quantity: 1, mods: { upgrade: "dj-blanco" } }]), /upgraded/);
 // QR guests order the variant directly by id.
 ticket = priceTicket(config, full, [{ kind: "item", id: "salsa-ranch-water--dj-blanco", quantity: 1 }]);
-assert.equal(ticket.amountCents, 1199 + 300);
+assert.equal(ticket.amountCents, 1199 + 500);
 
 // Food changes
 assert.equal(menu.find((item) => item.id === "salsa-pulled-pork-sandwich").priceCents, 1499);
 assert.equal(menu.find((item) => item.id === "salsa-mini-helado").priceCents, 150);
+
+// Shots on the guest QR menu cost the same as a shot rung on the register's builder.
+const shots = menu.filter((item) => item.category === "Shots");
+assert.ok(shots.length >= 5);
+for (const shot of shots) {
+  const rung = priceTicket(config, full, [{ kind: "build", liquor: shot.shot, style: "shot", quantity: 1, mods: {} }]);
+  assert.equal(shot.priceCents, rung.amountCents, shot.name);
+}

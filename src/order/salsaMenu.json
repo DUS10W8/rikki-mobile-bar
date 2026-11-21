@@ -179,6 +179,76 @@
     "description_es": "Bourbon Maker's Mark, Coca-Cola"
   },
   {
+    "id": "salsa-shot-lunazul-blanco",
+    "category": "Shots",
+    "name": "Lunazul shot",
+    "name_es": "Shot de Lunazul",
+    "priceCents": 1199,
+    "description": "Blanco tequila, with lime and salt",
+    "description_es": "Tequila blanco, con limón y sal",
+    "shot": "lunazul-blanco"
+  },
+  {
+    "id": "salsa-shot-don-julio-blanco",
+    "category": "Shots",
+    "name": "Don Julio Blanco shot",
+    "name_es": "Shot de Don Julio Blanco",
+    "priceCents": 1499,
+    "description": "Blanco tequila, with lime and salt",
+    "description_es": "Tequila blanco, con limón y sal",
+    "shot": "don-julio-blanco"
+  },
+  {
+    "id": "salsa-shot-don-julio-reposado",
+    "category": "Shots",
+    "name": "Don Julio Reposado shot",
+    "name_es": "Shot de Don Julio Reposado",
+    "priceCents": 1499,
+    "description": "Reposado tequila, with lime and salt",
+    "description_es": "Tequila reposado, con limón y sal",
+    "shot": "don-julio-reposado"
+  },
+  {
+    "id": "salsa-shot-vodka-house",
+    "category": "Shots",
+    "name": "House vodka shot",
+    "name_es": "Shot de vodka",
+    "priceCents": 999,
+    "description": "Vodka",
+    "description_es": "Vodka",
+    "shot": "vodka-house"
+  },
+  {
+    "id": "salsa-shot-whiskey-makers",
+    "category": "Shots",
+    "name": "Maker's Mark shot",
+    "name_es": "Shot de Maker's Mark",
+    "priceCents": 1199,
+    "description": "Bourbon",
+    "description_es": "Bourbon",
+    "shot": "whiskey-makers"
+  },
+  {
+    "id": "salsa-shot-whiskey-weller-107",
+    "category": "Shots",
+    "name": "Weller 107 shot",
+    "name_es": "Shot de Weller 107",
+    "priceCents": 1499,
+    "description": "Wheated bourbon, 107 proof",
+    "description_es": "Bourbon de trigo, 107 proof",
+    "shot": "whiskey-weller-107"
+  },
+  {
+    "id": "salsa-shot-rum-diplomatico",
+    "category": "Shots",
+    "name": "Diplomático shot",
+    "name_es": "Shot de Diplomático",
+    "priceCents": 1499,
+    "description": "Venezuelan dark rum",
+    "description_es": "Ron oscuro venezolano",
+    "shot": "rum-diplomatico"
+  },
+  {
     "id": "salsa-fresa-lemonade",
     "category": "Sin alcohol",
     "name": "Fresa lemonade",
