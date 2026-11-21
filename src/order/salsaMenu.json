@@ -4,77 +4,90 @@
     "category": "Tequila · Cocteles",
     "name": "Margarita",
     "priceCents": 1299,
-    "description": "Lunazul blanco tequila, triple sec, fresh lime, agave, salt rim"
+    "description": "Lunazul blanco tequila, triple sec, fresh lime, agave, salt rim",
+    "description_es": "Tequila Lunazul blanco, triple sec, limón fresco, agave, escarchado de sal"
   },
   {
     "id": "salsa-lunazul-paloma",
     "category": "Tequila · Cocteles",
     "name": "Paloma",
     "priceCents": 1299,
-    "description": "Lunazul blanco tequila, grapefruit soda, lime, salt rim"
+    "description": "Lunazul blanco tequila, grapefruit soda, lime, salt rim",
+    "description_es": "Tequila Lunazul blanco, refresco de toronja, limón, escarchado de sal"
   },
   {
     "id": "salsa-batanga",
     "category": "Tequila · Cocteles",
     "name": "Batanga",
     "priceCents": 1199,
-    "description": "Lunazul blanco tequila, Coca-Cola, lime, salt rim. The cantina classic from Tequila, Jalisco"
+    "description": "Lunazul blanco tequila, Coca-Cola, lime, salt rim. The cantina classic from Tequila, Jalisco",
+    "description_es": "Tequila Lunazul blanco, Coca-Cola, limón, escarchado de sal. El clásico de cantina de Tequila, Jalisco"
   },
   {
     "id": "salsa-ranch-water",
     "category": "Tequila · Cocteles",
     "name": "Ranch Water",
     "priceCents": 1199,
-    "description": "Lunazul blanco tequila, sparkling lime water, fresh lime"
+    "description": "Lunazul blanco tequila, sparkling lime water, fresh lime",
+    "description_es": "Tequila Lunazul blanco, agua mineral de limón, limón fresco"
   },
   {
     "id": "salsa-tequila-fresa",
     "category": "Tequila · Cocteles",
     "name": "Tequila Fresa",
     "priceCents": 1299,
-    "description": "Lunazul blanco tequila, strawberry lemonade, lime, chamoy straw"
+    "description": "Lunazul blanco tequila, strawberry lemonade, lime, chamoy straw",
+    "description_es": "Tequila Lunazul blanco, limonada de fresa, limón, popote de chamoy"
   },
   {
     "id": "salsa-lunazul-mule",
     "category": "Tequila · Cocteles",
     "name": "Mexican Mule",
     "priceCents": 1399,
-    "description": "Lunazul blanco tequila, ginger beer, fresh lime"
+    "description": "Lunazul blanco tequila, ginger beer, fresh lime",
+    "name_es": "Mexican Mule",
+    "description_es": "Tequila Lunazul blanco, ginger beer, limón fresco"
   },
   {
     "id": "salsa-don-julio-margarita",
     "category": "Tequila · Cocteles",
     "name": "Don Julio Margarita",
     "priceCents": 1599,
-    "description": "Don Julio Blanco tequila, triple sec, fresh lime, agave, salt rim"
+    "description": "Don Julio Blanco tequila, triple sec, fresh lime, agave, salt rim",
+    "description_es": "Tequila Don Julio Blanco, triple sec, limón fresco, agave, escarchado de sal"
   },
   {
     "id": "salsa-don-julio-reposado",
     "category": "Tequila · Cocteles",
     "name": "Don Julio Reposado",
     "priceCents": 1499,
-    "description": "Reposado tequila, on the rocks with lime"
+    "description": "Reposado tequila, on the rocks with lime",
+    "description_es": "Tequila reposado, en las rocas con limón"
   },
   {
     "id": "salsa-michelada",
     "category": "Cerveza y micheladas",
     "name": "Michelada",
     "priceCents": 999,
-    "description": "Modelo draft, Clamato, lime, salt rim, chamoy straw"
+    "description": "Modelo draft, Clamato, lime, salt rim, chamoy straw",
+    "description_es": "Modelo de barril, Clamato, limón, escarchado de sal, popote de chamoy"
   },
   {
     "id": "salsa-modelo-draft",
     "name": "Modelo draft",
     "priceCents": 699,
     "category": "Cerveza y micheladas",
-    "description": "Mexican lager, 12 oz pour"
+    "description": "Mexican lager, 12 oz pour",
+    "name_es": "Modelo de barril",
+    "description_es": "Cerveza mexicana, vaso de 12 oz"
   },
   {
     "id": "salsa-corona",
     "name": "Corona",
     "priceCents": 699,
     "category": "Cerveza y micheladas",
-    "description": "Mexican lager, bottle"
+    "description": "Mexican lager, bottle",
+    "description_es": "Cerveza mexicana, botella"
   },
   {
     "id": "salsa-coors-light",
@@ -87,91 +100,112 @@
     "name": "White Claw",
     "priceCents": 699,
     "category": "Cerveza y micheladas",
-    "description": "Hard seltzer"
+    "description": "Hard seltzer",
+    "description_es": "Seltzer con alcohol"
   },
   {
     "id": "salsa-spikedade",
     "name": "SpikedAde",
     "priceCents": 699,
     "category": "Cerveza y micheladas",
-    "description": "Hard lemonade"
+    "description": "Hard lemonade",
+    "description_es": "Limonada con alcohol"
   },
   {
     "id": "salsa-vodka-soda",
     "category": "Vodka, ron y whiskey",
     "name": "Vodka Soda",
     "priceCents": 999,
-    "description": "House vodka, soda water, lime"
+    "description": "House vodka, soda water, lime",
+    "name_es": "Vodka con soda",
+    "description_es": "Vodka de la casa, agua mineral, limón"
   },
   {
     "id": "salsa-vodka-cranberry",
     "category": "Vodka, ron y whiskey",
     "name": "Vodka Cran",
     "priceCents": 999,
-    "description": "House vodka, cranberry, lime"
+    "description": "House vodka, cranberry, lime",
+    "name_es": "Vodka con arándano",
+    "description_es": "Vodka de la casa, jugo de arándano, limón"
   },
   {
     "id": "salsa-vodka-fresa",
     "category": "Vodka, ron y whiskey",
     "name": "Vodka Fresa",
     "priceCents": 999,
-    "description": "House vodka, strawberry lemonade, lime"
+    "description": "House vodka, strawberry lemonade, lime",
+    "description_es": "Vodka de la casa, limonada de fresa, limón"
   },
   {
     "id": "salsa-moscow-mule",
     "category": "Vodka, ron y whiskey",
     "name": "Moscow Mule",
     "priceCents": 1199,
-    "description": "House vodka, ginger beer, fresh lime"
+    "description": "House vodka, ginger beer, fresh lime",
+    "description_es": "Vodka de la casa, ginger beer, limón fresco"
   },
   {
     "id": "salsa-vodka-red-bull",
     "category": "Vodka, ron y whiskey",
     "name": "Vodka Red Bull",
     "priceCents": 1299,
-    "description": "House vodka, Red Bull"
+    "description": "House vodka, Red Bull",
+    "name_es": "Vodka con Red Bull",
+    "description_es": "Vodka de la casa, Red Bull"
   },
   {
     "id": "salsa-cuba-libre",
     "category": "Vodka, ron y whiskey",
     "name": "Cuba Libre",
     "priceCents": 1199,
-    "description": "Captain Morgan white rum, Coca-Cola, fresh lime"
+    "description": "Captain Morgan white rum, Coca-Cola, fresh lime",
+    "description_es": "Ron blanco Captain Morgan, Coca-Cola, limón fresco"
   },
   {
     "id": "salsa-diplomatico-rocks",
     "category": "Vodka, ron y whiskey",
     "name": "Diplomático on the rocks",
     "priceCents": 1499,
-    "description": "Venezuelan dark rum, slow sipper"
+    "description": "Venezuelan dark rum, slow sipper",
+    "name_es": "Diplomático en las rocas",
+    "description_es": "Ron oscuro venezolano, para tomar despacio"
   },
   {
     "id": "salsa-whiskey-coke",
     "name": "Maker's & Coke",
     "priceCents": 1199,
     "category": "Vodka, ron y whiskey",
-    "description": "Maker's Mark bourbon, Coca-Cola"
+    "description": "Maker's Mark bourbon, Coca-Cola",
+    "name_es": "Maker's con Coca-Cola",
+    "description_es": "Bourbon Maker's Mark, Coca-Cola"
   },
   {
     "id": "salsa-fresa-lemonade",
     "category": "Sin alcohol",
     "name": "Fresa lemonade",
     "priceCents": 399,
-    "description": "Strawberry lemonade over ice"
+    "description": "Strawberry lemonade over ice",
+    "name_es": "Limonada de fresa",
+    "description_es": "Limonada de fresa con hielo"
   },
   {
     "id": "salsa-sparkling-lime",
     "category": "Sin alcohol",
     "name": "Sparkling lime water",
     "priceCents": 299,
-    "description": "Icelandic Tahitian lime, can"
+    "description": "Icelandic Tahitian lime, can",
+    "name_es": "Agua mineral de limón",
+    "description_es": "Icelandic de limón tahitiano, lata"
   },
   {
     "id": "salsa-cold-brew",
     "category": "Sin alcohol",
     "name": "Cold brew",
     "priceCents": 499,
-    "description": "Iced cold brew coffee"
+    "description": "Iced cold brew coffee",
+    "name_es": "Café frío (cold brew)",
+    "description_es": "Café cold brew con hielo"
   },
   {
     "id": "salsa-red-bull",
@@ -183,19 +217,24 @@
     "id": "salsa-fever-tree-ginger-beer",
     "name": "Fever-Tree Ginger Beer",
     "priceCents": 299,
-    "category": "Sin alcohol"
+    "category": "Sin alcohol",
+    "name_es": "Ginger beer Fever-Tree",
+    "description_es": "Sin alcohol"
   },
   {
     "id": "salsa-pulled-pork-sandwich",
     "name": "Pulled pork sandwich",
     "priceCents": 1399,
-    "category": "Comida"
+    "category": "Comida",
+    "name_es": "Torta de cerdo deshebrado",
+    "description_es": "Pulled pork"
   },
   {
     "id": "salsa-esquites",
     "name": "Esquites",
     "priceCents": 599,
-    "category": "Comida"
+    "category": "Comida",
+    "description_es": "Elote en vaso"
   },
   {
     "id": "salsa-paleta",
@@ -207,6 +246,7 @@
     "id": "salsa-chips-and-salsa",
     "name": "Chips and salsa",
     "priceCents": 499,
-    "category": "Comida"
+    "category": "Comida",
+    "name_es": "Totopos con salsa"
   }
 ]

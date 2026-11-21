@@ -8,6 +8,8 @@ export type EventMenuItem = {
   category: string;
   priceCents: number;
   description?: string;
+  name_es?: string;
+  description_es?: string;
 };
 
 // To switch the guest QR menu, change "menu" in activeEvent.json. The server reads the same file.
