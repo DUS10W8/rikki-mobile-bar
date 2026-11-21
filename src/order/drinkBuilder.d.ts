@@ -17,6 +17,7 @@ export type BuilderConfig = {
   styles: BuilderStyle[];
   signatures: Record<string, { style: string; liquor: string }>;
   groups: BuilderGroup[];
+  shotPrices?: Record<string, number | string>;
   upgrades?: Record<string, { name: string; from: string; house: string; options: { id: string; name: string; liquor: string; priceCents: number }[] }>;
 };
 export type Mods = Record<string, string | string[]>;

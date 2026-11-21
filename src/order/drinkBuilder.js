@@ -83,7 +83,10 @@ export function priceLine(config, menu, line) {
     if (!liquor || !style) throw new Error("Choose a liquor and how it's served.");
     const tier = config.tiers[liquor.tier];
     styleId = style.id;
-    unitCents = tier.priceCents + (style.priceCents ?? 0);
+    // Shots have their own prices (shotPrices); every other style is the liquor's tier price.
+    unitCents = style.id === "shot" && config.shotPrices
+      ? config.shotPrices[liquor.id] ?? config.shotPrices.default
+      : tier.priceCents + (style.priceCents ?? 0);
     label = style.label.replace("{liquor}", liquor.name);
     components.push({ id: `b-pour-${liquor.id}`, name: `${liquor.name} pour` });
     components.push({ id: `b-style-${style.id}`, name: style.name });

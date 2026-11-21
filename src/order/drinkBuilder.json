@@ -701,5 +701,11 @@
         }
       ]
     }
+  },
+  "shotPrices": {
+    "_about": "Price of a single shot, by liquor (owner, Nov 20). Anything not listed uses default.",
+    "default": 899,
+    "don-julio-blanco": 1599,
+    "don-julio-reposado": 1599
   }
 }

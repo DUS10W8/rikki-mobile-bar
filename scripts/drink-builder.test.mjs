@@ -106,3 +106,9 @@ for (const shot of shots) {
   const rung = priceTicket(config, full, [{ kind: "build", liquor: shot.shot, style: "shot", quantity: 1, mods: {} }]);
   assert.equal(shot.priceCents, rung.amountCents, shot.name);
 }
+
+// Shot prices (owner, Nov 20): Don Julio $15.99, everything else $8.99, on both screens.
+const shotPrice = (liquor) => priceTicket(config, full, [{ kind: "build", liquor, style: "shot", quantity: 1, mods: {} }]).amountCents;
+assert.equal(shotPrice("don-julio-blanco"), 1599);
+assert.equal(shotPrice("don-julio-reposado"), 1599);
+for (const liquor of ["lunazul-blanco", "vodka-house", "whiskey-makers", "whiskey-weller-107", "rum-diplomatico", "kahlua"]) assert.equal(shotPrice(liquor), 899, liquor);
