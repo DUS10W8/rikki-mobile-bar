@@ -75,14 +75,14 @@ const staff = { "x-walkup-code": code };
 const W = (body, headers = staff) => call(walkup, { body, headers });
 
 // ── Ring the brief's order (Lunazul Paloma; Patrón no longer exists) ──────────
-const id = "1370583e-d739-4684-82bb-004122a628ec";
+const id = "1370583e-d739-4684-82bb-004122a628ec"; // sandwich $13.99 + Paloma $12.99
 const items = [{ id: "salsa-pulled-pork-sandwich", quantity: 1 }, { id: "salsa-lunazul-paloma", quantity: 1 }];
 assert.equal((await W({ action: "create", id, eventMenu: "salsa", name: "", items: [{ id: "salsa-patron-paloma", quantity: 1 }] })).code, 400);
 const created = await W({ action: "create", id, eventMenu: "salsa", name: "", items });
 assert.equal(created.code, 201);
-assert.equal(rows.get(id).amount_cents, 2598);
+assert.equal(rows.get(id).amount_cents, 2698);
 assert.equal(rows.get(id).tax_cents, 0);
-assert.equal(created.data.order.amount_cents + created.data.order.tax_cents, 2598);
+assert.equal(created.data.order.amount_cents + created.data.order.tax_cents, 2698);
 
 // Nonzero tax from Square's catalog when no override is set
 delete process.env.SALES_TAX_BASIS_POINTS; resetTaxCache();
@@ -94,7 +94,7 @@ catalogTaxes = [
 const taxedId = "2370583e-d739-4684-82bb-004122a628ec";
 await W({ action: "create", id: taxedId, eventMenu: "salsa", name: "T", items });
 assert.equal(rows.get(taxedId).tax_basis_points, 890);
-assert.equal(rows.get(taxedId).tax_cents, 231);
+assert.equal(rows.get(taxedId).tax_cents, 240);
 // Square unreachable → tax unknown (null): card still possible, cash refused by the database
 resetTaxCache(); catalogTaxes = null;
 const savedFetch = globalThis.fetch;

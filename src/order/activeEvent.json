@@ -3,12 +3,11 @@
   "title": "Salsa Night Menu",
   "intro": "Order from your seat and pay with Square. We'll tell you when it's ready at the pickup table by the bar door. 21+ with wristband.",
   "categoryOrder": [
-    "Signature cocktails",
-    "Beer and seltzer",
-    "Mixed drinks",
-    "Mules",
-    "Food",
-    "Alcohol-free"
+    "Tequila · Cocteles",
+    "Cerveza y micheladas",
+    "Vodka, ron y whiskey",
+    "Sin alcohol",
+    "Comida"
   ],
   "handoffs": [
     "doorway_pickup"

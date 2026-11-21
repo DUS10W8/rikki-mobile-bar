@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ACTIVE_EVENT, EVENT_DRINK_MENU, EVENT_MENUS, sortCategories } from "../order/eventMenu";
 import { CashPanel, ChangeDue, DrawerPanel, type CashResult, type CashSale, type Shift } from "./cash";
 import { money, parseCents } from "./cashMoney";
 import { shortOrderId } from "../order/orderHandoff";
+import builderConfig from "../order/drinkBuilder.json";
+import { defaultMods, groupsFor, priceLine, type BuilderConfig, type Mods, type TicketLine } from "../order/drinkBuilder.js";
+
+const builder = builderConfig as unknown as BuilderConfig;
+// The drink builder replaces these menu sections on the register (the guest QR menu still shows them).
+const builtSections = new Set(["Mixed drinks", "Mules"]);
+type Line = TicketLine & { key: string };
 
 type Walkup = {
   id: string;
@@ -15,6 +22,8 @@ type Walkup = {
   change_cents?: number | null;
   order_id?: string | null;
   pos_url?: string;
+  display_lines?: { name: string; mods: string[]; quantity: number; unit_price_cents: number }[] | null;
+  created_at?: string;
   items?: { id: string; name: string; quantity: number; price_cents: number }[] | null;
 };
 
@@ -89,15 +98,31 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   };
   const [eventMenu, setEventMenu] = useState(ACTIVE_EVENT.menu);
   const menu = EVENT_MENUS[eventMenu] ?? EVENT_DRINK_MENU;
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [ticket, setTicket] = useState<Line[]>([]);
+  const [sheet, setSheet] = useState<{ line: TicketLine; key?: string } | null>(null);
   const [search, setSearch] = useState("");
   const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const query = normalize(search.trim());
-  const categories = sortCategories([...new Set(menu.map(item => item.category))]);
+  const categories = sortCategories([...new Set(menu.map(item => item.category))]).filter(category => !builtSections.has(category));
   const matches = menu.filter(item => normalize(item.name + " " + item.category).includes(query));
-  function changeQuantity(id: string, delta: number) {
+  const liquorMatches = builder.liquors.filter(liquor => normalize(liquor.name + " " + liquor.type).includes(query));
+  function changeQuantity(key: string, delta: number) {
     requestId.current = null;
-    setQuantities(current => ({ ...current, [id]: Math.max(0, Math.min(10, (current[id] || 0) + delta)) }));
+    setTicket(current => current.flatMap(line => line.key !== key ? [line]
+      : line.quantity + delta <= 0 ? [] : [{ ...line, quantity: Math.min(10, line.quantity + delta) }]));
+  }
+  function saveLine(line: TicketLine, key?: string) {
+    requestId.current = null;
+    setTicket(current => key ? current.map(entry => entry.key === key ? { ...line, key } : entry)
+      : [...current, { ...line, key: crypto.randomUUID() }]);
+  }
+  function tapItem(id: string) {
+    const signature = builder.signatures[id];
+    if (signature) { setSheet({ line: { kind: "item", id, mods: defaultMods(builder, signature.style), quantity: 1 } }); return; }
+    // Beer, food and NA: one tap adds one; a second tap adds another to the same line.
+    const existing = ticket.find(line => line.kind === "item" && line.id === id && !line.note && !Object.keys(line.mods ?? {}).length);
+    if (existing) changeQuantity(existing.key, 1);
+    else saveLine({ kind: "item", id, quantity: 1 });
   }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -215,10 +240,10 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     if (!total || busy) return;
     if (!operator.trim()) { setError("Enter your name in the Cash drawer section first."); return; }
     requestId.current ??= crypto.randomUUID();
-    void act({ action: "create", id: requestId.current, eventMenu, name, items }, (data) => {
+    void act({ action: "create", id: requestId.current, eventMenu, name, lines: payload }, (data) => {
       requestId.current = null;
       setSearch(""); setName("");
-      setQuantities({});
+      setTicket([]);
       const created = (data as { order?: Walkup }).order;
       if (created) startCash(created);
     });
@@ -235,9 +260,15 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
       amountCents, reason, operator }, () => setError(`Refunded ${money(amountCents)} cash. If the item came back sealed, log it as returned stock.`));
   };
 
-  const items = menu.filter((drink) => quantities[drink.id])
-    .map((drink) => ({ id: drink.id, quantity: quantities[drink.id], priceCents: drink.priceCents }));
-  const total = items.reduce((sum, item) => sum + item.quantity * item.priceCents, 0);
+  const priced = ticket.map((line) => {
+    try {
+      return priceLine(builder, menu, line);
+    } catch {
+      return null;
+    }
+  });
+  const total = priced.reduce((sum, line) => sum + (line ? line.unitCents * line.quantity : 0), 0);
+  const payload = ticket.map(({ key: _key, ...line }) => { void _key; return line; });
   // Same rounding as the server (src/server/tax.js); the server's figure is what's charged.
   const ticketTax = taxBasisPoints === null ? null : Math.floor((total * taxBasisPoints + 5000) / 10000);
 
@@ -333,6 +364,49 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
     return () => window.clearTimeout(timer);
   }, [thanks]);
 
+  // Register iPad: tell Abe the moment a card charge is paid, cancelled, or stalled.
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [now, setNow] = useState(() => Date.now());
+  const lastSeen = useRef<Map<string, Walkup> | null>(null);
+  useEffect(() => {
+    if (phone || !unlocked) return;
+    const previous = lastSeen.current;
+    lastSeen.current = new Map(orders.map((order) => [order.id, order]));
+    if (!previous) return;   // first load: don't announce old orders
+    const fresh: Notice[] = [];
+    for (const [id, before] of previous) {
+      const after = lastSeen.current.get(id);
+      if (before.status !== "opened") continue;
+      if (after?.status === "paid" && after.tender !== "cash") fresh.push({ id, kind: "paid", order: after, at: Date.now() });
+      else if (!after) fresh.push({ id, kind: "cancelled", order: before, at: Date.now() });
+    }
+    if (!fresh.length) return;
+    setNotices((current) => [...fresh, ...current.filter((notice) => !fresh.some((item) => item.id === notice.id))].slice(0, 4));
+    chime(fresh.some((notice) => notice.kind !== "paid") ? "problem" : "paid");
+  }, [orders, phone, unlocked]);
+  useEffect(() => {
+    if (phone || !orders.some((order) => order.status === "opened") && !notices.length) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [phone, orders, notices.length]);
+  useEffect(() => {
+    // Paid banners clear after 8 s; problems stay until tapped.
+    const paid = notices.filter((notice) => notice.kind === "paid");
+    if (!paid.length) return;
+    const timer = window.setTimeout(() => setNotices((current) => current.filter((notice) => notice.kind !== "paid" || Date.now() - notice.at < 8000)), 8200);
+    return () => window.clearTimeout(timer);
+  }, [notices]);
+  const waitingCards = useMemo(() => phone ? [] : orders.filter((order) => order.status === "opened"), [phone, orders]);
+  const stalledAlerted = useRef(new Set<string>());
+  useEffect(() => {
+    for (const order of waitingCards) {
+      if (now - new Date(order.created_at ?? now).getTime() >= stallMs && !stalledAlerted.current.has(order.id)) {
+        stalledAlerted.current.add(order.id);
+        chime("problem");
+      }
+    }
+  }, [now, waitingCards]);
+
   // Keep the bar iPhone awake on this screen so new charges appear without anyone touching it.
   useEffect(() => {
     if (!phone || !unlocked) return;
@@ -424,6 +498,22 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                 </div>
                 {/* Every item on one screen: no folders to open during a rush. */}
                 <fieldset disabled={busy || (!!cashSale && !cashResult)} className="grid gap-3 disabled:opacity-60">
+                  {!!liquorMatches.length && <section aria-label="Build a drink" className="rounded-2xl border-2 border-brand-ink/80 bg-white p-3">
+                    <h3 className="mb-2 text-sm font-black uppercase tracking-wide">Build a drink · pick the liquor</h3>
+                    <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+                      {builder.liquorTypes.flatMap(type => liquorMatches.filter(liquor => liquor.type === type)).map(liquor => (
+                        <button key={liquor.id} type="button"
+                          className="min-h-[50px] rounded-xl border border-brand-chrome bg-[#fffaf2] px-2.5 py-1 text-left leading-tight active:scale-[0.98]"
+                          onClick={() => {
+                            if (cashResult) { setCashResult(null); setCashSale(null); }
+                            setSheet({ line: { kind: "build", liquor: liquor.id, style: "", mods: {}, quantity: 1 } });
+                          }}>
+                          <span className="block text-[11px] font-black uppercase tracking-wide text-brand-ink/50">{liquor.type} · {price(builder.tiers[liquor.tier].priceCents)}</span>
+                          <strong className="block truncate">{liquor.name}</strong>
+                        </button>
+                      ))}
+                    </div>
+                  </section>}
                   {categories.map(category => {
                     const entries = matches.filter(item => item.category === category);
                     if (!entries.length) return null;
@@ -431,14 +521,14 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                       <h3 className="mb-1 text-xs font-black uppercase tracking-wide text-brand-ink/55">{category}</h3>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                         {entries.map(item => {
-                          const count = quantities[item.id] || 0;
+                          const count = ticket.filter(line => line.kind === "item" && line.id === item.id).reduce((sum, line) => sum + line.quantity, 0);
                           return <button key={item.id} type="button" disabled={count >= 10}
                             className={`relative min-h-[60px] rounded-xl border px-3 py-2 text-left leading-tight active:scale-[0.98] ${count ? "border-brand-ink bg-brand-ink text-white" : "border-brand-chrome bg-white"}`}
                             onClick={() => {
                               if (cashResult) { setCashResult(null); setCashSale(null); }   // first tap starts the next order
-                              changeQuantity(item.id, 1);
+                              tapItem(item.id);
                             }}>
-                            <strong className="block pr-6">{item.name}</strong>
+                            <strong className="block pr-6">{item.name}{builder.signatures[item.id] ? " ›" : ""}</strong>
                             <span className={count ? "text-white/80" : "text-brand-ink/70"}>{price(item.priceCents)}</span>
                             {count > 0 && <span className="absolute right-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-[#2E9B8A] px-1.5 text-sm font-black text-white">{count}</span>}
                           </button>;
@@ -446,10 +536,20 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                       </div>
                     </section>;
                   })}
-                  {!matches.length && <p role="status">No items match “{search}”.</p>}
+                  {!matches.length && !liquorMatches.length && <p role="status">No items match “{search}”.</p>}
                 </fieldset>
               </div>
-              <aside className="self-start lg:sticky lg:top-2">
+              {sheet && <DrinkSheet line={sheet.line} menu={menu} editing={!!sheet.key}
+                onClose={() => setSheet(null)}
+                onSave={(line) => { saveLine(line, sheet.key); setSheet(null); }} />}
+              <aside className="min-w-0 self-start lg:sticky lg:top-2">
+                <PaymentAlerts notices={notices} waiting={waitingCards} now={now} busy={busy}
+                  onDismiss={(id) => setNotices((current) => current.filter((notice) => notice.id !== id))}
+                  onCancel={(order) => {
+                    if (window.confirm(`Cancel the card charge for ${order.name}? Only do this if the guest has not paid on the iPhone.`)) {
+                      void act({ action: "archive", id: order.id });
+                    }
+                  }} />
                 {cashResult ? (
                   <>
                     <ChangeDue result={cashResult} onNext={() => { setCashResult(null); setCashSale(null); }} />
@@ -463,10 +563,10 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                   <form aria-label="Current ticket" className="rounded-2xl border-2 border-brand-ink bg-white p-4" onSubmit={(event) => {
                     event.preventDefault();
                     requestId.current ??= crypto.randomUUID();
-                    void act({ action: "create", id: requestId.current, eventMenu, name, items }, async (data) => {
+                    void act({ action: "create", id: requestId.current, eventMenu, name, lines: payload }, async (data) => {
                       requestId.current = null;
                       setSearch(""); setName("");
-                      setQuantities({});
+                      setTicket([]);
                       // Card was chosen: open the attempt now, so the guest iPhone shows the Pay screen without a tap.
                       const created = data.order;
                       if (created?.status === "waiting") {
@@ -478,22 +578,29 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
                   }}>
                     <div className="flex items-baseline justify-between">
                       <h3 className="text-lg font-black">Ticket</h3>
-                      {!!items.length && <button type="button" className="text-sm font-bold underline" disabled={busy}
-                        onClick={() => { setQuantities({}); requestId.current = null; }}>Clear</button>}
+                      {!!ticket.length && <button type="button" className="text-sm font-bold underline" disabled={busy}
+                        onClick={() => { setTicket([]); requestId.current = null; }}>Clear</button>}
                     </div>
-                    {!items.length && <p className="py-6 text-center text-brand-ink/55">Tap items to add them.</p>}
-                    <ul className="divide-y divide-brand-ink/10">
-                      {items.map(line => {
-                        const label = menu.find(item => item.id === line.id)!.name;
-                        return <li key={line.id} className="flex items-center gap-2 py-2">
-                          <button type="button" className="h-10 w-10 rounded-lg border border-brand-chrome text-xl font-black" aria-label={"Remove one " + label} disabled={busy} onClick={() => changeQuantity(line.id, -1)}>−</button>
-                          <span className="w-6 text-center text-lg font-black">{line.quantity}</span>
-                          <span className="min-w-0 flex-1 truncate font-bold">{label}</span>
-                          <span className="tabular-nums">{price(line.quantity * line.priceCents)}</span>
+                    {!ticket.length && <p className="py-6 text-center text-brand-ink/55">Pick a liquor to build a drink, or tap an item.</p>}
+                    <ul className="max-h-[38vh] divide-y divide-brand-ink/10 overflow-y-auto">
+                      {ticket.map((line, index) => {
+                        const info = priced[index];
+                        const editable = line.kind === "build" || !!builder.signatures[line.id];
+                        const label = info?.label ?? "Check this line";
+                        return <li key={line.key} className="flex items-start gap-2 py-2">
+                          <button type="button" className="h-10 w-10 shrink-0 rounded-lg border border-brand-chrome text-xl font-black" aria-label={"Remove one " + label} disabled={busy} onClick={() => changeQuantity(line.key, -1)}>−</button>
+                          <span className="w-6 shrink-0 pt-2 text-center text-lg font-black">{line.quantity}</span>
+                          <button type="button" disabled={!editable || busy} className="min-w-0 flex-1 text-left disabled:cursor-default"
+                            onClick={() => setSheet({ line, key: line.key })}>
+                            <span className="block font-bold leading-tight">{label}</span>
+                            {!!info?.mods.length && <span className="block text-sm leading-snug text-brand-ink/70">{info.mods.join(" · ")}</span>}
+                            {editable && <span className="text-xs font-bold text-[#2E9B8A]">Edit</span>}
+                          </button>
+                          <span className="shrink-0 pt-2 tabular-nums">{info ? price(info.unitCents * line.quantity) : "—"}</span>
                         </li>;
                       })}
                     </ul>
-                    {!!items.length && <input className={`${input} mt-2 w-full`} aria-label="Guest name" disabled={busy} placeholder="Guest name (optional)" value={name} maxLength={80} onChange={(event) => {
+                    {!!ticket.length && <input className={`${input} mt-2 w-full`} aria-label="Guest name" disabled={busy} placeholder="Guest name (optional)" value={name} maxLength={80} onChange={(event) => {
                       requestId.current = null;
                       setName(event.target.value);
                     }} />}
@@ -643,7 +750,10 @@ function GuestScreen({ charge, waiting, confirming, failed, paid, unconfirmed, o
       <p className="m-auto px-8 text-center text-2xl font-bold text-brand-ink/60">Your order will appear here.</p>{staff}</div>;
   }
 
-  const lines = charge.items?.length ? charge.items : null;
+  const lines = charge.display_lines?.length
+    ? charge.display_lines.map((line, index) => ({ id: String(index), name: line.mods.length ? `${line.name} (${line.mods.join(", ")})` : line.name,
+      quantity: line.quantity, price_cents: line.unit_price_cents }))
+    : charge.items?.length ? charge.items : null;
   const tax = charge.tax_cents;
   return <div className={shell} role="dialog" aria-modal="true" aria-label="Your order">
     {brand}
@@ -673,4 +783,207 @@ function GuestScreen({ charge, waiting, confirming, failed, paid, unconfirmed, o
     </div>
     {staff}
   </div>;
+}
+
+type Notice = { id: string; kind: "paid" | "cancelled"; order: Walkup; at: number };
+const stallMs = 2 * 60 * 1000;
+
+// Short tones so Abe hears the result without looking. Safe to call anytime: the iPad has
+// already been tapped, which lets the page play sound.
+function chime(kind: "paid" | "problem") {
+  try {
+    const Audio = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Audio) return;
+    const context = new Audio();
+    const notes = kind === "paid" ? [880, 1320] : [330, 220];
+    notes.forEach((frequency, index) => {
+      const tone = context.createOscillator();
+      const gain = context.createGain();
+      tone.frequency.value = frequency;
+      tone.connect(gain).connect(context.destination);
+      const start = context.currentTime + index * 0.16;
+      gain.gain.setValueAtTime(0.25, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.15);
+      tone.start(start);
+      tone.stop(start + 0.16);
+    });
+    window.setTimeout(() => void context.close(), 800);
+  } catch {
+    // Sound is a bonus; the banner is the signal.
+  }
+}
+
+function PaymentAlerts({ notices, waiting, now, busy, onDismiss, onCancel }: {
+  notices: Notice[]; waiting: Walkup[]; now: number; busy: boolean;
+  onDismiss: (id: string) => void; onCancel: (order: Walkup) => void;
+}) {
+  if (!notices.length && !waiting.length) return null;
+  const total = (order: Walkup) => price(order.amount_cents + (order.tax_cents ?? 0));
+  return (
+    <div className="mb-3 grid min-w-0 gap-2" aria-live="assertive">
+      {notices.map((notice) => notice.kind === "paid" ? (
+        <button key={notice.id} type="button" onClick={() => onDismiss(notice.id)}
+          className="w-full rounded-2xl bg-emerald-700 p-4 text-left text-white shadow-lg" role="status">
+          <span className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-3xl font-black text-emerald-700" aria-hidden="true">✓</span>
+            <span className="min-w-0">
+              <span className="block text-2xl font-black">Paid {total(notice.order)}</span>
+              <span className="block truncate font-bold">
+                {notice.order.order_id ? `#${shortOrderId(notice.order.order_id)} · ` : ""}{notice.order.name} · sent to Rikki
+              </span>
+            </span>
+          </span>
+        </button>
+      ) : (
+        <div key={notice.id} className="rounded-2xl bg-rose-700 p-4 text-white shadow-lg" role="alert">
+          <p className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-3xl font-black text-rose-700" aria-hidden="true">✕</span>
+            <span className="min-w-0">
+              <span className="block text-2xl font-black">Card not completed</span>
+              <span className="block font-bold">{notice.order.name} · {total(notice.order)}</span>
+              <span className="block text-sm">Charge cancelled. Nothing was sent to the bar.</span>
+            </span>
+          </p>
+          <button type="button" className="mt-3 w-full rounded-xl bg-white/15 py-2 font-black" onClick={() => onDismiss(notice.id)}>OK</button>
+        </div>
+      ))}
+      {waiting.map((order) => {
+        const waited = Math.max(0, now - new Date(order.created_at ?? now).getTime());
+        const stalled = waited >= stallMs;
+        const clock = `${Math.floor(waited / 60000)}:${String(Math.floor(waited / 1000) % 60).padStart(2, "0")}`;
+        return (
+          <div key={order.id} role={stalled ? "alert" : "status"}
+            className={`rounded-2xl border-2 p-3 ${stalled ? "border-rose-700 bg-rose-50 text-rose-950" : "border-amber-500 bg-amber-50 text-amber-950"}`}>
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0">
+                <span className="block text-lg font-black">{stalled ? "No payment yet" : "Waiting for card on iPhone"}</span>
+                <span className="block truncate text-sm font-bold">{order.name} · {total(order)}</span>
+              </span>
+              <span className="text-2xl font-black tabular-nums">{clock}</span>
+            </div>
+            {stalled && (
+              <div className="mt-2 grid gap-1 text-sm">
+                <p>Check the guest&rsquo;s phone. If they didn&rsquo;t pay, cancel and ring it again.</p>
+                <button type="button" disabled={busy} className="rounded-xl bg-rose-700 py-2 font-black text-white disabled:opacity-50"
+                  onClick={() => onCancel(order)}>Cancel card charge</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Toast-style option sheet: how the drink is served, then its options, quantity and a note.
+function DrinkSheet({ line, menu, editing, onClose, onSave }: {
+  line: TicketLine; menu: { id: string; name: string; priceCents: number }[]; editing: boolean;
+  onClose: () => void; onSave: (line: TicketLine) => void;
+}) {
+  const [draft, setDraft] = useState<TicketLine>(line);
+  const styleId = draft.kind === "build" ? draft.style : builder.signatures[draft.id]?.style ?? "";
+  const liquor = draft.kind === "build" ? builder.liquors.find(entry => entry.id === draft.liquor) : null;
+  const item = draft.kind === "item" ? menu.find(entry => entry.id === draft.id) : null;
+  const mods: Mods = draft.mods ?? {};
+  let priced: ReturnType<typeof priceLine> | null = null;
+  let problem = "";
+  try {
+    priced = styleId ? priceLine(builder, menu, draft) : null;
+  } catch (error) {
+    problem = (error as Error).message;
+  }
+  const chooseStyle = (id: string) => setDraft(current => current.kind !== "build" ? current : {
+    ...current, style: id, mods: { ...defaultMods(builder, id), ...(current.mods?.pour ? { pour: current.mods.pour } : {}) },
+  });
+  const setMod = (groupId: string, optionId: string, many: boolean) => setDraft(current => {
+    const value = current.mods?.[groupId];
+    const next = many
+      ? (Array.isArray(value) && value.includes(optionId) ? value.filter(entry => entry !== optionId) : [...(Array.isArray(value) ? value : []), optionId])
+      : optionId;
+    return { ...current, mods: { ...current.mods, [groupId]: next } };
+  });
+  const chip = (active: boolean) => `min-h-11 rounded-xl border-2 px-3 py-1.5 text-left font-bold leading-tight ${active ? "border-brand-ink bg-brand-ink text-white" : "border-brand-chrome bg-white"}`;
+  const tier = liquor ? builder.tiers[liquor.tier] : null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center" role="dialog" aria-modal="true" aria-label="Drink options"
+      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl bg-[#fffaf2] shadow-2xl sm:rounded-3xl">
+        <div className="flex items-start justify-between gap-3 border-b border-brand-chrome px-5 py-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-wide text-brand-ink/55">{liquor ? `${liquor.type} · ${tier?.name}` : "Signature"}</p>
+            <h3 className="text-2xl font-black">{liquor?.name ?? item?.name}</h3>
+          </div>
+          <button type="button" className="h-11 w-11 rounded-full border border-brand-chrome text-2xl" aria-label="Close" onClick={onClose}>×</button>
+        </div>
+        <div className="grid gap-4 overflow-y-auto px-5 py-4">
+          {draft.kind === "build" && (
+            <section>
+              <h4 className="mb-2 font-black">How is it served? <span className="text-sm font-bold text-rose-800">Required</span></h4>
+              <div className="grid gap-2">
+                {builder.styleSections.map(section => (
+                  <div key={section} className="grid grid-cols-[76px_minmax(0,1fr)] items-start gap-2">
+                    <span className="pt-2.5 text-xs font-black uppercase tracking-wide text-brand-ink/55">{section}</span>
+                    <div className="flex flex-wrap gap-2">
+                      {builder.styles.filter(style => style.section === section).map(style => (
+                        <button key={style.id} type="button" className={chip(draft.style === style.id)} onClick={() => chooseStyle(style.id)}>
+                          {style.name}{style.priceCents ? <span className="ml-1 text-sm opacity-75">+{price(style.priceCents)}</span> : null}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          {styleId && groupsFor(builder, styleId).map(group => (
+            <section key={group.id}>
+              <h4 className="mb-2 font-black">{group.name} <span className="text-sm font-bold text-brand-ink/50">{group.select === "many" ? "Any" : "Pick one"}</span></h4>
+              <div className="flex flex-wrap gap-2">
+                {group.options.map(option => {
+                  const value = mods[group.id];
+                  const active = group.select === "many" ? Array.isArray(value) && value.includes(option.id) : value === option.id;
+                  const extra = option.double && tier ? tier.doubleCents : option.double && draft.kind === "item"
+                    ? builder.tiers[builder.liquors.find(entry => entry.id === builder.signatures[draft.id]?.liquor)?.tier ?? "call"].doubleCents
+                    : option.priceCents ?? 0;
+                  return <button key={option.id} type="button" className={chip(active)} aria-pressed={active}
+                    onClick={() => setMod(group.id, option.id, group.select === "many")}>
+                    {option.name}{extra ? <span className="ml-1 text-sm opacity-75">+{price(extra)}</span> : null}
+                  </button>;
+                })}
+              </div>
+            </section>
+          ))}
+          {styleId && (
+            <section className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-end">
+              <div>
+                <h4 className="mb-2 font-black">How many</h4>
+                <div className="flex items-center gap-3">
+                  <button type="button" className="h-11 w-11 rounded-xl border-2 border-brand-chrome text-2xl font-black" aria-label="One fewer"
+                    onClick={() => setDraft(current => ({ ...current, quantity: Math.max(1, current.quantity - 1) }))}>−</button>
+                  <span className="w-8 text-center text-2xl font-black">{draft.quantity}</span>
+                  <button type="button" className="h-11 w-11 rounded-xl border-2 border-brand-chrome text-2xl font-black" aria-label="One more"
+                    onClick={() => setDraft(current => ({ ...current, quantity: Math.min(10, current.quantity + 1) }))}>+</button>
+                </div>
+              </div>
+              <label className="grid gap-1">
+                <span className="font-black">Note for the bar <span className="text-sm font-bold text-brand-ink/50">Optional</span></span>
+                <input className="min-h-11 rounded-xl border border-brand-chrome bg-white px-3" maxLength={60} value={draft.note ?? ""}
+                  placeholder="e.g. spicy, in a to-go cup" onChange={(event) => setDraft(current => ({ ...current, note: event.target.value }))} />
+              </label>
+            </section>
+          )}
+        </div>
+        <div className="border-t border-brand-chrome px-5 py-4">
+          {priced && <p className="mb-2 truncate text-sm text-brand-ink/70">{priced.label}{priced.mods.length ? " — " + priced.mods.join(" · ") : ""}</p>}
+          {problem && styleId && <p className="mb-2 text-sm font-bold text-rose-800" role="alert">{problem}</p>}
+          <button type="button" disabled={!priced}
+            className="min-h-16 w-full rounded-2xl bg-brand-ink px-4 text-xl font-black text-white disabled:opacity-40"
+            onClick={() => priced && onSave({ ...draft, note: draft.note?.trim() || undefined })}>
+            {!styleId ? "Choose how it's served" : priced ? `${editing ? "Update" : "Add to ticket"} · ${price(priced.unitCents * priced.quantity)}` : "Check the options"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
