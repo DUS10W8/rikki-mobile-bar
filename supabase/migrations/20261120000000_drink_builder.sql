@@ -7,6 +7,11 @@
 
 alter table public.walkup_checkouts add column if not exists display_lines jsonb;
 
+-- Stock items the builder uses that came after the Nov 18 seed.
+insert into public.inventory_items (sku, name, unit, package_size, package_label, low_stock_at)
+values ('clamato', 'Clamato', 'fl_oz', 128, '1 gal jug', 32)
+on conflict (sku) do nothing;
+
 insert into public.recipe_lines (menu_item_id, sku, quantity) values
   ('b-pour-lunazul-blanco', 'lunazul-blanco', 1.5),
   ('b-double-lunazul-blanco', 'lunazul-blanco', 1.5),
@@ -64,6 +69,9 @@ insert into public.recipe_lines (menu_item_id, sku, quantity) values
   ('b-style-lemonade', 'cup', 1),
   ('b-style-lemonade', 'ice', 5),
   ('b-style-lemonade', 'strawberry-lemonade', 4),
+  ('b-style-clamato', 'cup', 1),
+  ('b-style-clamato', 'ice', 5),
+  ('b-style-clamato', 'clamato', 4),
   ('b-style-red-bull', 'cup', 1),
   ('b-style-red-bull', 'ice', 5),
   ('b-style-red-bull', 'red-bull', 1),

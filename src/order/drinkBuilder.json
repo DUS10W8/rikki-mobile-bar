@@ -235,6 +235,19 @@
       ]
     },
     {
+      "id": "clamato",
+      "section": "Mixer",
+      "name": "Clamato",
+      "label": "{liquor} Clamato",
+      "iced": true,
+      "recipe": [
+        [
+          "clamato",
+          4
+        ]
+      ]
+    },
+    {
       "id": "red-bull",
       "section": "Mixer",
       "name": "Red Bull",
@@ -463,7 +476,8 @@
         "red-bull",
         "paloma",
         "mule",
-        "bloody-mary"
+        "bloody-mary",
+        "clamato"
       ],
       "options": [
         {
@@ -494,7 +508,8 @@
         "paloma",
         "mule",
         "bloody-mary",
-        "rocks"
+        "rocks",
+        "clamato"
       ],
       "options": [
         {

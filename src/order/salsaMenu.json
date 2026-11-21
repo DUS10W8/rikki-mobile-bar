@@ -60,7 +60,7 @@
     "category": "Cerveza y micheladas",
     "name": "Michelada",
     "priceCents": 999,
-    "description": "Modelo draft, spicy tomato mix, lime, salt rim, chamoy straw"
+    "description": "Modelo draft, Clamato, lime, salt rim, chamoy straw"
   },
   {
     "id": "salsa-modelo-draft",
@@ -97,15 +97,50 @@
     "description": "Hard lemonade"
   },
   {
+    "id": "salsa-vodka-soda",
+    "category": "Vodka, ron y whiskey",
+    "name": "Vodka Soda",
+    "priceCents": 999,
+    "description": "House vodka, soda water, lime"
+  },
+  {
+    "id": "salsa-vodka-cranberry",
+    "category": "Vodka, ron y whiskey",
+    "name": "Vodka Cran",
+    "priceCents": 999,
+    "description": "House vodka, cranberry, lime"
+  },
+  {
+    "id": "salsa-vodka-fresa",
+    "category": "Vodka, ron y whiskey",
+    "name": "Vodka Fresa",
+    "priceCents": 999,
+    "description": "House vodka, strawberry lemonade, lime"
+  },
+  {
+    "id": "salsa-moscow-mule",
+    "category": "Vodka, ron y whiskey",
+    "name": "Moscow Mule",
+    "priceCents": 1199,
+    "description": "House vodka, ginger beer, fresh lime"
+  },
+  {
+    "id": "salsa-vodka-red-bull",
+    "category": "Vodka, ron y whiskey",
+    "name": "Vodka Red Bull",
+    "priceCents": 1299,
+    "description": "House vodka, Red Bull"
+  },
+  {
     "id": "salsa-cuba-libre",
-    "category": "Ron, whiskey y café",
+    "category": "Vodka, ron y whiskey",
     "name": "Cuba Libre",
     "priceCents": 1199,
     "description": "Captain Morgan white rum, Coca-Cola, fresh lime"
   },
   {
     "id": "salsa-diplomatico-rocks",
-    "category": "Ron, whiskey y café",
+    "category": "Vodka, ron y whiskey",
     "name": "Diplomático on the rocks",
     "priceCents": 1499,
     "description": "Venezuelan dark rum, slow sipper"
@@ -114,15 +149,8 @@
     "id": "salsa-whiskey-coke",
     "name": "Maker's & Coke",
     "priceCents": 1199,
-    "category": "Ron, whiskey y café",
+    "category": "Vodka, ron y whiskey",
     "description": "Maker's Mark bourbon, Coca-Cola"
-  },
-  {
-    "id": "salsa-carajillo",
-    "category": "Ron, whiskey y café",
-    "name": "Carajillo",
-    "priceCents": 1299,
-    "description": "Kahlúa coffee liqueur shaken with cold brew over ice"
   },
   {
     "id": "salsa-fresa-lemonade",
