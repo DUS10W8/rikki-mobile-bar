@@ -5,8 +5,7 @@
     "name": "Margarita",
     "priceCents": 1299,
     "description": "Lunazul blanco tequila, triple sec, fresh lime, agave, salt rim",
-    "description_es": "Tequila Lunazul blanco, triple sec, limón fresco, agave, escarchado de sal",
-    "upgrade": "tequila"
+    "description_es": "Tequila Lunazul blanco, triple sec, limón fresco, agave, escarchado de sal"
   },
   {
     "id": "salsa-lunazul-paloma",
@@ -14,8 +13,7 @@
     "name": "Paloma",
     "priceCents": 1299,
     "description": "Lunazul blanco tequila, grapefruit soda, lime, salt rim",
-    "description_es": "Tequila Lunazul blanco, refresco de toronja, limón, escarchado de sal",
-    "upgrade": "tequila"
+    "description_es": "Tequila Lunazul blanco, refresco de toronja, limón, escarchado de sal"
   },
   {
     "id": "salsa-batanga",
@@ -23,8 +21,7 @@
     "name": "Batanga",
     "priceCents": 1199,
     "description": "Lunazul blanco tequila, Coca-Cola, lime, salt rim. The cantina classic from Tequila, Jalisco",
-    "description_es": "Tequila Lunazul blanco, Coca-Cola, limón, escarchado de sal. El clásico de cantina de Tequila, Jalisco",
-    "upgrade": "tequila"
+    "description_es": "Tequila Lunazul blanco, Coca-Cola, limón, escarchado de sal. El clásico de cantina de Tequila, Jalisco"
   },
   {
     "id": "salsa-ranch-water",
@@ -32,8 +29,7 @@
     "name": "Ranch Water",
     "priceCents": 1199,
     "description": "Lunazul blanco tequila, sparkling lime water, fresh lime",
-    "description_es": "Tequila Lunazul blanco, agua mineral de limón, limón fresco",
-    "upgrade": "tequila"
+    "description_es": "Tequila Lunazul blanco, agua mineral de limón, limón fresco"
   },
   {
     "id": "salsa-tequila-fresa",
@@ -41,8 +37,7 @@
     "name": "Tequila Fresa",
     "priceCents": 1299,
     "description": "Lunazul blanco tequila, strawberry lemonade, lime, chamoy straw",
-    "description_es": "Tequila Lunazul blanco, limonada de fresa, limón, popote de chamoy",
-    "upgrade": "tequila"
+    "description_es": "Tequila Lunazul blanco, limonada de fresa, limón, popote de chamoy"
   },
   {
     "id": "salsa-lunazul-mule",
@@ -51,8 +46,15 @@
     "priceCents": 1399,
     "description": "Lunazul blanco tequila, ginger beer, fresh lime",
     "name_es": "Mexican Mule",
-    "description_es": "Tequila Lunazul blanco, ginger beer, limón fresco",
-    "upgrade": "tequila"
+    "description_es": "Tequila Lunazul blanco, ginger beer, limón fresco"
+  },
+  {
+    "id": "salsa-don-julio-margarita",
+    "category": "Tequila · Cocteles",
+    "name": "Don Julio Margarita",
+    "priceCents": 1799,
+    "description": "Don Julio Blanco tequila, triple sec, fresh lime, agave, salt rim",
+    "description_es": "Tequila Don Julio Blanco, triple sec, limón fresco, agave, escarchado de sal"
   },
   {
     "id": "salsa-don-julio-reposado",
