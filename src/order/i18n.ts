@@ -4,6 +4,16 @@ export type Lang = "en" | "es";
 const STORAGE_KEY = "rikki-lang";
 
 function detect(): Lang {
+  // A QR code can pick the language with ?lang=es (the Spanish iPad menu does). The guest can still switch.
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get("lang");
+    if (fromUrl === "en" || fromUrl === "es") {
+      try { localStorage.setItem(STORAGE_KEY, fromUrl); } catch { /* still applies for this visit */ }
+      return fromUrl;
+    }
+  } catch {
+    // No URL available.
+  }
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "en" || saved === "es") return saved;

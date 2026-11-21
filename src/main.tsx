@@ -8,7 +8,7 @@ import { captureAttribution } from "./lib/attribution";
 captureAttribution();
 
 const modules = import.meta.glob<{ default: React.ComponentType }>([
-  "./App.tsx", "./pages/**/*.tsx", "!./pages/MobileBarSite.tsx", "./bartender/BartenderPage.tsx", "./order/OrderPage.tsx",
+  "./App.tsx", "./pages/**/*.tsx", "!./pages/MobileBarSite.tsx", "./bartender/BartenderPage.tsx", "./order/OrderPage.tsx", "./order/MenuDisplayPage.tsx",
 ]);
 // Case-insensitive, so "/Pay" typed on a phone still works.
 const routePath = window.location.pathname.replace(/\/+$/, "").toLowerCase();

@@ -3,6 +3,8 @@ export const routeModules: Record<string, string> = {
   "/tip": "./pages/TipPage.tsx",
   "/order": "./order/OrderPage.tsx",
   "/bartender": "./bartender/BartenderPage.tsx",
+  // Spanish menu + QR code for an iPad on a stand at the event.
+  "/menu-display": "./order/MenuDisplayPage.tsx",
   // Short device addresses: /pay = guest-facing payment iPhone, /register = order-taker's iPad.
   "/pay": "./bartender/BartenderPage.tsx",
   "/register": "./bartender/BartenderPage.tsx",

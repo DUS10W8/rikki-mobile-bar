@@ -12,9 +12,9 @@ const sourceIndex = path.join(distDir, "index.html");
 const sourceHtml = await readFile(sourceIndex, "utf8");
 
 /** SPA fallbacks that need the full React bundle but keep the homepage's <head> as-is. */
-const spaRoutes = ["tip", "order", "bartender", "pay", "register"];
+const spaRoutes = ["tip", "order", "bartender", "pay", "register", "menu-display"];
 /** Operational/internal tools: keep crawlable for direct links, but don't compete for search rankings. */
-const noindexRoutes = new Set(["tip", "order", "bartender", "pay", "register"]);
+const noindexRoutes = new Set(["tip", "order", "bartender", "pay", "register", "menu-display"]);
 
 function withNoindex(html) {
   if (html.includes('name="robots"')) {
