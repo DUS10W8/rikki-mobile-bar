@@ -4,6 +4,35 @@
 
 const MAX_PER_LINE = 10;
 
+/**
+ * Menu items marked "upgrade": "tequila" also exist as Don Julio versions, e.g.
+ * "salsa-lunazul-margarita--dj-blanco" ("Margarita · Don Julio Blanco", +$3). The guest QR menu
+ * shows them under the drink; the server accepts them like any item; each has its own recipe
+ * (the Lunazul pour swapped for the Don Julio bottle).
+ */
+export function expandMenu(config, menu) {
+  const variants = [];
+  for (const item of menu) {
+    const upgrade = item.upgrade && config.upgrades?.[item.upgrade];
+    if (!upgrade) continue;
+    for (const option of upgrade.options) {
+      variants.push({
+        ...item,
+        id: `${item.id}--${option.id}`,
+        name: `${item.name} · ${option.name}`,
+        ...(item.name_es ? { name_es: `${item.name_es} · ${option.name}` } : {}),
+        priceCents: item.priceCents + option.priceCents,
+        description: item.description?.replace(/Lunazul blanco tequila/i, `${option.name} tequila`),
+        ...(item.description_es ? { description_es: item.description_es.replace(/Tequila Lunazul blanco/i, `Tequila ${option.name}`) } : {}),
+        upgrade: undefined,
+        variantOf: item.id,
+        upgradeOption: option.id,
+      });
+    }
+  }
+  return [...menu, ...variants];
+}
+
 /** Groups that apply to a style (and to a signature, through its style). */
 export function groupsFor(config, styleId) {
   return config.groups
@@ -66,8 +95,23 @@ export function priceLine(config, menu, line) {
     liquor = signature ? config.liquors.find((entry) => entry.id === signature.liquor) ?? null : null;
     unitCents = item.priceCents;
     label = item.name;
-    components.push({ id: item.id, name: item.name });
-    if (!signature && line.mods && Object.keys(line.mods).length) throw new Error(`${item.name} has no options.`);
+    // Register: "upgrade" swaps the house tequila for a Don Julio bottle (the drink's Don Julio version).
+    const upgradeId = line.mods?.upgrade;
+    const upgrade = item.upgrade && config.upgrades?.[item.upgrade];
+    if (upgradeId !== undefined && upgradeId !== "house") {
+      const option = upgrade?.options.find((entry) => entry.id === upgradeId);
+      if (!option) throw new Error(`${item.name} can't be upgraded that way.`);
+      const variant = menu.find((entry) => entry.id === `${item.id}--${option.id}`);
+      if (!variant) throw new Error("That upgrade isn't on this menu. Refresh the register.");
+      unitCents = variant.priceCents;
+      label = variant.name;
+      liquor = config.liquors.find((entry) => entry.id === option.liquor) ?? liquor;
+      components.push({ id: variant.id, name: variant.name });
+    } else {
+      components.push({ id: item.id, name: item.name });
+    }
+    const otherMods = Object.keys(line.mods ?? {}).filter((key) => key !== "upgrade");
+    if (!signature && otherMods.length) throw new Error(`${item.name} has no options.`);
   } else {
     throw new Error("Check the ticket.");
   }
@@ -77,8 +121,10 @@ export function priceLine(config, menu, line) {
     const style = config.styles.find((item) => item.id === styleId);
     const groups = groupsFor(config, styleId);
     const defaults = defaultMods(config, styleId);
-    const chosen = { ...defaults, ...(line.mods ?? {}) };
-    for (const key of Object.keys(line.mods ?? {})) {
+    const { upgrade: _upgrade, ...optionMods } = line.mods ?? {};
+    void _upgrade;
+    const chosen = { ...defaults, ...optionMods };
+    for (const key of Object.keys(optionMods)) {
       if (!groups.some((group) => group.id === key)) throw new Error("That option doesn't apply to this drink.");
     }
     for (const group of groups) {
@@ -111,7 +157,7 @@ export function priceLine(config, menu, line) {
         }
       }
     }
-  } else if (line.mods && Object.keys(line.mods).length) {
+  } else if (line.mods && Object.keys(line.mods).some((key) => key !== "upgrade")) {
     throw new Error("This item has no options.");
   }
   if (note) modText.push(`"${note}"`);

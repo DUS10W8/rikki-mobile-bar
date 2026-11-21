@@ -45,6 +45,7 @@ const es: Record<string, string> = {
   "Opening Square checkout…": "Abriendo el pago con Square…",
   "Pay {amount}": "Pagar {amount}",
   "Choose your drinks": "Elige tus bebidas",
+  "Upgrade to {name}": "Cambia a {name}",
   "Quantity for {name}": "Cantidad de {name}",
   "Remove one {name}": "Quitar un {name}",
   "Add one {name}": "Agregar un {name}",

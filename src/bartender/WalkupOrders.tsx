@@ -103,8 +103,10 @@ export default function WalkupOrders({ phone = false }: { phone?: boolean }) {
   const [search, setSearch] = useState("");
   const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const query = normalize(search.trim());
-  const categories = sortCategories([...new Set(menu.map(item => item.category))]).filter(category => !builtSections.has(category));
-  const matches = menu.filter(item => normalize(item.name + " " + item.category).includes(query));
+  // Don Julio versions are chosen inside a drink's options, not as tiles of their own.
+  const tiles = menu.filter(item => !item.variantOf);
+  const categories = sortCategories([...new Set(tiles.map(item => item.category))]).filter(category => !builtSections.has(category));
+  const matches = tiles.filter(item => normalize(item.name + " " + item.category).includes(query));
   const liquorMatches = builder.liquors.filter(liquor => normalize(liquor.name + " " + liquor.type).includes(query));
   function changeQuantity(key: string, delta: number) {
     requestId.current = null;
@@ -877,7 +879,7 @@ function PaymentAlerts({ notices, waiting, now, busy, onDismiss, onCancel }: {
 
 // Toast-style option sheet: how the drink is served, then its options, quantity and a note.
 function DrinkSheet({ line, menu, editing, onClose, onSave }: {
-  line: TicketLine; menu: { id: string; name: string; priceCents: number }[]; editing: boolean;
+  line: TicketLine; menu: { id: string; name: string; priceCents: number; upgrade?: string }[]; editing: boolean;
   onClose: () => void; onSave: (line: TicketLine) => void;
 }) {
   const [draft, setDraft] = useState<TicketLine>(line);
@@ -936,6 +938,23 @@ function DrinkSheet({ line, menu, editing, onClose, onSave }: {
               </div>
             </section>
           )}
+          {item?.upgrade && builder.upgrades?.[item.upgrade] && (() => {
+            const upgrade = builder.upgrades![item.upgrade!];
+            const value = typeof mods.upgrade === "string" ? mods.upgrade : "house";
+            return <section>
+              <h4 className="mb-2 font-black">{upgrade.name} <span className="text-sm font-bold text-brand-ink/50">Pick one</span></h4>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className={chip(value === "house")} aria-pressed={value === "house"}
+                  onClick={() => setMod("upgrade", "house", false)}>{upgrade.house}</button>
+                {upgrade.options.map(option => (
+                  <button key={option.id} type="button" className={chip(value === option.id)} aria-pressed={value === option.id}
+                    onClick={() => setMod("upgrade", option.id, false)}>
+                    {option.name}<span className="ml-1 text-sm opacity-75">+{price(option.priceCents)}</span>
+                  </button>
+                ))}
+              </div>
+            </section>;
+          })()}
           {styleId && groupsFor(builder, styleId).map(group => (
             <section key={group.id}>
               <h4 className="mb-2 font-black">{group.name} <span className="text-sm font-bold text-brand-ink/50">{group.select === "many" ? "Any" : "Pick one"}</span></h4>
@@ -943,8 +962,12 @@ function DrinkSheet({ line, menu, editing, onClose, onSave }: {
                 {group.options.map(option => {
                   const value = mods[group.id];
                   const active = group.select === "many" ? Array.isArray(value) && value.includes(option.id) : value === option.id;
+                  // A double costs the poured bottle's tier: a Don Julio upgrade makes it top shelf.
+                  const upgraded = draft.kind === "item" && item?.upgrade && typeof mods.upgrade === "string"
+                    ? builder.upgrades?.[item.upgrade]?.options.find(entry => entry.id === mods.upgrade)?.liquor : undefined;
+                  const pouredId = upgraded ?? (draft.kind === "item" ? builder.signatures[draft.id]?.liquor : undefined);
                   const extra = option.double && tier ? tier.doubleCents : option.double && draft.kind === "item"
-                    ? builder.tiers[builder.liquors.find(entry => entry.id === builder.signatures[draft.id]?.liquor)?.tier ?? "call"].doubleCents
+                    ? builder.tiers[builder.liquors.find(entry => entry.id === pouredId)?.tier ?? "call"].doubleCents
                     : option.priceCents ?? 0;
                   return <button key={option.id} type="button" className={chip(active)} aria-pressed={active}
                     onClick={() => setMod(group.id, option.id, group.select === "many")}>

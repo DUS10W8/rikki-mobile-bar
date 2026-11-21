@@ -17,15 +17,17 @@ export type BuilderConfig = {
   styles: BuilderStyle[];
   signatures: Record<string, { style: string; liquor: string }>;
   groups: BuilderGroup[];
+  upgrades?: Record<string, { name: string; from: string; house: string; options: { id: string; name: string; liquor: string; priceCents: number }[] }>;
 };
 export type Mods = Record<string, string | string[]>;
 export type TicketLine =
   | { kind: "build"; liquor: string; style: string; mods: Mods; note?: string; quantity: number }
   | { kind: "item"; id: string; mods?: Mods; note?: string; quantity: number };
-export type MenuItem = { id: string; name: string; priceCents: number };
+export type MenuItem = { id: string; name: string; priceCents: number; upgrade?: string; variantOf?: string; upgradeOption?: string };
 export type PricedLine = { unitCents: number; quantity: number; label: string; mods: string[]; text: string; components: { id: string; name: string }[] };
 export type DisplayLine = { name: string; mods: string[]; quantity: number; unit_price_cents: number };
 
+export function expandMenu<T extends MenuItem>(config: BuilderConfig, menu: T[]): (T & { variantOf?: string; upgradeOption?: string })[];
 export function groupsFor(config: BuilderConfig, styleId: string): BuilderGroup[];
 export function defaultMods(config: BuilderConfig, styleId: string): Mods;
 export function priceLine(config: BuilderConfig, menu: MenuItem[], line: TicketLine): PricedLine;

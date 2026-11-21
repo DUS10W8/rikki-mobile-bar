@@ -66,3 +66,35 @@ const recipes = componentRecipes(config);
 assert.deepEqual(recipes.find(([id]) => id === "b-double-lunazul-blanco"), ["b-double-lunazul-blanco", "lunazul-blanco", 1.5]);
 assert.ok(recipes.some(([id, sku]) => id === "b-style-neat" && sku === "cup"));
 assert.ok(!recipes.some(([id, sku]) => id === "b-style-neat" && sku === "ice"));
+
+// ── Don Julio upgrade (owner, Nov 20): every Lunazul tequila drink, +$3 ─────────
+import { expandMenu } from "../src/order/drinkBuilder.js";
+const full = expandMenu(config, menu);
+const variant = full.find((item) => item.id === "salsa-lunazul-margarita--dj-blanco");
+assert.equal(variant.name, "Margarita · Don Julio Blanco");
+assert.equal(variant.priceCents, 1299 + 300);
+assert.equal(variant.description, "Don Julio Blanco tequila, triple sec, fresh lime, agave, salt rim");
+assert.equal(variant.description_es, "Tequila Don Julio Blanco, triple sec, limón fresco, agave, escarchado de sal");
+const upgradable = menu.filter((item) => item.upgrade === "tequila").map((item) => item.id);
+assert.deepEqual(upgradable.sort(), ["salsa-batanga", "salsa-lunazul-margarita", "salsa-lunazul-mule",
+  "salsa-lunazul-paloma", "salsa-ranch-water", "salsa-tequila-fresa"]);
+assert.equal(full.filter((item) => item.variantOf).length, upgradable.length * 2);
+assert.ok(!menu.some((item) => item.id === "salsa-don-julio-margarita"), "folded into the Margarita upgrade");
+
+// Register: upgrade a Batanga to Reposado, make it a double (top-shelf double +$7).
+ticket = priceTicket(config, full, [{ kind: "item", id: "salsa-batanga", quantity: 1, mods: { upgrade: "dj-reposado", pour: "double" } }]);
+assert.equal(ticket.amountCents, 1199 + 300 + 700);
+assert.equal(ticket.drink, "1 × Batanga · Don Julio Reposado — Double");
+assert.deepEqual(ticket.items.map((item) => item.id).sort(), ["b-double-don-julio-reposado", "salsa-batanga--dj-reposado"]);
+// "house" keeps the Lunazul drink; an unknown upgrade or one on a beer is refused.
+ticket = priceTicket(config, full, [{ kind: "item", id: "salsa-lunazul-paloma", quantity: 2, mods: { upgrade: "house" } }]);
+assert.equal(ticket.amountCents, 2 * 1299);
+assert.throws(() => priceTicket(config, full, [{ kind: "item", id: "salsa-lunazul-paloma", quantity: 1, mods: { upgrade: "patron" } }]), /upgraded/);
+assert.throws(() => priceTicket(config, full, [{ kind: "item", id: "salsa-corona", quantity: 1, mods: { upgrade: "dj-blanco" } }]), /upgraded/);
+// QR guests order the variant directly by id.
+ticket = priceTicket(config, full, [{ kind: "item", id: "salsa-ranch-water--dj-blanco", quantity: 1 }]);
+assert.equal(ticket.amountCents, 1199 + 300);
+
+// Food changes
+assert.equal(menu.find((item) => item.id === "salsa-pulled-pork-sandwich").priceCents, 1499);
+assert.equal(menu.find((item) => item.id === "salsa-mini-helado").priceCents, 150);

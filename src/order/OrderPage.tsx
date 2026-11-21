@@ -194,7 +194,8 @@ export default function OrderPage() {
   }, [trackingOrderId, trackingOrderStatus, soundAlertEnabled]);
 
   const groupedDrinks = useMemo(() => {
-    const groups = EVENT_DRINK_MENU.reduce<Record<string, (typeof EVENT_DRINK_MENU)[number][]>>((groups, drink) => {
+    // Don Julio versions are shown under their drink, not as items of their own.
+    const groups = EVENT_DRINK_MENU.filter((drink) => !drink.variantOf).reduce<Record<string, (typeof EVENT_DRINK_MENU)[number][]>>((groups, drink) => {
       const key = drink.category || "House";
       groups[key] = groups[key] || [];
       groups[key].push(drink);
@@ -393,31 +394,26 @@ export default function OrderPage() {
                   <div id={panelId} hidden={!isOpen}>
                     <div className="grid gap-2 border-t border-brand-chrome/70 p-3">
                       {items.map((drink) => (
-                        <div key={drink.id} className="flex items-center justify-between gap-3 rounded-2xl border border-brand-chrome bg-[#fffaf2] p-4">
-                          <div>
-                            <span className="block text-lg font-bold">{pick(drink.name, drink.name_es)}</span>
-                            {drink.description && <span className="block text-sm text-brand-ink/70">{pick(drink.description, drink.description_es)}</span>}
-                            <span className="font-bold">{formatDrinkPrice(drink.priceCents)}</span>
+                        <div key={drink.id} className="rounded-2xl border border-brand-chrome bg-[#fffaf2] p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <span className="block text-lg font-bold">{pick(drink.name, drink.name_es)}</span>
+                              {drink.description && <span className="block text-sm text-brand-ink/70">{pick(drink.description, drink.description_es)}</span>}
+                              <span className="font-bold">{formatDrinkPrice(drink.priceCents)}</span>
+                            </div>
+                            <QuantityStepper label={pick(drink.name, drink.name_es)} value={quantities[drink.id] ?? 0}
+                              onChange={(value) => setQuantities((current) => ({ ...current, [drink.id]: value }))} />
                           </div>
-                          <div className="order-quantity" role="group" aria-label={t("Quantity for {name}", { name: pick(drink.name, drink.name_es) })}>
-                            <button type="button" aria-label={t("Remove one {name}", { name: pick(drink.name, drink.name_es) })}
-                              disabled={!quantities[drink.id]}
-                              onClick={() => setQuantities((current) => ({
-                                ...current, [drink.id]: Math.max(0, (current[drink.id] ?? 0) - 1),
-                              }))}>
-                              <Minus size={19} aria-hidden="true" />
-                            </button>
-                            <output className="order-quantity-value" aria-live="polite">
-                              <span key={quantities[drink.id] ?? 0}>{quantities[drink.id] ?? 0}</span>
-                            </output>
-                            <button type="button" aria-label={t("Add one {name}", { name: pick(drink.name, drink.name_es) })}
-                              disabled={quantities[drink.id] >= 10}
-                              onClick={() => setQuantities((current) => ({
-                                ...current, [drink.id]: Math.min(10, (current[drink.id] ?? 0) + 1),
-                              }))}>
-                              <Plus size={19} aria-hidden="true" />
-                            </button>
-                          </div>
+                          {EVENT_DRINK_MENU.filter((variant) => variant.variantOf === drink.id).map((variant) => (
+                            <div key={variant.id} className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-dashed border-brand-chrome bg-white/60 px-3 py-2">
+                              <span className="text-sm leading-tight">
+                                <span className="block font-bold">{t("Upgrade to {name}", { name: variant.name.split(" · ")[1] ?? variant.name })}</span>
+                                <span className="text-brand-ink/70">+{formatDrinkPrice(variant.priceCents - drink.priceCents)} · {formatDrinkPrice(variant.priceCents)}</span>
+                              </span>
+                              <QuantityStepper label={pick(variant.name, variant.name_es)} value={quantities[variant.id] ?? 0} small
+                                onChange={(value) => setQuantities((current) => ({ ...current, [variant.id]: value }))} />
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>
@@ -483,6 +479,20 @@ export default function OrderPage() {
         </form>
       </main>
     </OrderShell>
+  );
+}
+
+function QuantityStepper({ label, value, onChange, small = false }: { label: string; value: number; onChange: (value: number) => void; small?: boolean }) {
+  return (
+    <div className={`order-quantity shrink-0 ${small ? "scale-90" : ""}`} role="group" aria-label={t("Quantity for {name}", { name: label })}>
+      <button type="button" aria-label={t("Remove one {name}", { name: label })} disabled={!value} onClick={() => onChange(Math.max(0, value - 1))}>
+        <Minus size={19} aria-hidden="true" />
+      </button>
+      <output className="order-quantity-value" aria-live="polite"><span key={value}>{value}</span></output>
+      <button type="button" aria-label={t("Add one {name}", { name: label })} disabled={value >= 10} onClick={() => onChange(Math.min(10, value + 1))}>
+        <Plus size={19} aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 

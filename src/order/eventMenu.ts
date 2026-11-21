@@ -1,6 +1,8 @@
 import hamiltonMenu from "./eventMenu.json";
 import salsaMenu from "./salsaMenu.json";
 import activeEvent from "./activeEvent.json";
+import builderConfig from "./drinkBuilder.json";
+import { expandMenu, type BuilderConfig } from "./drinkBuilder.js";
 
 export type EventMenuItem = {
   id: string;
@@ -10,10 +12,17 @@ export type EventMenuItem = {
   description?: string;
   name_es?: string;
   description_es?: string;
+  upgrade?: string;
+  variantOf?: string;
+  upgradeOption?: string;
 };
 
 // To switch the guest QR menu, change "menu" in activeEvent.json. The server reads the same file.
-export const EVENT_MENUS: Record<string, EventMenuItem[]> = { hamilton: hamiltonMenu.drinks, salsa: salsaMenu };
+// Salsa includes the Don Julio versions of upgradable tequila drinks ("…--dj-blanco"), as the server does.
+export const EVENT_MENUS: Record<string, EventMenuItem[]> = {
+  hamilton: hamiltonMenu.drinks,
+  salsa: expandMenu(builderConfig as unknown as BuilderConfig, salsaMenu as EventMenuItem[]),
+};
 export const ACTIVE_EVENT = activeEvent;
 export const EVENT_DRINK_MENU: EventMenuItem[] = EVENT_MENUS[activeEvent.menu];
 
